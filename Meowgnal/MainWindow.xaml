@@ -1,13 +1,14 @@
 ﻿<Window x:Class="Meowgnal.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Meowgnal" Height="340" Width="380">
+        Title="Meowgnal" Height="420" Width="380">
     <Grid>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
             <Button x:Name="TestButton" Content="Test Binance connection" Padding="10" Click="TestButton_Click"/>
             <Button x:Name="TestHyperliquidButton" Content="Test Hyperliquid connection" Padding="10" Margin="0,10,0,0" Click="TestHyperliquidButton_Click"/>
             <Button x:Name="TestIndicatorButton" Content="Test EMA9 calculation" Padding="10" Margin="0,10,0,0" Click="TestIndicatorButton_Click"/>
             <Button x:Name="TestStrategyButton" Content="Test full strategy scan" Padding="10" Margin="0,10,0,0" Click="TestStrategyButton_Click"/>
+            <Button x:Name="TestBacktestButton" Content="Test backtest" Padding="10" Margin="0,10,0,0" Click="TestBacktestButton_Click"/>
             <TextBlock x:Name="ResultText" Margin="0,15,0,0" FontSize="14"/>
         </StackPanel>
     </Grid>
