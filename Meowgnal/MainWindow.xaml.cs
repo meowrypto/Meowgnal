@@ -1,24 +1,20 @@
-﻿using System.Text;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+﻿using System.Windows;
+using Meowgnal.DataProviders;
 
-namespace Meowgnal
+namespace Meowgnal;
+
+public partial class MainWindow : Window
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
-    public partial class MainWindow : Window
+    public MainWindow()
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-        }
+        InitializeComponent();
+    }
+
+    private async void TestButton_Click(object sender, RoutedEventArgs e)
+    {
+        var provider = new BinanceDataProvider();
+        var bars = await provider.GetHistoricalCandlesAsync("BTC/USDT", "1h", limit: 5);
+
+        ResultText.Text = $"Got {bars.Count} candles.\nLast close: {bars[^1].Close}";
     }
 }
