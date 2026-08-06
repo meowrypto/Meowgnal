@@ -15,6 +15,7 @@ public sealed class SignalTypeToBrushConverter : IValueConverter
             : new SolidColorBrush(Color.FromRgb(0xEF, 0x53, 0x50));
     }
 
+
     public object ConvertBack(object? value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotImplementedException();
 }
