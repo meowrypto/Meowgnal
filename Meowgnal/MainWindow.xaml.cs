@@ -2,6 +2,11 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using LiveChartsCore;
+using LiveChartsCore.Defaults;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using SkiaSharp;
 using Meowgnal.DataProviders;
 using Meowgnal.Engine;
 using Meowgnal.Models;
@@ -26,6 +31,8 @@ public partial class MainWindow : Window
         var provider = new BinanceDataProvider();
         var bars = await provider.GetHistoricalCandlesAsync("BTC/USDT", "1h", limit: 200);
         PriceText.Text = bars[^1].Close.ToString("N2");
+
+        UpdateChart(bars);
 
         var strategy = new StrategyDefinition
         {
@@ -73,5 +80,37 @@ public partial class MainWindow : Window
                 Time = s.Timestamp.ToString("g")
             });
         }
+    }
+
+    private void UpdateChart(System.Collections.Generic.List<Bar> bars)
+    {
+        var points = bars.Select(b => new FinancialPoint(b.Timestamp, (double)b.High, (double)b.Open, (double)b.Close, (double)b.Low));
+
+        PriceChart.Series = new ISeries[]
+        {
+            new CandlesticksSeries<FinancialPoint>
+            {
+                Values = new ObservableCollection<FinancialPoint>(points),
+                UpFill = new SolidColorPaint(new SKColor(0x26, 0xA6, 0x9A)),
+                UpStroke = new SolidColorPaint(new SKColor(0x26, 0xA6, 0x9A)) { StrokeThickness = 1 },
+                DownFill = new SolidColorPaint(new SKColor(0xEF, 0x53, 0x50)),
+                DownStroke = new SolidColorPaint(new SKColor(0xEF, 0x53, 0x50)) { StrokeThickness = 1 },
+            }
+        };
+
+        PriceChart.XAxes = new[]
+        {
+            new Axis
+            {
+                Labeler = value => new DateTime((long)value).ToString("MM/dd HH:mm"),
+                UnitWidth = TimeSpan.FromHours(1).Ticks,
+                LabelsPaint = new SolidColorPaint(new SKColor(0x8A, 0x8F, 0x9C)),
+            }
+        };
+
+        PriceChart.YAxes = new[]
+        {
+            new Axis { LabelsPaint = new SolidColorPaint(new SKColor(0x8A, 0x8F, 0x9C)) }
+        };
     }
 }
