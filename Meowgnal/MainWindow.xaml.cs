@@ -14,7 +14,13 @@ public partial class MainWindow : Window
     {
         var provider = new BinanceDataProvider();
         var bars = await provider.GetHistoricalCandlesAsync("BTC/USDT", "1h", limit: 5);
+        ResultText.Text = $"[Binance] Got {bars.Count} candles.\nLast close: {bars[^1].Close}";
+    }
 
-        ResultText.Text = $"Got {bars.Count} candles.\nLast close: {bars[^1].Close}";
+    private async void TestHyperliquidButton_Click(object sender, RoutedEventArgs e)
+    {
+        var provider = new HyperliquidDataProvider();
+        var bars = await provider.GetHistoricalCandlesAsync("BTC/USDT", "1h", limit: 5);
+        ResultText.Text = $"[Hyperliquid] Got {bars.Count} candles.\nLast close: {bars[^1].Close}";
     }
 }
