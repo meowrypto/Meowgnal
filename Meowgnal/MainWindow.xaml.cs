@@ -30,19 +30,55 @@ public partial class MainWindow : Window
     private async void TestIndicatorButton_Click(object sender, RoutedEventArgs e)
     {
         var provider = new BinanceDataProvider();
-        // EMA9 needs a real warmup window, so grab plenty of candles.
         var bars = await provider.GetHistoricalCandlesAsync("BTC/USDT", "1h", limit: 100);
 
-        var indicatorDef = new IndicatorDefinition
+        var indicatorDef = new IndicatorDefinition { Id = "ema9", Type = "EMA", Params = new() { ["period"] = 9 } };
+        var emaValues = IndicatorEngine.Calculate(bars, indicatorDef);
+
+        ResultText.Text = $"[EMA9] Last close: {bars[^1].Close}\nEMA9: {emaValues.Last():N2}";
+    }
+
+    private async void TestStrategyButton_Click(object sender, RoutedEventArgs e)
+    {
+        var provider = new BinanceDataProvider();
+        var bars = await provider.GetHistoricalCandlesAsync("BTC/USDT", "1h", limit: 200);
+
+        var strategy = new StrategyDefinition
         {
-            Id = "ema9",
-            Type = "EMA",
-            Params = new() { ["period"] = 9 }
+            Name = "EMA Cross + RSI Filter",
+            Symbol = "BTC/USDT",
+            Timeframe = "1h",
+            Indicators =
+            {
+                new IndicatorDefinition { Id = "ema9", Type = "EMA", Params = new() { ["period"] = 9 } },
+                new IndicatorDefinition { Id = "ema21", Type = "EMA", Params = new() { ["period"] = 21 } },
+                new IndicatorDefinition { Id = "rsi14", Type = "RSI", Params = new() { ["period"] = 14 } },
+            },
+            EntryRules = new RuleGroup
+            {
+                Mode = "threshold",
+                MinScore = 3,
+                TriggerMode = "onTransition",
+                Conditions =
+                {
+                    new LeafCondition { Left = "ema9", Op = "crossesAbove", Right = "ema21", Weight = 2 },
+                    new LeafCondition { Left = "rsi14", Op = "lessThan", Right = 70.0, Weight = 1 },
+                }
+            },
+            ExitRules = new RuleGroup
+            {
+                Mode = "any",
+                Conditions = { new LeafCondition { Left = "ema9", Op = "crossesBelow", Right = "ema21" } }
+            }
         };
 
-        var emaValues = IndicatorEngine.Calculate(bars, indicatorDef);
-        var lastEma = emaValues.Last();
+        var signals = RuleEngine.ScanForSignals(strategy, bars);
+        var entryCount = signals.Count(s => s.Type == SignalType.Entry);
+        var exitCount = signals.Count(s => s.Type == SignalType.Exit);
+        var last = signals.LastOrDefault();
 
-        ResultText.Text = $"[EMA9] Last close: {bars[^1].Close}\nEMA9: {lastEma:N2}";
+        ResultText.Text = $"Scanned {bars.Count} candles.\n" +
+                           $"Entry signals: {entryCount}, Exit signals: {exitCount}\n" +
+                           (last is not null ? $"Last: {last.Type} at {last.Timestamp:g}" : "No signals yet");
     }
 }
