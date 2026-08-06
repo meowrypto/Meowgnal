@@ -9,8 +9,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Engine\" />
     <Folder Include="Views\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FacioQuo.Stock.Indicators" Version="3.0.0" />
   </ItemGroup>
 
 </Project>

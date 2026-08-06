@@ -58,7 +58,7 @@ public sealed class HyperliquidDataProvider : IDataProvider
         {
             bars.Add(new Bar
             {
-                OpenTime = DateTimeOffset.FromUnixTimeMilliseconds(row.GetProperty("t").GetInt64()),
+                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(row.GetProperty("t").GetInt64()).UtcDateTime,
                 Open = decimal.Parse(row.GetProperty("o").GetString()!, CultureInfo.InvariantCulture),
                 High = decimal.Parse(row.GetProperty("h").GetString()!, CultureInfo.InvariantCulture),
                 Low = decimal.Parse(row.GetProperty("l").GetString()!, CultureInfo.InvariantCulture),

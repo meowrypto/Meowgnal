@@ -35,7 +35,7 @@ public sealed class BinanceDataProvider : IDataProvider
             var openTimeMs = row[0].GetInt64();
             bars.Add(new Bar
             {
-                OpenTime = DateTimeOffset.FromUnixTimeMilliseconds(openTimeMs),
+                Timestamp = DateTimeOffset.FromUnixTimeMilliseconds(openTimeMs).UtcDateTime,
                 Open = decimal.Parse(row[1].GetString()!, CultureInfo.InvariantCulture),
                 High = decimal.Parse(row[2].GetString()!, CultureInfo.InvariantCulture),
                 Low = decimal.Parse(row[3].GetString()!, CultureInfo.InvariantCulture),
