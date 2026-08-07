@@ -72,7 +72,7 @@
             <TextBlock Text="Entry rules" FontWeight="Bold" Margin="0,0,0,6"/>
             <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                 <TextBlock Text="Mode" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="EntryModeCombo" ItemsSource="{StaticResource ModeOptions}" SelectedIndex="2" Width="100"/>
+                <ComboBox x:Name="EntryModeCombo" ItemsSource="{StaticResource ModeOptions}" SelectedIndex="0" Width="100"/>
                 <TextBlock Text="Min score (if threshold)" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="10,0,6,0"/>
                 <TextBox x:Name="EntryMinScoreBox" Text="3" Width="50"/>
             </StackPanel>

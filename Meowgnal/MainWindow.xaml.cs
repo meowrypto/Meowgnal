@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
@@ -10,6 +12,7 @@ using SkiaSharp;
 using Meowgnal.DataProviders;
 using Meowgnal.Engine;
 using Meowgnal.Models;
+using Meowgnal.Services;
 using Meowgnal.Views;
 
 namespace Meowgnal;
@@ -27,63 +30,74 @@ public partial class MainWindow : Window
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await LoadDashboardAsync();
 
-    private async System.Threading.Tasks.Task LoadDashboardAsync()
+    private void OpenBuilderButton_Click(object sender, RoutedEventArgs e)
     {
-        var provider = new BinanceDataProvider();
-        var bars = await provider.GetHistoricalCandlesAsync("BTC/USDT", "1h", limit: 200);
-        PriceText.Text = bars[^1].Close.ToString("N2");
-
-        UpdateChart(bars);
-
-        var strategy = new StrategyDefinition
-        {
-            Name = "EMA Cross + RSI Filter",
-            Symbol = "BTC/USDT",
-            Timeframe = "1h",
-            Indicators =
-            {
-                new IndicatorDefinition { Id = "ema9", Type = "EMA", Params = new() { ["period"] = 9 } },
-                new IndicatorDefinition { Id = "ema21", Type = "EMA", Params = new() { ["period"] = 21 } },
-                new IndicatorDefinition { Id = "rsi14", Type = "RSI", Params = new() { ["period"] = 14 } },
-            },
-            EntryRules = new RuleGroup
-            {
-                Mode = "threshold",
-                MinScore = 3,
-                TriggerMode = "onTransition",
-                Conditions =
-                {
-                    new LeafCondition { Left = "ema9", Op = "crossesAbove", Right = "ema21", Weight = 2 },
-                    new LeafCondition { Left = "rsi14", Op = "lessThan", Right = 70.0, Weight = 1 },
-                }
-            },
-            ExitRules = new RuleGroup
-            {
-                Mode = "any",
-                Conditions = { new LeafCondition { Left = "ema9", Op = "crossesBelow", Right = "ema21" } }
-            }
-        };
-
-        var signals = RuleEngine.ScanForSignals(strategy, bars);
-        var backtest = BacktestEngine.Run(strategy, bars, startingBalance: 10000m, feePercent: 0.1m, slippagePercent: 0.05m);
-
-        WinRateText.Text = $"{backtest.WinRatePercent:N0}%";
-        SignalCountText.Text = signals.Count.ToString();
-
-        _signals.Clear();
-        foreach (var s in signals.OrderByDescending(s => s.Timestamp).Take(10))
-        {
-            _signals.Add(new SignalDisplayItem
-            {
-                Symbol = strategy.Symbol,
-                Description = strategy.Name,
-                Type = s.Type == SignalType.Entry ? "buy" : "sell",
-                Time = s.Timestamp.ToString("g")
-            });
-        }
+        var builder = new StrategyBuilderWindow();
+        builder.ShowDialog();
     }
 
-    private void UpdateChart(System.Collections.Generic.List<Bar> bars)
+    private async Task LoadDashboardAsync()
+    {
+        var strategies = StrategyStorageService.LoadAll();
+        _signals.Clear();
+        ActiveStrategiesText.Text = strategies.Count.ToString();
+
+        if (strategies.Count == 0)
+        {
+            SymbolText.Text = "No strategies yet";
+            PriceText.Text = "";
+            WinRateText.Text = "—";
+            SignalCountText.Text = "0";
+            return;
+        }
+
+        var allSignals = new List<(SignalDisplayItem Item, DateTime Time)>();
+        List<Bar>? chartBars = null;
+        var totalWinRate = 0.0;
+        var totalSignalCount = 0;
+
+        foreach (var strategy in strategies)
+        {
+            IDataProvider provider = strategy.DataSource == "hyperliquid"
+                ? new HyperliquidDataProvider()
+                : new BinanceDataProvider();
+
+            var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 200);
+            chartBars ??= bars; // dashboard chart shows the first strategy's symbol for now
+
+            var signals = RuleEngine.ScanForSignals(strategy, bars);
+            var backtest = BacktestEngine.Run(strategy, bars, startingBalance: 10000m, feePercent: 0.1m, slippagePercent: 0.05m);
+
+            totalWinRate += backtest.WinRatePercent;
+            totalSignalCount += signals.Count;
+
+            foreach (var s in signals)
+            {
+                allSignals.Add((new SignalDisplayItem
+                {
+                    Symbol = strategy.Symbol,
+                    Description = strategy.Name,
+                    Type = s.Type == SignalType.Entry ? "buy" : "sell",
+                    Time = s.Timestamp.ToString("g")
+                }, s.Timestamp));
+            }
+        }
+
+        if (chartBars is not null)
+        {
+            UpdateChart(chartBars);
+            SymbolText.Text = strategies[0].Symbol;
+            PriceText.Text = chartBars[^1].Close.ToString("N2");
+        }
+
+        WinRateText.Text = $"{totalWinRate / strategies.Count:N0}%";
+        SignalCountText.Text = totalSignalCount.ToString();
+
+        foreach (var (item, _) in allSignals.OrderByDescending(x => x.Time).Take(15))
+            _signals.Add(item);
+    }
+
+    private void UpdateChart(List<Bar> bars)
     {
         var points = bars.Select(b => new FinancialPoint(b.Timestamp, (double)b.High, (double)b.Open, (double)b.Close, (double)b.Low));
 
@@ -114,9 +128,9 @@ public partial class MainWindow : Window
             new Axis { LabelsPaint = new SolidColorPaint(new SKColor(0x8A, 0x8F, 0x9C)) }
         };
     }
-    private void OpenBuilderButton_Click(object sender, RoutedEventArgs e)
+    private void OpenBacktestButton_Click(object sender, RoutedEventArgs e)
     {
-        var builder = new Meowgnal.Views.StrategyBuilderWindow();
-        builder.ShowDialog();
+        var backtest = new BacktestWindow();
+        backtest.ShowDialog();
     }
 }
