@@ -49,6 +49,7 @@
                     <Button x:Name="RefreshButton" Content="Refresh signals" Padding="10,4" Margin="16,0,0,0" Click="RefreshButton_Click"/>
                     <Button x:Name="OpenBuilderButton" Content="New strategy" Padding="10,4" Margin="8,0,0,0" Click="OpenBuilderButton_Click"/>
                     <Button x:Name="OpenBacktestButton" Content="Backtest" Padding="10,4" Margin="8,0,0,0" Click="OpenBacktestButton_Click"/>
+                    <Button x:Name="OpenSettingsButton" Content="Settings" Padding="10,4" Margin="8,0,0,0" Click="OpenSettingsButton_Click"/>
                 </StackPanel>
             </Border>
 

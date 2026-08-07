@@ -133,4 +133,9 @@ public partial class MainWindow : Window
         var backtest = new BacktestWindow();
         backtest.ShowDialog();
     }
+    private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = new SettingsWindow();
+        settings.ShowDialog();
+    }
 }

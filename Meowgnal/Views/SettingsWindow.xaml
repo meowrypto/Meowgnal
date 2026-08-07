@@ -1,0 +1,93 @@
+﻿<Window x:Class="Meowgnal.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings" Height="480" Width="620"
+        Background="#0F1117">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="TextMuted" Color="#8A8F9C"/>
+        <SolidColorBrush x:Key="PanelBg" Color="#161A23"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#262B38"/>
+        <SolidColorBrush x:Key="AccentBg" Color="#1E2A38"/>
+        <SolidColorBrush x:Key="AccentText" Color="#4FC3F7"/>
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style x:Key="NavItem" TargetType="RadioButton">
+            <Setter Property="Padding" Value="12,8"/>
+            <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="Bg" Background="Transparent" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="{StaticResource AccentBg}"/>
+                                <Setter Property="Foreground" Value="{StaticResource AccentText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="170"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left nav -->
+        <Border Grid.Column="0" Background="{StaticResource PanelBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,1,0">
+            <StackPanel Margin="0,10,0,0">
+                <RadioButton x:Name="NavDataSources" Content="Data sources" GroupName="Nav" Style="{StaticResource NavItem}" IsChecked="True" Checked="Nav_Checked"/>
+                <RadioButton x:Name="NavApiKeys" Content="Exchange API keys" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
+                <RadioButton x:Name="NavNotifications" Content="Notifications" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
+                <RadioButton x:Name="NavLicense" Content="License" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Right content -->
+        <Grid Grid.Column="1" Margin="20">
+            <!-- Data sources -->
+            <StackPanel x:Name="PanelDataSources">
+                <TextBlock Text="Default candle/price source for new strategies" Foreground="{StaticResource TextMuted}" Margin="0,0,0,12"/>
+                <RadioButton x:Name="SourceBinance" Content="Binance" GroupName="Source" Foreground="White" Margin="0,0,0,8"/>
+                <RadioButton x:Name="SourceHyperliquid" Content="Hyperliquid" GroupName="Source" Foreground="White" Margin="0,0,0,8"/>
+                <TextBlock Text="Both sources stay connected in the background — this only sets the default shown on new strategies."
+                           Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <!-- API keys -->
+            <StackPanel x:Name="PanelApiKeys" Visibility="Collapsed">
+                <Border Background="#2A1E14" CornerRadius="4" Padding="10" Margin="0,0,0,14">
+                    <TextBlock Text="Only ever provide a Read-Only API key here. Never a key with trade or withdrawal permission."
+                               Foreground="#FFB74D" TextWrapping="Wrap" FontSize="12"/>
+                </Border>
+                <TextBlock Text="Binance API key" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                <TextBox x:Name="ApiKeyBox" Margin="0,0,0,10"/>
+                <TextBlock Text="Binance API secret" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                <PasswordBox x:Name="ApiSecretBox" Margin="0,0,0,10"/>
+            </StackPanel>
+
+            <!-- Notifications -->
+            <StackPanel x:Name="PanelNotifications" Visibility="Collapsed">
+                <CheckBox x:Name="ToastCheck" Content="Windows toast notification on new signal" Foreground="White" Margin="0,0,0,10"/>
+                <CheckBox x:Name="SoundCheck" Content="Play alert sound on new signal" Foreground="White" Margin="0,0,0,10"/>
+                <TextBlock Text="More channels (Telegram, email) are planned for a future update."
+                           Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,8,0,0"/>
+            </StackPanel>
+
+            <!-- License -->
+            <StackPanel x:Name="PanelLicense" Visibility="Collapsed">
+                <TextBlock Text="License management is coming in a future update." Foreground="{StaticResource TextMuted}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+
+ 
+
+</Window>
