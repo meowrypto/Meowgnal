@@ -10,6 +10,7 @@ using SkiaSharp;
 using Meowgnal.DataProviders;
 using Meowgnal.Engine;
 using Meowgnal.Models;
+using Meowgnal.Views;
 
 namespace Meowgnal;
 
@@ -112,5 +113,10 @@ public partial class MainWindow : Window
         {
             new Axis { LabelsPaint = new SolidColorPaint(new SKColor(0x8A, 0x8F, 0x9C)) }
         };
+    }
+    private void OpenBuilderButton_Click(object sender, RoutedEventArgs e)
+    {
+        var builder = new Meowgnal.Views.StrategyBuilderWindow();
+        builder.ShowDialog();
     }
 }

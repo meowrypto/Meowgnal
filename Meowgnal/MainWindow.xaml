@@ -47,6 +47,7 @@
                     <TextBlock x:Name="SymbolText" Text="BTC/USDT" Foreground="White" FontSize="15" VerticalAlignment="Center"/>
                     <TextBlock x:Name="PriceText" Text="—" Foreground="{StaticResource TextMuted}" Margin="10,0,0,0" VerticalAlignment="Center"/>
                     <Button x:Name="RefreshButton" Content="Refresh signals" Padding="10,4" Margin="16,0,0,0" Click="RefreshButton_Click"/>
+                    <Button x:Name="OpenBuilderButton" Content="New strategy" Padding="10,4" Margin="8,0,0,0" Click="OpenBuilderButton_Click"/>
                 </StackPanel>
             </Border>
 
