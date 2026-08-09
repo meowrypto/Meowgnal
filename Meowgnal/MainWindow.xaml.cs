@@ -31,8 +31,27 @@ public partial class MainWindow : Window
         public string DataSource { get; set; } = "binance";
     }
 
+    // A rendered watchlist row; keeps references so live ticks can update
+    // the two price texts in place without rebuilding the whole panel.
+    private sealed class WatchlistRow
+    {
+        public WatchlistItem Item { get; init; } = new();
+        public TextBlock LastText { get; init; } = new();
+        public TextBlock ChgText { get; init; } = new();
+    }
+
     private readonly List<ChartTab> _tabs = new();
     private ChartTab? _activeTab;
+
+    // Watchlist state: all lists + the one currently shown.
+    private WatchlistsFile _watchlistsFile = new();
+    private WatchlistDefinition _activeWatchlist = new();
+    private readonly List<WatchlistRow> _watchlistRows = new();
+    private readonly DispatcherTimer _watchTimer = new() { Interval = TimeSpan.FromSeconds(5) };
+    private bool _refreshingWatchlist;
+
+    // Debounce for the add-symbol live preview while the user is typing.
+    private readonly DispatcherTimer _symbolPreviewDebounce = new() { Interval = TimeSpan.FromMilliseconds(600) };
 
     private readonly ObservableCollection<SignalDisplayItem> _signals = new();
 
@@ -104,6 +123,17 @@ public partial class MainWindow : Window
         _clockTimer.Tick += (_, _) => UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
         _clockTimer.Start();
 
+        // Watchlist live prices every 5 seconds.
+        _watchTimer.Tick += WatchTimer_Tick;
+        _watchTimer.Start();
+
+        // Add-symbol preview refresh while typing (debounced).
+        _symbolPreviewDebounce.Tick += async (_, _) =>
+        {
+            _symbolPreviewDebounce.Stop();
+            await UpdateSymbolPreviewAsync();
+        };
+
         Loaded += MainWindow_Loaded;
     }
 
@@ -122,6 +152,14 @@ public partial class MainWindow : Window
         };
         _tabs.Add(firstTab);
         await ActivateTabAsync(firstTab);
+
+        // Watchlists: load encrypted file, pick the saved active list.
+        _watchlistsFile = WatchlistStorageService.Load();
+        _activeWatchlist = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == _watchlistsFile.ActiveListName)
+                           ?? _watchlistsFile.Lists[0];
+        WatchlistNameText.Text = _activeWatchlist.Name;
+        RebuildWatchlistPanel();
+        _ = RefreshWatchlistPricesAsync();
 
         await LoadDashboardAsync();
         StartSignalMonitor();
@@ -269,6 +307,351 @@ public partial class MainWindow : Window
 
         await LoadChartAsync();
     }
+
+    // ------------------------------------------------------------------
+    // Watchlist (right panel)
+    // ------------------------------------------------------------------
+
+    // Right-panel tab switching: Watchlist <-> Signals.
+    private void RightTabWatchlist_Click(object sender, RoutedEventArgs e)
+    {
+        WatchlistPane.Visibility = Visibility.Visible;
+        SignalsPane.Visibility = Visibility.Collapsed;
+        TabWatchlistButton.Background = (Brush)FindResource("Accent");
+        TabWatchlistButton.Foreground = Brushes.White;
+        TabSignalsButton.Background = Brushes.Transparent;
+        TabSignalsButton.Foreground = (Brush)FindResource("TextSecondary");
+    }
+
+    private void RightTabSignals_Click(object sender, RoutedEventArgs e)
+    {
+        WatchlistPane.Visibility = Visibility.Collapsed;
+        SignalsPane.Visibility = Visibility.Visible;
+        TabSignalsButton.Background = (Brush)FindResource("Accent");
+        TabSignalsButton.Foreground = Brushes.White;
+        TabWatchlistButton.Background = Brushes.Transparent;
+        TabWatchlistButton.Foreground = (Brush)FindResource("TextSecondary");
+    }
+
+    // Rebuilds the watchlist rows for the active list. Price texts are kept
+    // per row so the 5-second ticker can update them in place.
+    private void RebuildWatchlistPanel()
+    {
+        WatchlistRowsPanel.Children.Clear();
+        _watchlistRows.Clear();
+
+        // Column headers.
+        var header = new Grid();
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        header.Children.Add(new TextBlock { Text = "Symbol", Foreground = (Brush)FindResource("TextMuted"), FontSize = 10 });
+        var hLast = new TextBlock { Text = "Last", Foreground = (Brush)FindResource("TextMuted"), FontSize = 10, Margin = new Thickness(0, 0, 14, 0) };
+        Grid.SetColumn(hLast, 1);
+        var hChg = new TextBlock { Text = "Chg%", Foreground = (Brush)FindResource("TextMuted"), FontSize = 10 };
+        Grid.SetColumn(hChg, 2);
+        header.Children.Add(hLast);
+        header.Children.Add(hChg);
+        WatchlistRowsPanel.Children.Add(header);
+
+        foreach (var item in _activeWatchlist.Items)
+        {
+            var row = new Grid { Margin = new Thickness(0, 7, 0, 0), Cursor = Cursors.Hand, Tag = item };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var sym = new TextBlock
+            {
+                Text = item.Symbol,
+                Foreground = (Brush)FindResource("TextPrimary"),
+                FontSize = 12,
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            var last = new TextBlock
+            {
+                Text = "—",
+                Foreground = (Brush)FindResource("TextSecondary"),
+                FontSize = 12,
+                Margin = new Thickness(0, 0, 14, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            Grid.SetColumn(last, 1);
+            var chg = new TextBlock
+            {
+                Text = "—",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 12,
+                Margin = new Thickness(0, 0, 10, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            Grid.SetColumn(chg, 2);
+            var del = new TextBlock
+            {
+                Text = "✕",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 10,
+                Tag = item,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            Grid.SetColumn(del, 3);
+            del.MouseLeftButtonUp += RemoveSymbol_Click;
+
+            row.Children.Add(sym);
+            row.Children.Add(last);
+            row.Children.Add(chg);
+            row.Children.Add(del);
+            row.MouseLeftButtonUp += WatchlistRow_Click;
+
+            WatchlistRowsPanel.Children.Add(row);
+            _watchlistRows.Add(new WatchlistRow { Item = item, LastText = last, ChgText = chg });
+        }
+    }
+
+    // Clicking a watchlist row opens (or switches to) the chart tab for it,
+    // using the source the user originally picked for that row.
+    private async void WatchlistRow_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Grid g || g.Tag is not WatchlistItem item) return;
+
+        var existing = _tabs.FirstOrDefault(t => t.Symbol == item.Symbol);
+        if (existing is not null)
+        {
+            await ActivateTabAsync(existing);
+            return;
+        }
+
+        var tab = new ChartTab { Symbol = item.Symbol, DataSource = item.DataSource };
+        _tabs.Add(tab);
+        await ActivateTabAsync(tab);
+    }
+
+    private void RemoveSymbol_Click(object sender, MouseButtonEventArgs e)
+    {
+        e.Handled = true; // don't let the row-click (open tab) fire as well
+        if (sender is not TextBlock t || t.Tag is not WatchlistItem item) return;
+
+        _activeWatchlist.Items.Remove(item);
+        SaveWatchlists();
+        RebuildWatchlistPanel();
+        _ = RefreshWatchlistPricesAsync();
+    }
+
+    // ----- List management -----
+
+    private void WatchlistNameButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (WatchlistSwitchPopup.IsOpen)
+        {
+            WatchlistSwitchPopup.IsOpen = false;
+            return;
+        }
+
+        SwitchListPanel.Children.Clear();
+        foreach (var list in _watchlistsFile.Lists)
+        {
+            var btn = new Button
+            {
+                Style = (Style)FindResource("TvButtonLeft"),
+                Tag = list.Name,
+                Content = list == _activeWatchlist ? list.Name + "  ★" : list.Name,
+            };
+            btn.Click += SwitchList_Click;
+            SwitchListPanel.Children.Add(btn);
+        }
+        WatchlistSwitchPopup.IsOpen = true;
+    }
+
+    private void SwitchList_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || b.Tag is not string name) return;
+        WatchlistSwitchPopup.IsOpen = false;
+
+        var list = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == name);
+        if (list is null || list == _activeWatchlist) return;
+
+        _activeWatchlist = list;
+        _watchlistsFile.ActiveListName = list.Name;
+        SaveWatchlists();
+        WatchlistNameText.Text = list.Name;
+        RebuildWatchlistPanel();
+        _ = RefreshWatchlistPricesAsync();
+    }
+
+    private void NewWatchlistButton_Click(object sender, RoutedEventArgs e)
+    {
+        NewWatchlistNameBox.Text = "";
+        NewWatchlistPopup.IsOpen = !NewWatchlistPopup.IsOpen;
+    }
+
+    private void NewWatchlistConfirm_Click(object sender, RoutedEventArgs e)
+    {
+        var name = NewWatchlistNameBox.Text.Trim();
+        if (name.Length == 0)
+        {
+            MessageBox.Show("Please enter a name for the watchlist.", "Meowgnal",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (_watchlistsFile.Lists.Any(l => string.Equals(l.Name, name, StringComparison.OrdinalIgnoreCase)))
+        {
+            NotificationService.ShowToast("Meowgnal", "A watchlist with this name already exists.");
+            return;
+        }
+
+        var list = new WatchlistDefinition { Name = name };
+        _watchlistsFile.Lists.Add(list);
+        _watchlistsFile.ActiveListName = name;
+        _activeWatchlist = list;
+        SaveWatchlists();
+
+        NewWatchlistPopup.IsOpen = false;
+        WatchlistNameText.Text = name;
+        RebuildWatchlistPanel();
+    }
+
+    // ----- Add symbol with dual-source live preview -----
+
+    private void AddSymbolButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (AddSymbolPopup.IsOpen)
+        {
+            AddSymbolPopup.IsOpen = false;
+            return;
+        }
+        AddSymbolPopup.IsOpen = true;
+        _ = UpdateSymbolPreviewAsync();
+    }
+
+    private void AddSymbolBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        _symbolPreviewDebounce.Stop();
+        _symbolPreviewDebounce.Start();
+    }
+
+    // Fetches the live price of the typed symbol from BOTH exchanges and
+    // shows them next to the source radio buttons (like TradingView's
+    // exchange picker). Unavailable sources get disabled.
+    private async Task UpdateSymbolPreviewAsync()
+    {
+        var symbol = NormalizeSymbol(AddSymbolBox.Text);
+        if (symbol is null)
+        {
+            SourceBinanceRadio.Content = "Binance — …";
+            SourceHyperRadio.Content = "Hyperliquid — …";
+            return;
+        }
+
+        var binanceTask = SafeTickerAsync(new BinanceDataProvider(), symbol);
+        var hyperTask = SafeTickerAsync(new HyperliquidDataProvider(), symbol);
+        await Task.WhenAll(binanceTask, hyperTask);
+
+        var b = binanceTask.Result;
+        var h = hyperTask.Result;
+
+        SourceBinanceRadio.IsEnabled = b is not null;
+        SourceBinanceRadio.Content = b is null ? "Binance — not available" : $"Binance — {FormatPrice(b.Last)}";
+        SourceHyperRadio.IsEnabled = h is not null;
+        SourceHyperRadio.Content = h is null ? "Hyperliquid — not available" : $"Hyperliquid — {FormatPrice(h.Last)}";
+
+        // Auto-select the first available source.
+        if (b is not null) SourceBinanceRadio.IsChecked = true;
+        else if (h is not null) SourceHyperRadio.IsChecked = true;
+    }
+
+    private static async Task<TickerInfo?> SafeTickerAsync(IDataProvider provider, string symbol)
+    {
+        try
+        {
+            var map = await provider.GetTickersAsync(new[] { symbol });
+            return map.TryGetValue(symbol, out var t) ? t : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void AddSymbolConfirm_Click(object sender, RoutedEventArgs e)
+    {
+        var symbol = NormalizeSymbol(AddSymbolBox.Text);
+        if (symbol is null)
+        {
+            MessageBox.Show("Please enter a valid symbol, e.g. BTC/USDT", "Meowgnal",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        var source = SourceHyperRadio.IsChecked == true ? "hyperliquid" : "binance";
+
+        if (_activeWatchlist.Items.Any(i => i.Symbol == symbol && i.DataSource == source))
+        {
+            NotificationService.ShowToast("Meowgnal", $"{symbol} is already in this list.");
+            return;
+        }
+
+        _activeWatchlist.Items.Add(new WatchlistItem { Symbol = symbol, DataSource = source });
+        SaveWatchlists();
+        AddSymbolPopup.IsOpen = false;
+        RebuildWatchlistPanel();
+        _ = RefreshWatchlistPricesAsync();
+    }
+
+    private void SaveWatchlists() => WatchlistStorageService.Save(_watchlistsFile);
+
+    // ----- Live prices (every 5 seconds) -----
+
+    private async void WatchTimer_Tick(object sender, EventArgs e)
+    {
+        if (_refreshingWatchlist) return;
+        _refreshingWatchlist = true;
+        try
+        {
+            await RefreshWatchlistPricesAsync();
+        }
+        finally
+        {
+            _refreshingWatchlist = false;
+        }
+    }
+
+    // Groups rows by their own source and asks each exchange for live
+    // prices in one batched call, then updates the row texts in place.
+    private async Task RefreshWatchlistPricesAsync()
+    {
+        if (_watchlistRows.Count == 0) return;
+
+        foreach (var group in _watchlistRows.GroupBy(r => r.Item.DataSource).ToList())
+        {
+            try
+            {
+                IDataProvider provider = group.Key == "hyperliquid"
+                    ? new HyperliquidDataProvider()
+                    : new BinanceDataProvider();
+                var tickers = await provider.GetTickersAsync(group.Select(r => r.Item.Symbol).Distinct());
+
+                foreach (var row in group)
+                {
+                    if (!tickers.TryGetValue(row.Item.Symbol, out var t)) continue;
+                    row.LastText.Text = FormatPrice(t.Last);
+                    row.ChgText.Text = $"{t.ChgPercent:+0.00;-0.00;0.00}%";
+                    row.ChgText.Foreground = t.ChgPercent >= 0 ? UpBrush : DownBrush;
+                }
+            }
+            catch
+            {
+                // Exchange unreachable this tick — keep last known values.
+            }
+        }
+    }
+
+    // Big prices with 2 decimals, small ones with enough precision (like TV).
+    private static string FormatPrice(decimal price) =>
+        price >= 1000 ? price.ToString("N2") :
+        price >= 1 ? price.ToString("N4") :
+        price.ToString("0.00000000");
 
     // Starts the embedded browser, points it at our local ChartHost folder
     // (served under a virtual https host) and loads chart.html.

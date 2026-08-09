@@ -104,7 +104,7 @@
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="48"/>
             <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="240"/>
+            <ColumnDefinition Width="250"/>
         </Grid.ColumnDefinitions>
 
         <!-- Left tool rail (TV style) -->
@@ -304,37 +304,129 @@
             </Border>
         </Grid>
 
-        <!-- Right signal panel (TV watchlist look) -->
+        <!-- Right panel: Watchlist / Signals tabs (TradingView style) -->
         <Border Grid.Column="2" Background="#131722"
                 BorderBrush="{StaticResource BorderLine}" BorderThickness="1,0,0,0">
             <DockPanel>
+                <!-- Tab header -->
                 <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
-                        BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
-                    <TextBlock Text="Active signals" Foreground="{StaticResource TextSecondary}" FontSize="12" FontWeight="Bold"/>
+                        BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="TabWatchlistButton" Content="Watchlist" Style="{StaticResource TvButton}"
+                                Background="{StaticResource Accent}" Foreground="White" Click="RightTabWatchlist_Click"/>
+                        <Button x:Name="TabSignalsButton" Grid.Column="1" Content="Signals" Style="{StaticResource TvButton}"
+                                Click="RightTabSignals_Click"/>
+                    </Grid>
                 </Border>
-                <ItemsControl x:Name="SignalsList">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
-                                <StackPanel>
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="{Binding Symbol}" Foreground="{StaticResource TextPrimary}" FontSize="12" FontWeight="Bold"/>
-                                        <Border Grid.Column="1" CornerRadius="3" Padding="6,1"
-                                                Background="{Binding Type, Converter={StaticResource TypeToBrushConverter}}">
-                                            <TextBlock Text="{Binding Type}" FontSize="10" Foreground="White"/>
-                                        </Border>
-                                    </Grid>
-                                    <TextBlock Text="{Binding Description}" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
-                                    <TextBlock Text="{Binding Time}" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,1,0,0"/>
+
+                <!-- Watchlist pane -->
+                <DockPanel x:Name="WatchlistPane">
+                    <!-- Watchlist toolbar -->
+                    <Border DockPanel.Dock="Top" Padding="6,5"
+                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Button x:Name="WatchlistNameButton" Style="{StaticResource TvButtonLeft}"
+                                    Click="WatchlistNameButton_Click" ToolTip="Switch watchlist">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock x:Name="WatchlistNameText" Text="Main" Foreground="{StaticResource TextPrimary}"
+                                               FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <TextBlock Text="▾" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                               VerticalAlignment="Center" Margin="6,1,0,0"/>
                                 </StackPanel>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                            </Button>
+                            <Button x:Name="NewWatchlistButton" Grid.Column="1" Content="＋ List" Style="{StaticResource TvButton}"
+                                    ToolTip="Create a new watchlist" Click="NewWatchlistButton_Click"/>
+                            <Button x:Name="AddSymbolButton" Grid.Column="2" Content="＋ Symbol" Style="{StaticResource TvButton}"
+                                    ToolTip="Add a symbol to this watchlist" Click="AddSymbolButton_Click"/>
+
+                            <!-- Switch-list popup -->
+                            <Popup x:Name="WatchlistSwitchPopup" StaysOpen="False" AllowsTransparency="True"
+                                   Placement="Bottom" PlacementTarget="{Binding ElementName=WatchlistNameButton}">
+                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                        BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+                                    <StackPanel x:Name="SwitchListPanel"/>
+                                </Border>
+                            </Popup>
+
+                            <!-- New-list popup -->
+                            <Popup x:Name="NewWatchlistPopup" StaysOpen="False" AllowsTransparency="True"
+                                   Placement="Bottom" PlacementTarget="{Binding ElementName=NewWatchlistButton}">
+                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                        BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Watchlist name" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="NewWatchlistNameBox" Width="160" Margin="0,4,0,8"/>
+                                        <Button Content="Create" Style="{StaticResource TvButton}" Click="NewWatchlistConfirm_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+
+                            <!-- Add-symbol popup with dual-source live preview -->
+                            <Popup x:Name="AddSymbolPopup" StaysOpen="False" AllowsTransparency="True"
+                                   Placement="Bottom" PlacementTarget="{Binding ElementName=AddSymbolButton}">
+                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                        BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Symbol (e.g. BTC/USDT)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="AddSymbolBox" Text="BTC/USDT" Width="200" Margin="0,4,0,8"
+                                                 TextChanged="AddSymbolBox_TextChanged"/>
+                                        <TextBlock Text="Pick the price source:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                                        <RadioButton x:Name="SourceBinanceRadio" Content="Binance — …" GroupName="AddSrc"
+                                                     Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                        <RadioButton x:Name="SourceHyperRadio" Content="Hyperliquid — …" GroupName="AddSrc"
+                                                     Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
+                                        <Button Content="Add to watchlist" Style="{StaticResource TvButton}" Click="AddSymbolConfirm_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                    </Border>
+
+                    <!-- Watchlist rows -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="WatchlistRowsPanel" Margin="10,8,10,8"/>
+                    </ScrollViewer>
+                </DockPanel>
+
+                <!-- Signals pane -->
+                <DockPanel x:Name="SignalsPane" Visibility="Collapsed">
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
+                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
+                        <TextBlock Text="Active signals" Foreground="{StaticResource TextSecondary}" FontSize="12" FontWeight="Bold"/>
+                    </Border>
+                    <ItemsControl x:Name="SignalsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="{Binding Symbol}" Foreground="{StaticResource TextPrimary}" FontSize="12" FontWeight="Bold"/>
+                                            <Border Grid.Column="1" CornerRadius="3" Padding="6,1"
+                                                    Background="{Binding Type, Converter={StaticResource TypeToBrushConverter}}">
+                                                <TextBlock Text="{Binding Type}" FontSize="10" Foreground="White"/>
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock Text="{Binding Description}" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
+                                        <TextBlock Text="{Binding Time}" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,1,0,0"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </DockPanel>
             </DockPanel>
         </Border>
     </Grid>
