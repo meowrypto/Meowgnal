@@ -21,6 +21,19 @@ namespace Meowgnal;
 
 public partial class MainWindow : Window
 {
+    // One open chart tab per symbol (TradingView style). Each tab remembers
+    // its own symbol, timeframe, chart type and data source.
+    private sealed class ChartTab
+    {
+        public string Symbol { get; set; } = "BTC/USDT";
+        public string Timeframe { get; set; } = "1h";
+        public string ChartType { get; set; } = "candles";
+        public string DataSource { get; set; } = "binance";
+    }
+
+    private readonly List<ChartTab> _tabs = new();
+    private ChartTab? _activeTab;
+
     private readonly ObservableCollection<SignalDisplayItem> _signals = new();
 
     // Completes once chart.html has fully loaded inside the WebView2.
@@ -57,7 +70,7 @@ public partial class MainWindow : Window
 
     private const int MaxFavoriteTimeframes = 6;
 
-    private List<string> _favoriteTfs;
+    private readonly List<string> _favoriteTfs;
     private readonly HashSet<string> _collapsedGroups = new() { "SECONDS" };
 
     private string _chartSymbol = "BTC/USDT";
@@ -97,8 +110,164 @@ public partial class MainWindow : Window
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         _ = InitializeChartWebViewAsync();
+
+        // First tab comes from the first saved strategy (or the default pair).
+        var first = StrategyStorageService.LoadAll().FirstOrDefault();
+        var firstTab = new ChartTab
+        {
+            Symbol = first?.Symbol ?? "BTC/USDT",
+            Timeframe = first?.Timeframe ?? "1h",
+            ChartType = "candles",
+            DataSource = first?.DataSource ?? SettingsStorageService.Load().DefaultDataSource,
+        };
+        _tabs.Add(firstTab);
+        await ActivateTabAsync(firstTab);
+
         await LoadDashboardAsync();
         StartSignalMonitor();
+    }
+
+    // ------------------------------------------------------------------
+    // Chart tabs (one per symbol)
+    // ------------------------------------------------------------------
+
+    // Rebuilds the tab strip; the active tab is highlighted.
+    private void RebuildTabsBar()
+    {
+        TabsPanel.Children.Clear();
+
+        foreach (var tab in _tabs)
+        {
+            var isActive = tab == _activeTab;
+
+            var border = new Border
+            {
+                Background = isActive ? (Brush)FindResource("BgPanel") : Brushes.Transparent,
+                CornerRadius = new CornerRadius(4),
+                Margin = new Thickness(0, 0, 4, 0),
+                Padding = new Thickness(10, 5, 10, 5),
+                Cursor = Cursors.Hand,
+                Tag = tab,
+            };
+            border.MouseLeftButtonUp += Tab_Click;
+
+            var sp = new StackPanel { Orientation = Orientation.Horizontal };
+            sp.Children.Add(new TextBlock
+            {
+                Text = tab.Symbol,
+                Foreground = isActive ? (Brush)FindResource("TextPrimary") : (Brush)FindResource("TextMuted"),
+                FontSize = 12,
+                FontWeight = isActive ? FontWeights.Bold : FontWeights.Normal,
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+
+            var close = new TextBlock
+            {
+                Text = "✕",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 10,
+                Margin = new Thickness(8, 1, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+                Tag = tab,
+            };
+            close.MouseLeftButtonUp += TabClose_Click;
+
+            sp.Children.Add(close);
+            border.Child = sp;
+            TabsPanel.Children.Add(border);
+        }
+    }
+
+    private async void Tab_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Border border || border.Tag is not ChartTab tab || tab == _activeTab) return;
+        await ActivateTabAsync(tab);
+    }
+
+    private void TabClose_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not TextBlock t || t.Tag is not ChartTab tab) return;
+        if (_tabs.Count <= 1) return; // always keep at least one tab open
+
+        _tabs.Remove(tab);
+        if (_activeTab == tab)
+        {
+            _ = ActivateTabAsync(_tabs[0]);
+        }
+        else
+        {
+            RebuildTabsBar();
+        }
+    }
+
+    private void AddTabButton_Click(object sender, RoutedEventArgs e)
+    {
+        NewTabSymbolBox.Text = "ETH/USDT";
+        NewTabPopup.IsOpen = !NewTabPopup.IsOpen;
+    }
+
+    private async void NewTabOpen_Click(object sender, RoutedEventArgs e)
+    {
+        var symbol = NormalizeSymbol(NewTabSymbolBox.Text);
+        if (symbol is null)
+        {
+            MessageBox.Show("Please enter a valid symbol, e.g. ETH/USDT", "Meowgnal",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        NewTabPopup.IsOpen = false;
+
+        // Same symbol already open? Just switch to that tab.
+        var existing = _tabs.FirstOrDefault(t => t.Symbol == symbol);
+        if (existing is not null)
+        {
+            await ActivateTabAsync(existing);
+            return;
+        }
+
+        // Data source: follow a strategy on this symbol if one exists,
+        // otherwise fall back to the default in Settings.
+        var dataSource = StrategyStorageService.LoadAll().FirstOrDefault(s => s.Symbol == symbol)?.DataSource
+                         ?? SettingsStorageService.Load().DefaultDataSource;
+
+        var tab = new ChartTab
+        {
+            Symbol = symbol,
+            Timeframe = "1h",
+            ChartType = _chartType,
+            DataSource = dataSource,
+        };
+        _tabs.Add(tab);
+        await ActivateTabAsync(tab);
+    }
+
+    // "ethusdt" -> "ETH/USDT", "btc/usdt" -> "BTC/USDT", "ETH" -> "ETH/USDT".
+    private static string? NormalizeSymbol(string input)
+    {
+        var s = input.Trim().ToUpperInvariant();
+        if (s.Length == 0) return null;
+        if (s.Contains('/')) return s;
+        if (s.EndsWith("USDT") && s.Length > 4) return s[..^4] + "/USDT";
+        if (s.EndsWith("USD") && s.Length > 3) return s[..^3] + "/USD";
+        return s + "/USDT";
+    }
+
+    // Makes the given tab active and restores all of its saved chart state.
+    private async Task ActivateTabAsync(ChartTab tab)
+    {
+        _activeTab = tab;
+        _chartSymbol = tab.Symbol;
+        _chartTimeframe = tab.Timeframe;
+        _chartDataSource = tab.DataSource;
+        _chartType = tab.ChartType;
+
+        RebuildTabsBar();
+        RebuildTimeframeBar();
+        ApplyChartType(_chartType);
+        _ = SendChartTypeAsync(_chartType);
+
+        await LoadChartAsync();
     }
 
     // Starts the embedded browser, points it at our local ChartHost folder
@@ -267,6 +436,7 @@ public partial class MainWindow : Window
     {
         if (sender is not Button btn || btn.Tag is not string tf || tf == _chartTimeframe) return;
         _chartTimeframe = tf;
+        if (_activeTab is not null) _activeTab.Timeframe = tf;
         RebuildTimeframeBar();
         await LoadChartAsync();
     }
@@ -403,6 +573,7 @@ public partial class MainWindow : Window
         TimeframePopup.IsOpen = false;
         if (tf == _chartTimeframe) return;
         _chartTimeframe = tf;
+        if (_activeTab is not null) _activeTab.Timeframe = tf;
         RebuildTimeframeBar();
         await LoadChartAsync();
     }
@@ -411,11 +582,9 @@ public partial class MainWindow : Window
     {
         if (sender is not Button btn || btn.Tag is not string tf) return;
 
-        if (_favoriteTfs.Contains(tf))
-        {
-            _favoriteTfs.Remove(tf);
-        }
-        else
+        // Remove returns false when the item wasn't there → then we add it
+        // (respecting the 6-star cap).
+        if (!_favoriteTfs.Remove(tf))
         {
             if (_favoriteTfs.Count >= MaxFavoriteTimeframes)
             {
@@ -452,6 +621,7 @@ public partial class MainWindow : Window
     private void ApplyChartType(string type)
     {
         _chartType = type;
+        if (_activeTab is not null) _activeTab.ChartType = type;
         ChartTypeIcon.Content = FindResource("Icon_" + type);
         ChartTypeLabel.Text = type switch
         {
@@ -555,19 +725,10 @@ public partial class MainWindow : Window
 
         if (strategies.Count == 0)
         {
-            SymbolText.Text = "No strategies yet";
-            PriceText.Text = "";
             WinRateText.Text = "—";
             SignalCountText.Text = "0";
             return;
         }
-
-        _chartSymbol = strategies[0].Symbol;
-        _chartTimeframe = strategies[0].Timeframe;
-        _chartDataSource = strategies[0].DataSource;
-        RebuildTimeframeBar();
-
-        await LoadChartAsync();
 
         var allSignals = new List<(SignalDisplayItem Item, DateTime Time)>();
         var totalWinRate = 0.0;
@@ -640,7 +801,7 @@ public partial class MainWindow : Window
         {
             type = "setCandles",
             // Second-based timeframes need seconds shown on the time axis.
-            secondsVisible = _chartTimeframe.EndsWith("s"),
+            secondsVisible = _chartTimeframe.EndsWith('s'),
             data = bars.Select(b => new
             {
                 // Lightweight Charts expects UTC Unix time in SECONDS.

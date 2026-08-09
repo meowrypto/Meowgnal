@@ -123,13 +123,34 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
+            <!-- Symbol tabs (TradingView style): one tab per symbol + "+" -->
+            <Border Grid.Row="0" BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
+                <StackPanel Orientation="Horizontal">
+                    <StackPanel x:Name="TabsPanel" Orientation="Horizontal"/>
+                    <Button x:Name="AddTabButton" Content="＋" Style="{StaticResource TvButton}"
+                            ToolTip="Open a new chart tab" Click="AddTabButton_Click"/>
+                    <Popup x:Name="NewTabPopup" StaysOpen="False" AllowsTransparency="True"
+                           Placement="Bottom" PlacementTarget="{Binding ElementName=AddTabButton}">
+                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Symbol (e.g. ETH/USDT)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBox x:Name="NewTabSymbolBox" Text="ETH/USDT" Width="170" Margin="0,4,0,8"/>
+                                <Button Content="Open chart" Style="{StaticResource TvButton}" Click="NewTabOpen_Click"/>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                </StackPanel>
+            </Border>
+
             <!-- Top bar -->
-            <Border Grid.Row="0" Background="{StaticResource BgPanel}"
+            <Border Grid.Row="1" Background="{StaticResource BgPanel}"
                     BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="10,6">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -149,7 +170,7 @@
             </Border>
 
             <!-- Chart toolbar -->
-            <Border Grid.Row="1" BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
+            <Border Grid.Row="2" BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
                 <Grid>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <!-- Favorite timeframe buttons are built here at runtime (stable order) -->
@@ -222,7 +243,7 @@
             </Border>
 
             <!-- Chart + OHLC legend -->
-            <Grid Grid.Row="2" Background="#131722">
+            <Grid Grid.Row="3" Background="#131722">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -243,7 +264,7 @@
             </Grid>
 
             <!-- Stat cards -->
-            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="10,8">
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,8">
                 <Border Background="{StaticResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
                     <StackPanel>
                         <TextBlock Text="Active strategies" Foreground="{StaticResource TextMuted}" FontSize="11"/>
@@ -265,7 +286,7 @@
             </StackPanel>
 
             <!-- Bottom status bar: license link (left) + live UTC clock (right) -->
-            <Border Grid.Row="4" Background="{StaticResource BgPanel}"
+            <Border Grid.Row="5" Background="{StaticResource BgPanel}"
                     BorderBrush="{StaticResource BorderLine}" BorderThickness="0,1,0,0" Padding="10,4">
                 <Grid>
                     <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="11"
