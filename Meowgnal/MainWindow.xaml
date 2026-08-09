@@ -66,6 +66,13 @@
                         <Button Content="1W" Tag="1w" Padding="8,3" Margin="0,0,4,0" Click="TimeframeButton_Click"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <ComboBox x:Name="ChartTypeCombo" Width="120" Margin="0,0,8,0" SelectionChanged="ChartTypeCombo_SelectionChanged">
+                            <ComboBoxItem Content="Candles" Tag="candles"/>
+                            <ComboBoxItem Content="Line" Tag="line"/>
+                            <ComboBoxItem Content="Area" Tag="area"/>
+                            <ComboBoxItem Content="Heikin Ashi" Tag="heikinashi"/>
+                            <ComboBoxItem Content="Bars (OHLC)" Tag="bars"/>
+                        </ComboBox>
                         <Button x:Name="ScreenshotButton" Content="📷" ToolTip="Save chart screenshot" Padding="8,3" Margin="0,0,6,0" Click="ScreenshotButton_Click"/>
                         <Button x:Name="FullscreenButton" Content="⛶" ToolTip="Fullscreen (Esc to exit)" Padding="8,3" Click="FullscreenButton_Click"/>
                     </StackPanel>

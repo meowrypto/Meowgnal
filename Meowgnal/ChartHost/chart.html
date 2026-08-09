@@ -30,7 +30,8 @@
             grid: '#1A1E28',
             border: '#262B38',
             up: '#26A69A',
-            down: '#EF5350'
+            down: '#EF5350',
+            accent: '#4FC3F7'
         };
 
         const chart = LightweightCharts.createChart(document.getElementById('chart'), {
@@ -55,23 +56,12 @@
             }
         });
 
-        const candleSeries = chart.addCandlestickSeries({
-            upColor: COLORS.up,
-            downColor: COLORS.down,
-            borderUpColor: COLORS.up,
-            borderDownColor: COLORS.down,
-            wickUpColor: COLORS.up,
-            wickDownColor: COLORS.down,
-            priceFormat: {
-                type: 'price',
-                precision: 2,
-                minMove: 0.01
-            }
-        });
-
-        // The latest dataset received from C#, kept so the crosshair handler
-        // can look up the hovered candle and its predecessor.
-        let currentData = [];
+        // The raw candle dataset received from C#.
+        let rawData = [];
+        // The dataset currently displayed (raw, Heikin Ashi, or close-only).
+        let displayData = [];
+        let chartType = 'candles';
+        let activeSeries = null;
 
         // Keeps the chart filling the whole WebView2 area when the window resizes.
         function resizeChart() {
@@ -83,10 +73,78 @@
         window.addEventListener('resize', resizeChart);
         resizeChart();
 
+        // Creates a brand-new series object for the selected chart type.
+        function createSeriesForType() {
+            switch (chartType) {
+                case 'line':
+                    return chart.addLineSeries({ color: COLORS.accent, lineWidth: 2 });
+                case 'area':
+                    return chart.addAreaSeries({
+                        lineColor: COLORS.accent,
+                        topColor: 'rgba(79, 195, 247, 0.35)',
+                        bottomColor: 'rgba(79, 195, 247, 0.03)',
+                        lineWidth: 2
+                    });
+                case 'bars':
+                    return chart.addBarSeries({ upColor: COLORS.up, downColor: COLORS.down });
+                default:
+                    return chart.addCandlestickSeries({
+                        upColor: COLORS.up,
+                        downColor: COLORS.down,
+                        borderUpColor: COLORS.up,
+                        borderDownColor: COLORS.down,
+                        wickUpColor: COLORS.up,
+                        wickDownColor: COLORS.down,
+                        priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
+                    });
+            }
+        }
+
+        // Heikin Ashi transformation of the raw candles.
+        function heikinAshi(candles) {
+            const ha = [];
+            let prevOpen = null, prevClose = null;
+            for (const c of candles) {
+                const haClose = (c.open + c.high + c.low + c.close) / 4;
+                const haOpen = prevOpen === null ? (c.open + c.close) / 2 : (prevOpen + prevClose) / 2;
+                ha.push({
+                    time: c.time,
+                    open: haOpen,
+                    high: Math.max(c.high, haOpen, haClose),
+                    low: Math.min(c.low, haOpen, haClose),
+                    close: haClose
+                });
+                prevOpen = haOpen;
+                prevClose = haClose;
+            }
+            return ha;
+        }
+
+        // Builds the dataset to display for the current chart type.
+        function buildDisplayData() {
+            if (chartType === 'heikinashi') return heikinAshi(rawData);
+            if (chartType === 'line' || chartType === 'area')
+                return rawData.map(function (c) { return { time: c.time, value: c.close }; });
+            return rawData; // candles and bars use raw OHLC
+        }
+
+        // Removes the old series and renders again with the current type.
+        function renderWithCurrentType() {
+            if (activeSeries !== null) {
+                chart.removeSeries(activeSeries);
+                activeSeries = null;
+            }
+            activeSeries = createSeriesForType();
+            displayData = buildDisplayData();
+            activeSeries.setData(displayData);
+            chart.timeScale().fitContent();
+        }
+
+        // Initial (empty) series so the page is ready before data arrives.
+        renderWithCurrentType();
+
         // ------------------------------------------------------------------
         // Message bridge — receives commands from C#.
-        // C# calls CoreWebView2.PostWebMessageAsJson(...); the message
-        // arrives here already parsed as a JavaScript object.
         // ------------------------------------------------------------------
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.addEventListener('message', function (e) {
@@ -94,17 +152,20 @@
                 if (!msg || !msg.type) return;
 
                 if (msg.type === 'setCandles') {
-                    currentData = msg.data;
-                    candleSeries.setData(currentData);
-                    chart.timeScale().fitContent();
+                    rawData = msg.data;
+                    renderWithCurrentType();
                 } else if (msg.type === 'updateCandle') {
-                    candleSeries.update(msg.data);
+                    if (activeSeries !== null) activeSeries.update(msg.data);
+                } else if (msg.type === 'setChartType') {
+                    chartType = msg.chartType;
+                    renderWithCurrentType();
                 }
             });
         }
 
         // Reports the hovered candle's OHLC (plus the previous candle's OHLC,
         // so C# can color each value against the previous candle) back to C#.
+        // Works for every chart type: line/area fall back to the raw candles.
         chart.subscribeCrosshairMove(function (param) {
             if (!window.chrome || !window.chrome.webview) return;
 
@@ -113,19 +174,25 @@
                 return;
             }
 
-            const index = currentData.findIndex(function (d) { return d.time === param.time; });
-            if (index < 0) {
+            let hovered = displayData.find(function (d) { return d.time === param.time; });
+            if (!hovered || hovered.open === undefined) {
+                hovered = rawData.find(function (d) { return d.time === param.time; });
+            }
+            if (!hovered || hovered.open === undefined) {
                 window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
                 return;
             }
 
-            const d = currentData[index];
-            const p = index > 0 ? currentData[index - 1] : d;
+            // Previous candle for coloring: from the same OHLC-bearing list.
+            const ohlcList = (displayData.length > 0 && displayData[0].open !== undefined) ? displayData : rawData;
+            const idx = ohlcList.findIndex(function (d) { return d.time === hovered.time; });
+            const prev = idx > 0 ? ohlcList[idx - 1] : hovered;
+
             window.chrome.webview.postMessage(JSON.stringify({
                 type: 'crosshair',
                 hasData: true,
-                open: d.open, high: d.high, low: d.low, close: d.close,
-                prevOpen: p.open, prevHigh: p.high, prevLow: p.low, prevClose: p.close
+                open: hovered.open, high: hovered.high, low: hovered.low, close: hovered.close,
+                prevOpen: prev.open, prevHigh: prev.high, prevLow: prev.low, prevClose: prev.close
             }));
         });
     </script>

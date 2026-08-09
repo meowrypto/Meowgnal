@@ -45,6 +45,9 @@ public partial class MainWindow : Window
         // while the WebView2 is starting up.
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x0B, 0x0D, 0x12);
 
+        // Default chart type: candlestick.
+        ChartTypeCombo.SelectedIndex = 0;
+
         Loaded += MainWindow_Loaded;
     }
 
@@ -105,7 +108,7 @@ public partial class MainWindow : Window
     // JavaScript -> C# message handler. The chart page reports which candle
     // the mouse is hovering over; we mirror its OHLC into the header bar,
     // coloring each value against the previous candle (like TradingView).
-    private void OnChartWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+    private void OnChartWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         // Some WebView2 runtime versions hand us the message as a quoted
         // JSON string instead of an object — unwrap one level so both work.
@@ -193,6 +196,29 @@ public partial class MainWindow : Window
 
         _chartTimeframe = tf;
         await LoadChartAsync();
+    }
+
+    // Sends the selected chart type to the page; the page rebuilds the
+    // series (candles / line / area / Heikin Ashi / bars) from its raw data.
+    private void ChartTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ChartTypeCombo.SelectedItem is not ComboBoxItem item || item.Tag is not string tag) return;
+        _ = SendChartTypeAsync(tag);
+    }
+
+    private async Task SendChartTypeAsync(string chartType)
+    {
+        try
+        {
+            await _chartPageReady.Task;
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "setChartType", chartType }));
     }
 
     private void FullscreenButton_Click(object sender, RoutedEventArgs e) => ToggleFullscreen();
