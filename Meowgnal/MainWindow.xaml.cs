@@ -107,11 +107,11 @@ public partial class MainWindow : Window
     // coloring each value against the previous candle (like TradingView).
     private void OnChartWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
+        // Some WebView2 runtime versions hand us the message as a quoted
+        // JSON string instead of an object — unwrap one level so both work.
         var json = e.WebMessageAsJson;
         using (var probe = JsonDocument.Parse(json))
         {
-            // Some WebView2 runtime versions hand us the message as a quoted
-            // JSON string instead of an object — unwrap one level so both work.
             if (probe.RootElement.ValueKind == JsonValueKind.String)
                 json = probe.RootElement.GetString()!;
         }
@@ -157,6 +157,18 @@ public partial class MainWindow : Window
         OhlcHighText.Foreground = high >= prevHigh ? Brushes.MediumSeaGreen : Brushes.IndianRed;
         OhlcLowText.Foreground = low >= prevLow ? Brushes.MediumSeaGreen : Brushes.IndianRed;
         OhlcCloseText.Foreground = close >= prevClose ? Brushes.MediumSeaGreen : Brushes.IndianRed;
+    }
+
+    // Opens tradingview.com in the default browser. This visible attribution
+    // link is required by the Lightweight Charts license.
+    private void TradingViewLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
+    {
+        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = e.Uri.AbsoluteUri,
+            UseShellExecute = true
+        });
+        e.Handled = true;
     }
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await LoadDashboardAsync();

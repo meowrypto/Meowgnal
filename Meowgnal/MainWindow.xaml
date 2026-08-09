@@ -77,6 +77,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,6,0,0">
@@ -91,6 +92,15 @@
                 </StackPanel>
 
                 <wv2:WebView2 Grid.Row="1" x:Name="ChartWebView"/>
+
+                <!-- License requirement: visible attribution link to tradingview.com -->
+                <TextBlock Grid.Row="2" Margin="10,2,0,4" FontSize="10"
+                           Foreground="{StaticResource TextMuted}">
+                    <Hyperlink NavigateUri="https://www.tradingview.com"
+                               RequestNavigate="TradingViewLink_RequestNavigate"
+                               Foreground="{StaticResource TextMuted}"
+                               TextDecorations="None">Chart powered by TradingView Lightweight Charts</Hyperlink>
+                </TextBlock>
             </Grid>
 
             <!-- Stat cards -->
