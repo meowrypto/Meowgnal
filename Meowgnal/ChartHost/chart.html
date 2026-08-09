@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Meowgnal Chart Host</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0B0D12;
+        }
+
+        #chart {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <script src="lightweight-charts.standalone.production.js"></script>
+</head>
+<body>
+    <div id="chart"></div>
+    <script>
+        // Colors matched to the Meowgnal WPF dark theme.
+        const COLORS = {
+            background: '#0B0D12',
+            text: '#8A8F9C',
+            grid: '#1A1E28',
+            border: '#262B38',
+            up: '#26A69A',
+            down: '#EF5350'
+        };
+
+        const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+            layout: {
+                background: { type: LightweightCharts.ColorType.Solid, color: COLORS.background },
+                textColor: COLORS.text
+            },
+            grid: {
+                vertLines: { color: COLORS.grid },
+                horzLines: { color: COLORS.grid }
+            },
+            rightPriceScale: {
+                borderColor: COLORS.border
+            },
+            timeScale: {
+                borderColor: COLORS.border,
+                timeVisible: true,
+                secondsVisible: false
+            },
+            crosshair: {
+                mode: LightweightCharts.CrosshairMode.Normal
+            }
+        });
+
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: COLORS.up,
+            downColor: COLORS.down,
+            borderUpColor: COLORS.up,
+            borderDownColor: COLORS.down,
+            wickUpColor: COLORS.up,
+            wickDownColor: COLORS.down,
+            priceFormat: {
+                type: 'price',
+                precision: 2,
+                minMove: 0.01
+            }
+        });
+
+        // Keeps the chart filling the whole WebView2 area when the window resizes.
+        function resizeChart() {
+            chart.applyOptions({
+                width: document.body.clientWidth,
+                height: document.body.clientHeight
+            });
+        }
+        window.addEventListener('resize', resizeChart);
+        resizeChart();
+
+        // ------------------------------------------------------------------
+        // Bridge functions — called from C# in a later step.
+        // ------------------------------------------------------------------
+
+        // Replaces the whole dataset. json: [{ time, open, high, low, close }, ...]
+        // time is a Unix timestamp in SECONDS.
+        function setCandles(json, fitView) {
+            const data = JSON.parse(json);
+            candleSeries.setData(data);
+            if (fitView !== false) {
+                chart.timeScale().fitContent();
+            }
+        }
+
+        // Updates (or appends) only the newest candle — for live ticks later.
+        function updateCandle(json) {
+            candleSeries.update(JSON.parse(json));
+        }
+
+        // Reports the hovered candle's OHLC back to C# for the OHLC bar.
+        chart.subscribeCrosshairMove(function (param) {
+            if (!window.chrome || !window.chrome.webview) return;
+
+            if (!param || !param.time) {
+                window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
+                return;
+            }
+            const d = param.seriesData.get(candleSeries);
+            if (!d) return;
+            window.chrome.webview.postMessage(JSON.stringify({
+                type: 'crosshair',
+                hasData: true,
+                open: d.open,
+                high: d.high,
+                low: d.low,
+                close: d.close
+            }));
+        });
+
+        // ------------------------------------------------------------------
+        // Temporary demo candles — just to visually verify the host page.
+        // Real data from C# replaces this in a later step.
+        // ------------------------------------------------------------------
+        (function renderDemoCandles() {
+            const demo = [];
+            let price = 60000;
+            const startTime = Math.floor(Date.now() / 1000) - 50 * 3600;
+            for (let i = 0; i < 50; i++) {
+                const open = price;
+                const close = open + (Math.random() - 0.5) * 900;
+                const high = Math.max(open, close) + Math.random() * 300;
+                const low = Math.min(open, close) - Math.random() * 300;
+                demo.push({ time: startTime + i * 3600, open: open, high: high, low: low, close: close });
+                price = close;
+            }
+            candleSeries.setData(demo);
+            chart.timeScale().fitContent();
+        })();
+    </script>
+</body>
+</html>

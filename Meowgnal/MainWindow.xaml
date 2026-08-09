@@ -4,7 +4,8 @@
         xmlns:views="clr-namespace:Meowgnal.Views"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Title="Meowgnal" Height="560" Width="900"
-        Background="#0F1117">
+        Background="#0F1117"
+        PreviewKeyDown="Window_PreviewKeyDown">
 
     <Window.Resources>
         <views:SignalTypeToBrushConverter x:Key="TypeToBrushConverter"/>
@@ -13,6 +14,8 @@
         <SolidColorBrush x:Key="TextMuted" Color="#8A8F9C"/>
         <SolidColorBrush x:Key="AccentGreen" Color="#26A69A"/>
         <SolidColorBrush x:Key="AccentRed" Color="#EF5350"/>
+        <SolidColorBrush x:Key="AccentBg" Color="#1E2A38"/>
+        <SolidColorBrush x:Key="AccentText" Color="#4FC3F7"/>
     </Window.Resources>
 
     <Grid>
@@ -37,6 +40,7 @@
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
@@ -53,13 +57,46 @@
                 </StackPanel>
             </Border>
 
-            <!-- Real candlestick chart -->
-            <Border Grid.Row="1" Background="#0B0D12" Margin="0">
-                <lvc:CartesianChart x:Name="PriceChart"/>
+            <!-- Chart toolbar -->
+            <Border Grid.Row="1" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1" Padding="14,6">
+                <Grid>
+                    <StackPanel x:Name="TimeframePanel" Orientation="Horizontal">
+                        <Button Content="15m" Tag="15m" Padding="8,3" Margin="0,0,4,0" Click="TimeframeButton_Click"/>
+                        <Button x:Name="DefaultTfButton" Content="1h" Tag="1h" Padding="8,3" Margin="0,0,4,0" Click="TimeframeButton_Click" Background="{StaticResource AccentBg}" Foreground="{StaticResource AccentText}"/>
+                        <Button Content="4h" Tag="4h" Padding="8,3" Margin="0,0,4,0" Click="TimeframeButton_Click"/>
+                        <Button Content="1D" Tag="1d" Padding="8,3" Margin="0,0,4,0" Click="TimeframeButton_Click"/>
+                        <Button Content="1W" Tag="1w" Padding="8,3" Margin="0,0,4,0" Click="TimeframeButton_Click"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="ScreenshotButton" Content="📷" ToolTip="Save chart screenshot" Padding="8,3" Margin="0,0,6,0" Click="ScreenshotButton_Click"/>
+                        <Button x:Name="FullscreenButton" Content="⛶" ToolTip="Fullscreen (Esc to exit)" Padding="8,3" Click="FullscreenButton_Click"/>
+                    </StackPanel>
+                </Grid>
             </Border>
 
+            <!-- Real candlestick chart -->
+            <Grid Grid.Row="2" Background="#0B0D12">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,6,0,0">
+                    <TextBlock Text="O" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="OhlcOpenText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="H" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="OhlcHighText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="L" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="OhlcLowText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="C" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="OhlcCloseText" Text="—" FontSize="11" Margin="3,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <lvc:CartesianChart Grid.Row="1" x:Name="PriceChart" ZoomMode="X" PreviewMouseWheel="PriceChart_PreviewMouseWheel"/>
+            </Grid>
+
             <!-- Stat cards -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="14">
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="14">
                 <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="12,8" Margin="0,0,10,0">
                     <StackPanel>
                         <TextBlock Text="Active strategies" Foreground="{StaticResource TextMuted}" FontSize="11"/>

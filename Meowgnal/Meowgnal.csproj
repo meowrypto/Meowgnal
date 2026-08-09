@@ -10,10 +10,25 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="ChartHost\chart.html" />
+    <None Remove="ChartHost\lightweight-charts.standalone.production.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="ChartHost\chart.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="ChartHost\lightweight-charts.standalone.production.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="FacioQuo.Stock.Indicators" Version="3.0.0" />
     <PackageReference Include="LiveChartsCore" Version="2.0.5" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView" Version="2.0.5" />
     <PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.5" />
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
   </ItemGroup>
 
 </Project>
