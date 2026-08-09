@@ -42,6 +42,24 @@ public partial class MainWindow : Window
     private static readonly SolidColorBrush UpBrush = new(Color.FromRgb(0x08, 0x99, 0x81));
     private static readonly SolidColorBrush DownBrush = new(Color.FromRgb(0xF2, 0x36, 0x45));
 
+    // Full timeframe catalog shown in the dropdown menu (TradingView style),
+    // from seconds up to months. Also defines the stable sort order.
+    private static readonly (string Group, string[] Items)[] TimeframeCatalog =
+    {
+        ("SECONDS", new[] { "1s", "5s", "15s", "30s" }),
+        ("MINUTES", new[] { "1m", "2m", "3m", "5m", "10m", "15m", "30m", "45m" }),
+        ("HOURS", new[] { "1h", "2h", "3h", "4h", "6h", "8h", "12h" }),
+        ("DAYS", new[] { "1d", "3d" }),
+        ("WEEKS / MONTHS", new[] { "1w", "1M" }),
+    };
+
+    private static readonly string[] CatalogOrder = TimeframeCatalog.SelectMany(g => g.Items).ToArray();
+
+    private const int MaxFavoriteTimeframes = 6;
+
+    private List<string> _favoriteTfs;
+    private readonly HashSet<string> _collapsedGroups = new() { "SECONDS" };
+
     private string _chartSymbol = "BTC/USDT";
     private string _chartTimeframe = "1h";
     private string _chartDataSource = "binance";
@@ -63,6 +81,10 @@ public partial class MainWindow : Window
 
         // Default chart type: candlestick (sets button icon + label).
         ApplyChartType("candles");
+
+        // Starred timeframes (persisted encrypted with the other settings).
+        _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
+        RebuildTimeframeBar();
 
         // Live UTC clock.
         UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
@@ -208,20 +230,207 @@ public partial class MainWindow : Window
         StartSignalMonitor(); // apply a changed check interval immediately
     }
 
+    // ------------------------------------------------------------------
+    // Timeframe toolbar + full TradingView-style menu with favorites
+    // ------------------------------------------------------------------
+
+    // Rebuilds the toolbar buttons in a STABLE order: always smallest to
+    // largest interval, left to right — selecting one never moves buttons.
+    private void RebuildTimeframeBar()
+    {
+        TimeframePanel.Children.Clear();
+
+        var toShow = _favoriteTfs
+            .Union(new[] { _chartTimeframe })
+            .OrderBy(tf => Array.IndexOf(CatalogOrder, tf))
+            .ToList();
+
+        foreach (var tf in toShow)
+        {
+            var btn = new Button
+            {
+                Content = tf,
+                Tag = tf,
+                Style = (Style)FindResource("TvButton"),
+            };
+            btn.Click += TimeframeButton_Click;
+            if (tf == _chartTimeframe)
+            {
+                btn.Background = (Brush)FindResource("Accent");
+                btn.Foreground = Brushes.White;
+            }
+            TimeframePanel.Children.Add(btn);
+        }
+    }
+
     private async void TimeframeButton_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button clicked || clicked.Tag is not string tf) return;
+        if (sender is not Button btn || btn.Tag is not string tf || tf == _chartTimeframe) return;
+        _chartTimeframe = tf;
+        RebuildTimeframeBar();
+        await LoadChartAsync();
+    }
 
-        foreach (var child in TimeframePanel.Children)
+    private void TimeframeMenuButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (TimeframePopup.IsOpen)
         {
-            if (child is not Button btn) continue;
-            var isSelected = btn == clicked;
-            btn.Background = isSelected ? (Brush)FindResource("Accent") : Brushes.Transparent;
-            btn.Foreground = isSelected ? Brushes.White : (Brush)FindResource("TextSecondary");
+            TimeframePopup.IsOpen = false;
+            return;
         }
 
+        BuildTimeframeMenu();
+        FitTimeframeMenuToWindow();
+        TimeframePopup.IsOpen = true;
+    }
+
+    // Keeps the dropdown INSIDE the app window: measures the free space from
+    // the button down to the window's own bottom edge. Small window → shorter
+    // menu that scrolls inside itself; big/fullscreen window → tall menu.
+    private void FitTimeframeMenuToWindow()
+    {
+        // Both values are in the window's own coordinate space, so the OS
+        // window chrome (title bar/borders) can never skew the measurement.
+        var buttonBottomY = TimeframeMenuButton.TranslatePoint(
+            new Point(0, TimeframeMenuButton.ActualHeight), this).Y;
+        var clientBottomY = (Content as FrameworkElement)?.ActualHeight ?? ActualHeight;
+
+        var available = clientBottomY - buttonBottomY - 6;
+        TimeframeMenuScroll.MaxHeight = Math.Clamp(available, 160, 640);
+    }
+
+    // Fills the dropdown: grouped catalog (seconds → months), each section
+    // separated by a line and collapsible via its header arrow (like TV).
+    private void BuildTimeframeMenu()
+    {
+        TimeframeMenuPanel.Children.Clear();
+
+        foreach (var (group, items) in TimeframeCatalog)
+        {
+            // Separator line between sections.
+            if (TimeframeMenuPanel.Children.Count > 0)
+            {
+                TimeframeMenuPanel.Children.Add(new Border
+                {
+                    Height = 1,
+                    Background = (Brush)FindResource("BorderLine"),
+                    Margin = new Thickness(4, 6, 4, 2),
+                });
+            }
+
+            var isCollapsed = _collapsedGroups.Contains(group);
+
+            // Section header with collapse arrow.
+            var header = new Button
+            {
+                Style = (Style)FindResource("TvButtonLeft"),
+                Tag = group,
+            };
+            var headerPanel = new StackPanel { Orientation = Orientation.Horizontal };
+            headerPanel.Children.Add(new TextBlock
+            {
+                Text = group,
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 10,
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            headerPanel.Children.Add(new TextBlock
+            {
+                Text = isCollapsed ? "˅" : "˄",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 9,
+                Margin = new Thickness(6, 1, 0, 0),
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            header.Content = headerPanel;
+            header.Click += TimeframeGroupHeader_Click;
+            TimeframeMenuPanel.Children.Add(header);
+
+            // Collapsible body of the section.
+            var groupPanel = new StackPanel
+            {
+                Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible,
+            };
+
+            foreach (var tf in items)
+            {
+                var row = new Grid();
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+                var selectBtn = new Button
+                {
+                    Content = tf,
+                    Tag = tf,
+                    Style = (Style)FindResource("TvButtonLeft"),
+                };
+                selectBtn.Click += TimeframeMenuSelect_Click;
+                if (tf == _chartTimeframe) selectBtn.Foreground = (Brush)FindResource("Accent");
+
+                var isFav = _favoriteTfs.Contains(tf);
+                var starBtn = new Button
+                {
+                    Content = isFav ? "★" : "☆",
+                    Tag = tf,
+                    Style = (Style)FindResource("TvButton"),
+                    Foreground = isFav ? (Brush)FindResource("TextPrimary") : (Brush)FindResource("TextMuted"),
+                    ToolTip = "Add to / remove from the toolbar (max 6)",
+                };
+                starBtn.Click += TimeframeStar_Click;
+
+                Grid.SetColumn(selectBtn, 0);
+                Grid.SetColumn(starBtn, 1);
+                row.Children.Add(selectBtn);
+                row.Children.Add(starBtn);
+                groupPanel.Children.Add(row);
+            }
+
+            TimeframeMenuPanel.Children.Add(groupPanel);
+        }
+    }
+
+    // Collapses / expands one section of the timeframe menu.
+    private void TimeframeGroupHeader_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string group) return;
+        if (!_collapsedGroups.Remove(group)) _collapsedGroups.Add(group);
+        BuildTimeframeMenu();
+    }
+
+    private async void TimeframeMenuSelect_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string tf) return;
+        TimeframePopup.IsOpen = false;
+        if (tf == _chartTimeframe) return;
         _chartTimeframe = tf;
+        RebuildTimeframeBar();
         await LoadChartAsync();
+    }
+
+    private void TimeframeStar_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string tf) return;
+
+        if (_favoriteTfs.Contains(tf))
+        {
+            _favoriteTfs.Remove(tf);
+        }
+        else
+        {
+            if (_favoriteTfs.Count >= MaxFavoriteTimeframes)
+            {
+                NotificationService.ShowToast("Meowgnal", "Maximum 6 favorite timeframes — unstar one first.");
+                return;
+            }
+            _favoriteTfs.Add(tf);
+        }
+
+        var settings = SettingsStorageService.Load();
+        settings.FavoriteTimeframes = _favoriteTfs;
+        SettingsStorageService.Save(settings);
+
+        RebuildTimeframeBar();
+        BuildTimeframeMenu();
     }
 
     // ------------------------------------------------------------------
@@ -318,11 +527,24 @@ public partial class MainWindow : Window
 
     private async Task LoadChartAsync()
     {
-        IDataProvider provider = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
-        var bars = await provider.GetHistoricalCandlesAsync(_chartSymbol, _chartTimeframe, limit: 1000);
-        await UpdateChartAsync(bars);
-        SymbolText.Text = _chartSymbol;
-        PriceText.Text = bars[^1].Close.ToString("N2");
+        try
+        {
+            IDataProvider provider = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
+            var bars = await provider.GetHistoricalCandlesAsync(_chartSymbol, _chartTimeframe, limit: 1000);
+            await UpdateChartAsync(bars);
+            SymbolText.Text = _chartSymbol;
+            PriceText.Text = bars[^1].Close.ToString("N2");
+        }
+        catch (Exception ex)
+        {
+            // e.g. a timeframe the current exchange doesn't support (seconds
+            // on Hyperliquid), or a temporary network failure — never crash.
+            MessageBox.Show(
+                $"Could not load chart data for {_chartSymbol} / {_chartTimeframe}:\n{ex.Message}",
+                "Meowgnal",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 
     private async Task LoadDashboardAsync()
@@ -343,6 +565,7 @@ public partial class MainWindow : Window
         _chartSymbol = strategies[0].Symbol;
         _chartTimeframe = strategies[0].Timeframe;
         _chartDataSource = strategies[0].DataSource;
+        RebuildTimeframeBar();
 
         await LoadChartAsync();
 
@@ -416,6 +639,8 @@ public partial class MainWindow : Window
         var payload = new
         {
             type = "setCandles",
+            // Second-based timeframes need seconds shown on the time axis.
+            secondsVisible = _chartTimeframe.EndsWith("s"),
             data = bars.Select(b => new
             {
                 // Lightweight Charts expects UTC Unix time in SECONDS.

@@ -14,4 +14,7 @@ public sealed class AppSettings
 
     // How often the background monitor scans strategies for new signals.
     public int SignalCheckIntervalSeconds { get; set; } = 60;
+
+    // Timeframes starred into the toolbar (max 6), TradingView style.
+    public List<string> FavoriteTimeframes { get; set; } = new() { "15m", "1h", "4h", "1d", "1w", "1M" };
 }

@@ -188,6 +188,7 @@
 
                 if (msg.type === 'setCandles') {
                     rawData = msg.data;
+                    chart.applyOptions({ timeScale: { secondsVisible: msg.secondsVisible === true } });
                     renderWithCurrentType();
                 } else if (msg.type === 'updateCandle') {
                     if (activeSeries !== null) activeSeries.update(msg.data);
