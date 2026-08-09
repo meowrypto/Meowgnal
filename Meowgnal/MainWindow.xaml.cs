@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Microsoft.Web.WebView2.Core;
 using Meowgnal.DataProviders;
 using Meowgnal.Engine;
@@ -26,6 +27,13 @@ public partial class MainWindow : Window
     // Candle data sent before that moment simply waits, so we never post
     // messages into a page that isn't ready yet.
     private readonly TaskCompletionSource<bool> _chartPageReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // Background signal monitor: periodically rescans all strategies and
+    // raises toast/sound alerts only for signals it hasn't seen before.
+    private DispatcherTimer? _monitorTimer;
+    private readonly HashSet<string> _knownSignalKeys = new();
+    private bool _baselineSeeded;
+    private bool _isScanning;
 
     private string _chartSymbol = "BTC/USDT";
     private string _chartTimeframe = "1h";
@@ -55,6 +63,7 @@ public partial class MainWindow : Window
     {
         _ = InitializeChartWebViewAsync();
         await LoadDashboardAsync();
+        StartSignalMonitor();
     }
 
     // Starts the embedded browser, points it at our local ChartHost folder
@@ -180,7 +189,11 @@ public partial class MainWindow : Window
 
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
 
-    private void OpenSettingsButton_Click(object sender, RoutedEventArgs e) => new SettingsWindow().ShowDialog();
+    private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        new SettingsWindow().ShowDialog();
+        StartSignalMonitor(); // apply a changed check interval immediately
+    }
 
     private async void TimeframeButton_Click(object sender, RoutedEventArgs e)
     {
@@ -314,6 +327,10 @@ public partial class MainWindow : Window
 
             foreach (var s in signals)
             {
+                // Remember everything that already exists so the background
+                // monitor never toasts for old signals.
+                _knownSignalKeys.Add(MakeSignalKey(strategy.StrategyId, s));
+
                 allSignals.Add((new SignalDisplayItem
                 {
                     Symbol = strategy.Symbol,
@@ -323,6 +340,8 @@ public partial class MainWindow : Window
                 }, s.Timestamp));
             }
         }
+
+        _baselineSeeded = true;
 
         WinRateText.Text = $"{totalWinRate / strategies.Count:N0}%";
         SignalCountText.Text = totalSignalCount.ToString();
@@ -374,5 +393,114 @@ public partial class MainWindow : Window
         };
 
         ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
+    }
+
+    // ------------------------------------------------------------------
+    // Background signal monitor
+    // ------------------------------------------------------------------
+
+    private sealed record FoundSignal(StrategyDefinition Strategy, SignalEvent Signal);
+
+    private static string MakeSignalKey(string strategyId, SignalEvent signal) =>
+        $"{strategyId}|{signal.Timestamp:O}|{(int)signal.Type}";
+
+    // Starts (or re-syncs) the periodic scan timer using the interval stored
+    // in Settings -> Notifications (default 60 seconds).
+    private void StartSignalMonitor()
+    {
+        var seconds = Math.Clamp(SettingsStorageService.Load().SignalCheckIntervalSeconds, 10, 3600);
+        var interval = TimeSpan.FromSeconds(seconds);
+
+        if (_monitorTimer is null)
+        {
+            _monitorTimer = new DispatcherTimer { Interval = interval };
+            _monitorTimer.Tick += async (_, _) => await MonitorTickAsync();
+            _monitorTimer.Start();
+        }
+        else if (_monitorTimer.Interval != interval)
+        {
+            _monitorTimer.Interval = interval;
+        }
+    }
+
+    private async Task MonitorTickAsync()
+    {
+        if (_isScanning) return; // previous scan still running on a slow network
+        _isScanning = true;
+        try
+        {
+            var settings = SettingsStorageService.Load();
+            var found = await ScanAllStrategiesAsync();
+
+            if (!_baselineSeeded)
+            {
+                // First scan after startup with no strategies loaded yet:
+                // silently remember everything so we never toast old signals.
+                _baselineSeeded = true;
+                foreach (var f in found) _knownSignalKeys.Add(MakeSignalKey(f.Strategy.StrategyId, f.Signal));
+                return;
+            }
+
+            var fresh = found
+                .Where(f => !_knownSignalKeys.Contains(MakeSignalKey(f.Strategy.StrategyId, f.Signal)))
+                .ToList();
+            if (fresh.Count == 0) return;
+
+            foreach (var f in fresh)
+            {
+                _knownSignalKeys.Add(MakeSignalKey(f.Strategy.StrategyId, f.Signal));
+                _signals.Insert(0, new SignalDisplayItem
+                {
+                    Symbol = f.Strategy.Symbol,
+                    Description = f.Strategy.Name,
+                    Type = f.Signal.Type == SignalType.Entry ? "buy" : "sell",
+                    Time = f.Signal.Timestamp.ToString("g")
+                });
+            }
+
+            while (_signals.Count > 30) _signals.RemoveAt(_signals.Count - 1);
+            SignalCountText.Text = found.Count.ToString();
+
+            if (settings.ToastNotificationsEnabled)
+            {
+                foreach (var f in fresh.Take(5)) // avoid a toast flood
+                {
+                    NotificationService.ShowToast(
+                        $"Meowgnal — {f.Strategy.Symbol} ({f.Strategy.Timeframe})",
+                        $"{(f.Signal.Type == SignalType.Entry ? "BUY" : "SELL")} signal: {f.Strategy.Name}");
+                }
+            }
+
+            if (settings.SoundNotificationsEnabled)
+                NotificationService.PlayAlertSound();
+        }
+        catch
+        {
+            // A failed scan tick must never crash the app; retry next tick.
+        }
+        finally
+        {
+            _isScanning = false;
+        }
+    }
+
+    private static async Task<List<FoundSignal>> ScanAllStrategiesAsync()
+    {
+        var found = new List<FoundSignal>();
+        foreach (var strategy in StrategyStorageService.LoadAll())
+        {
+            try
+            {
+                IDataProvider provider = strategy.DataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
+                var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 200);
+                foreach (var signal in RuleEngine.ScanForSignals(strategy, bars))
+                    found.Add(new FoundSignal(strategy, signal));
+            }
+            catch
+            {
+                // Skip strategies whose exchange is unreachable this tick.
+            }
+        }
+        return found;
     }
 }
