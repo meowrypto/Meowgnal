@@ -3,7 +3,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Settings" Height="480" Width="620"
         Background="#0F1117">
-
     <Window.Resources>
         <SolidColorBrush x:Key="TextMuted" Color="#8A8F9C"/>
         <SolidColorBrush x:Key="PanelBg" Color="#161A23"/>
@@ -33,13 +32,11 @@
             </Setter>
         </Style>
     </Window.Resources>
-
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="170"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-
         <!-- Left nav -->
         <Border Grid.Column="0" Background="{StaticResource PanelBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,1,0">
             <StackPanel Margin="0,10,0,0">
@@ -49,7 +46,6 @@
                 <RadioButton x:Name="NavLicense" Content="License" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
             </StackPanel>
         </Border>
-
         <!-- Right content -->
         <Grid Grid.Column="1" Margin="20">
             <!-- Data sources -->
@@ -60,7 +56,6 @@
                 <TextBlock Text="Both sources stay connected in the background — this only sets the default shown on new strategies."
                            Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,8,0,0"/>
             </StackPanel>
-
             <!-- API keys -->
             <StackPanel x:Name="PanelApiKeys" Visibility="Collapsed">
                 <Border Background="#2A1E14" CornerRadius="4" Padding="10" Margin="0,0,0,14">
@@ -72,22 +67,27 @@
                 <TextBlock Text="Binance API secret" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
                 <PasswordBox x:Name="ApiSecretBox" Margin="0,0,0,10"/>
             </StackPanel>
-
             <!-- Notifications -->
             <StackPanel x:Name="PanelNotifications" Visibility="Collapsed">
                 <CheckBox x:Name="ToastCheck" Content="Windows toast notification on new signal" Foreground="White" Margin="0,0,0,10"/>
                 <CheckBox x:Name="SoundCheck" Content="Play alert sound on new signal" Foreground="White" Margin="0,0,0,10"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                    <TextBlock Text="Check for new signals every" Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <ComboBox x:Name="IntervalCombo" Width="120">
+                        <ComboBoxItem Content="30 seconds" Tag="30"/>
+                        <ComboBoxItem Content="1 minute" Tag="60"/>
+                        <ComboBoxItem Content="5 minutes" Tag="300"/>
+                        <ComboBoxItem Content="15 minutes" Tag="900"/>
+                    </ComboBox>
+                </StackPanel>
+                <Button x:Name="TestNotificationButton" Content="Send test notification" HorizontalAlignment="Left" Padding="12,5" Margin="0,0,0,12" Click="TestNotificationButton_Click"/>
                 <TextBlock Text="More channels (Telegram, email) are planned for a future update."
                            Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,8,0,0"/>
             </StackPanel>
-
             <!-- License -->
             <StackPanel x:Name="PanelLicense" Visibility="Collapsed">
                 <TextBlock Text="License management is coming in a future update." Foreground="{StaticResource TextMuted}"/>
             </StackPanel>
         </Grid>
     </Grid>
-
- 
-
 </Window>

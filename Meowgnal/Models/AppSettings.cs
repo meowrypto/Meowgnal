@@ -7,9 +7,11 @@ public sealed class AppSettings
     // Stored encrypted on disk. Should ONLY ever be a Read-Only API key —
     // never one with trade or withdrawal permissions.
     public string BinanceApiKey { get; set; } = "";
-
     public string BinanceApiSecret { get; set; } = "";
 
     public bool ToastNotificationsEnabled { get; set; } = true;
     public bool SoundNotificationsEnabled { get; set; } = true;
+
+    // How often the background monitor scans strategies for new signals.
+    public int SignalCheckIntervalSeconds { get; set; } = 60;
 }
