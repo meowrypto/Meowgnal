@@ -69,6 +69,10 @@
             }
         });
 
+        // The latest dataset received from C#, kept so the crosshair handler
+        // can look up the hovered candle and its predecessor.
+        let currentData = [];
+
         // Keeps the chart filling the whole WebView2 area when the window resizes.
         function resizeChart() {
             chart.applyOptions({
@@ -90,7 +94,8 @@
                 if (!msg || !msg.type) return;
 
                 if (msg.type === 'setCandles') {
-                    candleSeries.setData(msg.data);
+                    currentData = msg.data;
+                    candleSeries.setData(currentData);
                     chart.timeScale().fitContent();
                 } else if (msg.type === 'updateCandle') {
                     candleSeries.update(msg.data);
@@ -98,7 +103,8 @@
             });
         }
 
-        // Reports the hovered candle's OHLC back to C# for the OHLC bar.
+        // Reports the hovered candle's OHLC (plus the previous candle's OHLC,
+        // so C# can color each value against the previous candle) back to C#.
         chart.subscribeCrosshairMove(function (param) {
             if (!window.chrome || !window.chrome.webview) return;
 
@@ -106,37 +112,22 @@
                 window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
                 return;
             }
-            const d = param.seriesData.get(candleSeries);
-            if (!d) return;
+
+            const index = currentData.findIndex(function (d) { return d.time === param.time; });
+            if (index < 0) {
+                window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
+                return;
+            }
+
+            const d = currentData[index];
+            const p = index > 0 ? currentData[index - 1] : d;
             window.chrome.webview.postMessage(JSON.stringify({
                 type: 'crosshair',
                 hasData: true,
-                open: d.open,
-                high: d.high,
-                low: d.low,
-                close: d.close
+                open: d.open, high: d.high, low: d.low, close: d.close,
+                prevOpen: p.open, prevHigh: p.high, prevLow: p.low, prevClose: p.close
             }));
         });
-
-        // ------------------------------------------------------------------
-        // Temporary demo candles — shown only until the first real dataset
-        // arrives from C#. Removed in a later step.
-        // ------------------------------------------------------------------
-        (function renderDemoCandles() {
-            const demo = [];
-            let price = 60000;
-            const startTime = Math.floor(Date.now() / 1000) - 50 * 3600;
-            for (let i = 0; i < 50; i++) {
-                const open = price;
-                const close = open + (Math.random() - 0.5) * 900;
-                const high = Math.max(open, close) + Math.random() * 300;
-                const low = Math.min(open, close) - Math.random() * 300;
-                demo.push({ time: startTime + i * 3600, open: open, high: high, low: low, close: close });
-                price = close;
-            }
-            candleSeries.setData(demo);
-            chart.timeScale().fitContent();
-        })();
     </script>
 </body>
 </html>

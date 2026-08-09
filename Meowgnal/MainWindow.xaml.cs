@@ -73,6 +73,9 @@ public partial class MainWindow : Window
 
             core.NavigationCompleted += (_, _) => _chartPageReady.TrySetResult(true);
 
+            // JavaScript -> C# side of the bridge (crosshair OHLC updates).
+            core.WebMessageReceived += OnChartWebMessageReceived;
+
             var hostFolder = Path.Combine(AppContext.BaseDirectory, "ChartHost");
             core.SetVirtualHostNameToFolderMapping("meowgnal.local", hostFolder, CoreWebView2HostResourceAccessKind.Allow);
             core.Navigate("https://meowgnal.local/chart.html");
@@ -97,6 +100,63 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
         }
+    }
+
+    // JavaScript -> C# message handler. The chart page reports which candle
+    // the mouse is hovering over; we mirror its OHLC into the header bar,
+    // coloring each value against the previous candle (like TradingView).
+    private void OnChartWebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        var json = e.WebMessageAsJson;
+        using (var probe = JsonDocument.Parse(json))
+        {
+            // Some WebView2 runtime versions hand us the message as a quoted
+            // JSON string instead of an object — unwrap one level so both work.
+            if (probe.RootElement.ValueKind == JsonValueKind.String)
+                json = probe.RootElement.GetString()!;
+        }
+
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        if (!root.TryGetProperty("type", out var typeProp) || typeProp.GetString() != "crosshair") return;
+
+        if (root.TryGetProperty("hasData", out var hasData) && hasData.GetBoolean())
+        {
+            SetOhlcHeader(
+                (decimal)root.GetProperty("open").GetDouble(),
+                (decimal)root.GetProperty("high").GetDouble(),
+                (decimal)root.GetProperty("low").GetDouble(),
+                (decimal)root.GetProperty("close").GetDouble(),
+                (decimal)root.GetProperty("prevOpen").GetDouble(),
+                (decimal)root.GetProperty("prevHigh").GetDouble(),
+                (decimal)root.GetProperty("prevLow").GetDouble(),
+                (decimal)root.GetProperty("prevClose").GetDouble());
+        }
+        else if (_currentBars.Count > 0)
+        {
+            // Mouse left the chart: show the newest candle again.
+            var last = _currentBars[^1];
+            var prev = _currentBars.Count > 1 ? _currentBars[^2] : last;
+            SetOhlcHeader(last.Open, last.High, last.Low, last.Close, prev.Open, prev.High, prev.Low, prev.Close);
+        }
+    }
+
+    // Writes the four OHLC values into the header bar, coloring each one
+    // green/red by comparing it with the previous candle's matching value.
+    private void SetOhlcHeader(
+        decimal open, decimal high, decimal low, decimal close,
+        decimal prevOpen, decimal prevHigh, decimal prevLow, decimal prevClose)
+    {
+        OhlcOpenText.Text = open.ToString("N2");
+        OhlcHighText.Text = high.ToString("N2");
+        OhlcLowText.Text = low.ToString("N2");
+        OhlcCloseText.Text = close.ToString("N2");
+
+        OhlcOpenText.Foreground = open >= prevOpen ? Brushes.MediumSeaGreen : Brushes.IndianRed;
+        OhlcHighText.Foreground = high >= prevHigh ? Brushes.MediumSeaGreen : Brushes.IndianRed;
+        OhlcLowText.Foreground = low >= prevLow ? Brushes.MediumSeaGreen : Brushes.IndianRed;
+        OhlcCloseText.Foreground = close >= prevClose ? Brushes.MediumSeaGreen : Brushes.IndianRed;
     }
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await LoadDashboardAsync();
@@ -241,16 +301,7 @@ public partial class MainWindow : Window
 
         var last = bars[^1];
         var prev = bars.Count > 1 ? bars[^2] : last;
-
-        OhlcOpenText.Text = last.Open.ToString("N2");
-        OhlcHighText.Text = last.High.ToString("N2");
-        OhlcLowText.Text = last.Low.ToString("N2");
-        OhlcCloseText.Text = last.Close.ToString("N2");
-
-        OhlcOpenText.Foreground = last.Open >= prev.Open ? Brushes.MediumSeaGreen : Brushes.IndianRed;
-        OhlcHighText.Foreground = last.High >= prev.High ? Brushes.MediumSeaGreen : Brushes.IndianRed;
-        OhlcLowText.Foreground = last.Low >= prev.Low ? Brushes.MediumSeaGreen : Brushes.IndianRed;
-        OhlcCloseText.Foreground = last.Close >= prev.Close ? Brushes.MediumSeaGreen : Brushes.IndianRed;
+        SetOhlcHeader(last.Open, last.High, last.Low, last.Close, prev.Open, prev.High, prev.Low, prev.Close);
 
         await SendCandlesToChartAsync(bars);
     }
