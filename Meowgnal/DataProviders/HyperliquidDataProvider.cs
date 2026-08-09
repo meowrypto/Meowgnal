@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -21,6 +22,9 @@ public sealed class HyperliquidDataProvider : IDataProvider
     {
         BaseAddress = new Uri("https://api.hyperliquid.xyz")
     };
+
+    // 24h change is expensive to compute per coin, so it is cached for 5 min.
+    private static readonly Dictionary<string, (double Chg, DateTime FetchedAt)> DailyChangeCache = new();
 
     // Milliseconds per candle for each supported interval.
     private static readonly Dictionary<string, long> IntervalMs = new()
@@ -86,5 +90,82 @@ public sealed class HyperliquidDataProvider : IDataProvider
         }
 
         return result;
+    }
+
+    // Live mid prices (one call for all coins) + cached daily change per coin.
+    public async Task<Dictionary<string, TickerInfo>> GetTickersAsync(IEnumerable<string> symbols)
+    {
+        var result = new Dictionary<string, TickerInfo>();
+
+        var pairs = symbols
+            .Select(s => (Original: s, Coin: s.Split('/')[0].ToUpperInvariant()))
+            .Distinct()
+            .ToList();
+        if (pairs.Count == 0) return result;
+
+        // 1) Current mid price for every coin in a single public call.
+        var midsResponse = await Http.PostAsJsonAsync("/info", new { type = "allMids" });
+        midsResponse.EnsureSuccessStatusCode();
+        using var midsDoc = JsonDocument.Parse(await midsResponse.Content.ReadAsStreamAsync());
+
+        foreach (var (original, coin) in pairs)
+        {
+            if (!midsDoc.RootElement.TryGetProperty(coin, out var midElement)) continue;
+
+            result[original] = new TickerInfo
+            {
+                Last = decimal.Parse(midElement.GetString()!, CultureInfo.InvariantCulture),
+                ChgPercent = await GetDailyChangePercentAsync(coin),
+            };
+        }
+
+        return result;
+    }
+
+    // Approximates the 24h change from the last two daily candles.
+    // Cached per coin for 5 minutes to keep the public API polite.
+    private static async Task<double> GetDailyChangePercentAsync(string coin)
+    {
+        if (DailyChangeCache.TryGetValue(coin, out var cached) &&
+            DateTime.UtcNow - cached.FetchedAt < TimeSpan.FromMinutes(5))
+        {
+            return cached.Chg;
+        }
+
+        try
+        {
+            var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var body = new
+            {
+                type = "candleSnapshot",
+                req = new { coin, interval = "1d", startTime = now - 2 * 86_400_000L, endTime = now }
+            };
+            var response = await Http.PostAsJsonAsync("/info", body);
+            response.EnsureSuccessStatusCode();
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStreamAsync());
+
+            var candles = doc.RootElement.EnumerateArray().ToList();
+            double chg = 0;
+            if (candles.Count >= 2)
+            {
+                var prevClose = double.Parse(candles[^2].GetProperty("c").GetString()!, CultureInfo.InvariantCulture);
+                var lastClose = double.Parse(candles[^1].GetProperty("c").GetString()!, CultureInfo.InvariantCulture);
+                if (prevClose != 0) chg = (lastClose - prevClose) / prevClose * 100;
+            }
+            else if (candles.Count == 1)
+            {
+                var open = double.Parse(candles[0].GetProperty("o").GetString()!, CultureInfo.InvariantCulture);
+                var close = double.Parse(candles[0].GetProperty("c").GetString()!, CultureInfo.InvariantCulture);
+                if (open != 0) chg = (close - open) / open * 100;
+            }
+
+            DailyChangeCache[coin] = (chg, DateTime.UtcNow);
+            return chg;
+        }
+        catch
+        {
+            // Network hiccup: fall back to the cached value (or 0 if none).
+            return cached.Chg;
+        }
     }
 }

@@ -20,3 +20,9 @@ public sealed class WatchlistsFile
     public string ActiveListName { get; set; } = "Main";
     public List<WatchlistDefinition> Lists { get; set; } = new();
 }
+// Live price snapshot for one symbol (watchlist rows + add-symbol preview).
+public sealed class TickerInfo
+{
+    public decimal Last { get; set; }
+    public double ChgPercent { get; set; }
+}

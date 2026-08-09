@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -69,6 +70,41 @@ public sealed class BinanceDataProvider : IDataProvider
             // Next (older) page ends just before this page's oldest candle.
             endTime = firstOpenMs - 1;
             if (batch.Count < batchSize) break;
+        }
+
+        return result;
+    }
+
+    // Live last price + 24h change for many symbols in ONE public call.
+    public async Task<Dictionary<string, TickerInfo>> GetTickersAsync(IEnumerable<string> symbols)
+    {
+        var result = new Dictionary<string, TickerInfo>();
+
+        var pairs = symbols
+            .Select(s => (Original: s, Raw: s.Replace("/", "").ToUpperInvariant()))
+            .Distinct()
+            .ToList();
+        if (pairs.Count == 0) return result;
+
+        // The 24hr ticker endpoint accepts a JSON array of raw symbols.
+        var symbolsJson = Uri.EscapeDataString(JsonSerializer.Serialize(pairs.Select(p => p.Raw).ToList()));
+        var url = $"/api/v3/ticker/24hr?symbols={symbolsJson}";
+
+        await using var stream = await Http.GetStreamAsync(url);
+        using var doc = await JsonDocument.ParseAsync(stream);
+
+        var rawToOriginal = pairs.ToDictionary(p => p.Raw, p => p.Original);
+
+        foreach (var row in doc.RootElement.EnumerateArray())
+        {
+            var raw = row.GetProperty("symbol").GetString()!;
+            if (!rawToOriginal.TryGetValue(raw, out var original)) continue;
+
+            result[original] = new TickerInfo
+            {
+                Last = decimal.Parse(row.GetProperty("lastPrice").GetString()!, CultureInfo.InvariantCulture),
+                ChgPercent = double.Parse(row.GetProperty("priceChangePercent").GetString()!, CultureInfo.InvariantCulture),
+            };
         }
 
         return result;
