@@ -45,6 +45,7 @@ public partial class MainWindow : Window
     private string _chartSymbol = "BTC/USDT";
     private string _chartTimeframe = "1h";
     private string _chartDataSource = "binance";
+    private string _chartType = "candles";
     private List<Bar> _currentBars = new();
     private bool _isFullscreen;
     private WindowState _prevState;
@@ -60,8 +61,8 @@ public partial class MainWindow : Window
         // while the WebView2 is starting up.
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
 
-        // Default chart type: candlestick.
-        ChartTypeCombo.SelectedIndex = 0;
+        // Default chart type: candlestick (sets button icon + label).
+        ApplyChartType("candles");
 
         // Live UTC clock.
         UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
@@ -223,12 +224,34 @@ public partial class MainWindow : Window
         await LoadChartAsync();
     }
 
-    // Sends the selected chart type to the page; the page rebuilds the
-    // series (candles / line / area / Heikin Ashi / bars) from its raw data.
-    private void ChartTypeCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    // ------------------------------------------------------------------
+    // Chart type dropdown (TradingView style, with mini icons)
+    // ------------------------------------------------------------------
+
+    private void ChartTypeButton_Click(object sender, RoutedEventArgs e) =>
+        ChartTypePopup.IsOpen = !ChartTypePopup.IsOpen;
+
+    private void ChartTypeItem_Click(object sender, RoutedEventArgs e)
     {
-        if (ChartTypeCombo.SelectedItem is not ComboBoxItem item || item.Tag is not string tag) return;
-        _ = SendChartTypeAsync(tag);
+        if (sender is not Button btn || btn.Tag is not string type) return;
+        ChartTypePopup.IsOpen = false;
+        ApplyChartType(type);
+        _ = SendChartTypeAsync(type);
+    }
+
+    // Updates the toolbar button's icon + label for the given chart type.
+    private void ApplyChartType(string type)
+    {
+        _chartType = type;
+        ChartTypeIcon.Content = FindResource("Icon_" + type);
+        ChartTypeLabel.Text = type switch
+        {
+            "line" => "Line",
+            "area" => "Area",
+            "heikinashi" => "Heikin Ashi",
+            "bars" => "Bars (OHLC)",
+            _ => "Candles"
+        };
     }
 
     private async Task SendChartTypeAsync(string chartType)
