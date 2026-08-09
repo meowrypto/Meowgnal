@@ -27,27 +27,20 @@ public partial class BacktestWindow : Window
     private async void Run_Click(object sender, RoutedEventArgs e)
     {
         if (StrategyCombo.SelectedItem is not StrategyDefinition strategy) return;
-
         IDataProvider provider = strategy.DataSource == "hyperliquid"
             ? new HyperliquidDataProvider()
             : new BinanceDataProvider();
-
-        var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 500);
-
+        var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 2000);
         var balance = decimal.TryParse(BalanceBox.Text, out var b) ? b : 10000m;
         var fee = decimal.TryParse(FeeBox.Text, out var f) ? f : 0.1m;
         var slippage = decimal.TryParse(SlippageBox.Text, out var s) ? s : 0.05m;
-
         var result = BacktestEngine.Run(strategy, bars, balance, fee, slippage);
-
         WinRateText.Text = $"{result.WinRatePercent:N1}%";
         AvgRRText.Text = result.AverageRiskReward.ToString("N2");
         DrawdownText.Text = $"{result.MaxDrawdownPercent:N1}%";
         TradesText.Text = result.Trades.Count.ToString();
         BalanceResultText.Text = $"{result.StartingBalance:N0} → {result.FinalBalance:N0}";
-
         TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(result.Trades);
-
         var points = result.EquityCurve.Select(p => new ObservablePoint(p.Time.Ticks, (double)p.Balance));
         EquityChart.Series = new ISeries[]
         {

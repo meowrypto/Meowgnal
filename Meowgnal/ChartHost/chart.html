@@ -166,7 +166,13 @@
             displayData = buildDisplayData();
             activeSeries.setData(displayData);
             renderVolume();
-            chart.timeScale().fitContent();
+
+            // TV-like initial view: show the last ~120 candles with a small
+            // right margin; the full deep history stays scrollable/zoomable.
+            const total = displayData.length;
+            if (total > 0) {
+                chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, total - 120), to: total + 4 });
+            }
         }
 
         // Initial (empty) series so the page is ready before data arrives.

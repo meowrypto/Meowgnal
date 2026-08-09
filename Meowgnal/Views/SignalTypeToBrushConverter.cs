@@ -11,10 +11,9 @@ public sealed class SignalTypeToBrushConverter : IValueConverter
     {
         var type = value as string ?? "";
         return type == "buy"
-            ? new SolidColorBrush(Color.FromRgb(0x26, 0xA6, 0x9A))
-            : new SolidColorBrush(Color.FromRgb(0xEF, 0x53, 0x50));
+            ? new SolidColorBrush(Color.FromRgb(0x08, 0x99, 0x81))
+            : new SolidColorBrush(Color.FromRgb(0xF2, 0x36, 0x45));
     }
-
 
     public object ConvertBack(object? value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotImplementedException();

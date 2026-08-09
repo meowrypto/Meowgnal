@@ -35,6 +35,13 @@ public partial class MainWindow : Window
     private bool _baselineSeeded;
     private bool _isScanning;
 
+    // Live UTC clock in the bottom status bar (TradingView style).
+    private readonly DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+
+    // Exact TradingView up/down colors for the OHLC legend.
+    private static readonly SolidColorBrush UpBrush = new(Color.FromRgb(0x08, 0x99, 0x81));
+    private static readonly SolidColorBrush DownBrush = new(Color.FromRgb(0xF2, 0x36, 0x45));
+
     private string _chartSymbol = "BTC/USDT";
     private string _chartTimeframe = "1h";
     private string _chartDataSource = "binance";
@@ -51,10 +58,15 @@ public partial class MainWindow : Window
 
         // Matches the chart page background so there is no white flash
         // while the WebView2 is starting up.
-        ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x0B, 0x0D, 0x12);
+        ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
 
         // Default chart type: candlestick.
         ChartTypeCombo.SelectedIndex = 0;
+
+        // Live UTC clock.
+        UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
+        _clockTimer.Tick += (_, _) => UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
+        _clockTimer.Start();
 
         Loaded += MainWindow_Loaded;
     }
@@ -155,7 +167,7 @@ public partial class MainWindow : Window
     }
 
     // Writes the four OHLC values into the header bar, coloring each one
-    // green/red by comparing it with the previous candle's matching value.
+    // green/red (TradingView palette) by comparing it with the previous candle.
     private void SetOhlcHeader(
         decimal open, decimal high, decimal low, decimal close,
         decimal prevOpen, decimal prevHigh, decimal prevLow, decimal prevClose)
@@ -165,10 +177,10 @@ public partial class MainWindow : Window
         OhlcLowText.Text = low.ToString("N2");
         OhlcCloseText.Text = close.ToString("N2");
 
-        OhlcOpenText.Foreground = open >= prevOpen ? Brushes.MediumSeaGreen : Brushes.IndianRed;
-        OhlcHighText.Foreground = high >= prevHigh ? Brushes.MediumSeaGreen : Brushes.IndianRed;
-        OhlcLowText.Foreground = low >= prevLow ? Brushes.MediumSeaGreen : Brushes.IndianRed;
-        OhlcCloseText.Foreground = close >= prevClose ? Brushes.MediumSeaGreen : Brushes.IndianRed;
+        OhlcOpenText.Foreground = open >= prevOpen ? UpBrush : DownBrush;
+        OhlcHighText.Foreground = high >= prevHigh ? UpBrush : DownBrush;
+        OhlcLowText.Foreground = low >= prevLow ? UpBrush : DownBrush;
+        OhlcCloseText.Foreground = close >= prevClose ? UpBrush : DownBrush;
     }
 
     // Opens tradingview.com in the default browser. This visible attribution
@@ -203,8 +215,8 @@ public partial class MainWindow : Window
         {
             if (child is not Button btn) continue;
             var isSelected = btn == clicked;
-            btn.Background = isSelected ? (Brush)FindResource("AccentBg") : SystemColors.ControlBrush;
-            btn.Foreground = isSelected ? (Brush)FindResource("AccentText") : SystemColors.ControlTextBrush;
+            btn.Background = isSelected ? (Brush)FindResource("Accent") : Brushes.Transparent;
+            btn.Foreground = isSelected ? Brushes.White : (Brush)FindResource("TextSecondary");
         }
 
         _chartTimeframe = tf;
@@ -284,7 +296,7 @@ public partial class MainWindow : Window
     private async Task LoadChartAsync()
     {
         IDataProvider provider = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
-        var bars = await provider.GetHistoricalCandlesAsync(_chartSymbol, _chartTimeframe, limit: 200);
+        var bars = await provider.GetHistoricalCandlesAsync(_chartSymbol, _chartTimeframe, limit: 1000);
         await UpdateChartAsync(bars);
         SymbolText.Text = _chartSymbol;
         PriceText.Text = bars[^1].Close.ToString("N2");
@@ -318,7 +330,7 @@ public partial class MainWindow : Window
         foreach (var strategy in strategies)
         {
             IDataProvider provider = strategy.DataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
-            var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 200);
+            var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 500);
             var signals = RuleEngine.ScanForSignals(strategy, bars);
             var backtest = BacktestEngine.Run(strategy, bars, startingBalance: 10000m, feePercent: 0.1m, slippagePercent: 0.05m);
 
@@ -493,7 +505,7 @@ public partial class MainWindow : Window
             try
             {
                 IDataProvider provider = strategy.DataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
-                var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 200);
+                var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 500);
                 foreach (var signal in RuleEngine.ScanForSignals(strategy, bars))
                     found.Add(new FoundSignal(strategy, signal));
             }
