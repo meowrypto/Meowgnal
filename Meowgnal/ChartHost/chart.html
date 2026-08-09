@@ -80,22 +80,22 @@
         resizeChart();
 
         // ------------------------------------------------------------------
-        // Bridge functions — called from C# in a later step.
+        // Message bridge — receives commands from C#.
+        // C# calls CoreWebView2.PostWebMessageAsJson(...); the message
+        // arrives here already parsed as a JavaScript object.
         // ------------------------------------------------------------------
+        if (window.chrome && window.chrome.webview) {
+            window.chrome.webview.addEventListener('message', function (e) {
+                const msg = e.data;
+                if (!msg || !msg.type) return;
 
-        // Replaces the whole dataset. json: [{ time, open, high, low, close }, ...]
-        // time is a Unix timestamp in SECONDS.
-        function setCandles(json, fitView) {
-            const data = JSON.parse(json);
-            candleSeries.setData(data);
-            if (fitView !== false) {
-                chart.timeScale().fitContent();
-            }
-        }
-
-        // Updates (or appends) only the newest candle — for live ticks later.
-        function updateCandle(json) {
-            candleSeries.update(JSON.parse(json));
+                if (msg.type === 'setCandles') {
+                    candleSeries.setData(msg.data);
+                    chart.timeScale().fitContent();
+                } else if (msg.type === 'updateCandle') {
+                    candleSeries.update(msg.data);
+                }
+            });
         }
 
         // Reports the hovered candle's OHLC back to C# for the OHLC bar.
@@ -119,8 +119,8 @@
         });
 
         // ------------------------------------------------------------------
-        // Temporary demo candles — just to visually verify the host page.
-        // Real data from C# replaces this in a later step.
+        // Temporary demo candles — shown only until the first real dataset
+        // arrives from C#. Removed in a later step.
         // ------------------------------------------------------------------
         (function renderDemoCandles() {
             const demo = [];
