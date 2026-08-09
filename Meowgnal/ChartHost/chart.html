@@ -10,7 +10,7 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
-            background: #0B0D12;
+            background: #131722;
         }
 
         #chart {
@@ -23,21 +23,26 @@
 <body>
     <div id="chart"></div>
     <script>
-        // Colors matched to the Meowgnal WPF dark theme.
+        // TradingView "Dark" palette — exact values from the TV design system.
         const COLORS = {
-            background: '#0B0D12',
-            text: '#8A8F9C',
-            grid: '#1A1E28',
-            border: '#262B38',
-            up: '#26A69A',
-            down: '#EF5350',
-            accent: '#4FC3F7'
+            background: '#131722',
+            grid: '#1E222D',
+            border: '#2A2E39',
+            textMuted: '#787B86',
+            crosshair: '#758696',
+            up: '#089981',
+            down: '#F23645',
+            accent: '#2962FF',
+            volumeUp: 'rgba(8, 153, 129, 0.35)',
+            volumeDown: 'rgba(242, 54, 69, 0.35)'
         };
 
         const chart = LightweightCharts.createChart(document.getElementById('chart'), {
             layout: {
                 background: { type: LightweightCharts.ColorType.Solid, color: COLORS.background },
-                textColor: COLORS.text
+                textColor: COLORS.textMuted,
+                fontSize: 11,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, Helvetica, Arial, sans-serif"
             },
             grid: {
                 vertLines: { color: COLORS.grid },
@@ -52,8 +57,19 @@
                 secondsVisible: false
             },
             crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal
+                mode: LightweightCharts.CrosshairMode.Normal,
+                vertLine: { color: COLORS.crosshair, labelBackgroundColor: COLORS.border },
+                horzLine: { color: COLORS.crosshair, labelBackgroundColor: COLORS.border }
             }
+        });
+
+        // Volume histogram pinned to the bottom 20% of the pane (like TV).
+        const volumeSeries = chart.addHistogramSeries({
+            priceFormat: { type: 'volume' },
+            priceScaleId: ''
+        });
+        chart.priceScale('').applyOptions({
+            scaleMargins: { top: 0.8, bottom: 0 }
         });
 
         // The raw candle dataset received from C#.
@@ -81,8 +97,8 @@
                 case 'area':
                     return chart.addAreaSeries({
                         lineColor: COLORS.accent,
-                        topColor: 'rgba(79, 195, 247, 0.35)',
-                        bottomColor: 'rgba(79, 195, 247, 0.03)',
+                        topColor: 'rgba(41, 98, 255, 0.35)',
+                        bottomColor: 'rgba(41, 98, 255, 0.03)',
                         lineWidth: 2
                     });
                 case 'bars':
@@ -128,7 +144,19 @@
             return rawData; // candles and bars use raw OHLC
         }
 
-        // Removes the old series and renders again with the current type.
+        // Volume bars colored by candle direction (independent of chart type).
+        function renderVolume() {
+            volumeSeries.setData(rawData.map(function (c) {
+                return {
+                    time: c.time,
+                    value: c.volume,
+                    color: c.close >= c.open ? COLORS.volumeUp : COLORS.volumeDown
+                };
+            }));
+        }
+
+        // Removes the old price series and renders again with the current type.
+        // (The volume series is permanent and never removed.)
         function renderWithCurrentType() {
             if (activeSeries !== null) {
                 chart.removeSeries(activeSeries);
@@ -137,6 +165,7 @@
             activeSeries = createSeriesForType();
             displayData = buildDisplayData();
             activeSeries.setData(displayData);
+            renderVolume();
             chart.timeScale().fitContent();
         }
 
@@ -156,6 +185,11 @@
                     renderWithCurrentType();
                 } else if (msg.type === 'updateCandle') {
                     if (activeSeries !== null) activeSeries.update(msg.data);
+                    volumeSeries.update({
+                        time: msg.data.time,
+                        value: msg.data.volume || 0,
+                        color: msg.data.close >= msg.data.open ? COLORS.volumeUp : COLORS.volumeDown
+                    });
                 } else if (msg.type === 'setChartType') {
                     chartType = msg.chartType;
                     renderWithCurrentType();

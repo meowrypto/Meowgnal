@@ -388,7 +388,8 @@ public partial class MainWindow : Window
                 open = b.Open,
                 high = b.High,
                 low = b.Low,
-                close = b.Close
+                close = b.Close,
+                volume = b.Volume
             }).ToArray()
         };
 
