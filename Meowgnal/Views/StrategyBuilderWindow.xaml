@@ -3,9 +3,16 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:sys="clr-namespace:System;assembly=mscorlib"
         Title="New Strategy" Height="620" Width="620"
-        Background="#0F1117">
+        Background="#131722" WindowStartupLocation="CenterOwner">
 
     <Window.Resources>
+        <!-- TradingView Dark Palette -->
+        <SolidColorBrush x:Key="PanelBg" Color="#1E222D"/>
+        <SolidColorBrush x:Key="BorderColor" Color="#2A2E39"/>
+        <SolidColorBrush x:Key="TextColor" Color="#D1D4DC"/>
+        <SolidColorBrush x:Key="TextMuted" Color="#787B86"/>
+        <SolidColorBrush x:Key="AccentColor" Color="#2962FF"/>
+
         <x:Array x:Key="IndicatorTypeOptions" Type="sys:String">
             <sys:String>EMA</sys:String>
             <sys:String>SMA</sys:String>
@@ -26,99 +33,171 @@
             <sys:String>any</sys:String>
             <sys:String>threshold</sys:String>
         </x:Array>
-        <SolidColorBrush x:Key="TextMuted" Color="#8A8F9C"/>
-        <SolidColorBrush x:Key="PanelBg" Color="#161A23"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#262B38"/>
+
+        <!-- Base Text Style -->
         <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+        </Style>
+
+        <!-- TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="CaretBrush" Value="White"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Button -->
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ComboBox -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
     </Window.Resources>
 
-    <ScrollViewer Padding="16" VerticalScrollBarVisibility="Auto">
+    <ScrollViewer Padding="20" VerticalScrollBarVisibility="Auto">
         <StackPanel>
-            <TextBlock Text="Strategy name" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-            <TextBox x:Name="NameBox" Text="My strategy" Margin="0,0,0,10"/>
+            <TextBlock Text="Strategy name" Foreground="{StaticResource TextMuted}" Margin="0,0,0,6" FontSize="13"/>
+            <TextBox x:Name="NameBox" Text="My strategy" Margin="0,0,0,14"/>
 
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                <StackPanel Margin="0,0,10,0">
-                    <TextBlock Text="Symbol" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                    <TextBox x:Name="SymbolBox" Text="BTC/USDT" Width="140"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,18">
+                <StackPanel Margin="0,0,14,0">
+                    <TextBlock Text="Symbol" Foreground="{StaticResource TextMuted}" Margin="0,0,0,6" FontSize="13"/>
+                    <TextBox x:Name="SymbolBox" Text="BTC/USDT" Width="150"/>
                 </StackPanel>
                 <StackPanel>
-                    <TextBlock Text="Timeframe" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                    <TextBox x:Name="TimeframeBox" Text="1h" Width="80"/>
+                    <TextBlock Text="Timeframe" Foreground="{StaticResource TextMuted}" Margin="0,0,0,6" FontSize="13"/>
+                    <TextBox x:Name="TimeframeBox" Text="1h" Width="90"/>
                 </StackPanel>
             </StackPanel>
 
             <!-- Indicators -->
-            <TextBlock Text="Indicators" FontWeight="Bold" Margin="0,0,0,6"/>
-            <ItemsControl x:Name="IndicatorsList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{StaticResource PanelBg}" CornerRadius="4" Padding="8" Margin="0,0,0,6">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding Id}" Width="80" ToolTip="Indicator id (used in conditions below)"/>
-                                <ComboBox ItemsSource="{StaticResource IndicatorTypeOptions}" SelectedItem="{Binding Type}" Width="80" Margin="6,0,0,0"/>
-                                <TextBlock Text="period" Foreground="{StaticResource TextMuted}" Margin="6,4,4,0"/>
-                                <TextBox Text="{Binding Period}" Width="50"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button Content="+ Add indicator" HorizontalAlignment="Left" Padding="8,4" Margin="0,0,0,16" Click="AddIndicator_Click"/>
+            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,18">
+                <StackPanel>
+                    <TextBlock Text="📊 Indicators" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
+                    <ItemsControl x:Name="IndicatorsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox Text="{Binding Id}" Width="90" ToolTip="Indicator id (used in conditions below)" Margin="0,0,8,0"/>
+                                        <ComboBox ItemsSource="{StaticResource IndicatorTypeOptions}" SelectedItem="{Binding Type}" Width="90" Margin="0,0,8,0"/>
+                                        <TextBlock Text="period" Foreground="{StaticResource TextMuted}" Margin="0,4,8,0"/>
+                                        <TextBox Text="{Binding Period}" Width="60"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="+ Add indicator" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddIndicator_Click"/>
+                </StackPanel>
+            </Border>
 
             <!-- Entry rules -->
-            <TextBlock Text="Entry rules" FontWeight="Bold" Margin="0,0,0,6"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Text="Mode" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="EntryModeCombo" ItemsSource="{StaticResource ModeOptions}" SelectedIndex="0" Width="100"/>
-                <TextBlock Text="Min score (if threshold)" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="10,0,6,0"/>
-                <TextBox x:Name="EntryMinScoreBox" Text="3" Width="50"/>
-            </StackPanel>
-            <ItemsControl x:Name="EntryConditionsList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{StaticResource PanelBg}" CornerRadius="4" Padding="8" Margin="0,0,0,6">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding Left}" Width="70" ToolTip="Indicator id, 'price', or 'volume'"/>
-                                <ComboBox ItemsSource="{StaticResource OperatorOptions}" SelectedItem="{Binding Op}" Width="110" Margin="6,0,0,0"/>
-                                <TextBox Text="{Binding Right}" Width="70" Margin="6,0,0,0" ToolTip="Number or another indicator id"/>
-                                <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="6,4,4,0"/>
-                                <TextBox Text="{Binding Weight}" Width="40"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button Content="+ Add entry condition" HorizontalAlignment="Left" Padding="8,4" Margin="0,0,0,16" Click="AddEntryCondition_Click"/>
+            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,18">
+                <StackPanel>
+                    <TextBlock Text="🎯 Entry rules" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="Mode" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="EntryModeCombo" ItemsSource="{StaticResource ModeOptions}" SelectedIndex="0" Width="120"/>
+                        <TextBlock Text="Min score (if threshold)" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="14,0,10,0"/>
+                        <TextBox x:Name="EntryMinScoreBox" Text="3" Width="60"/>
+                    </StackPanel>
+                    <ItemsControl x:Name="EntryConditionsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox Text="{Binding Left}" Width="80" ToolTip="Indicator id, 'price', or 'volume'" Margin="0,0,8,0"/>
+                                        <ComboBox ItemsSource="{StaticResource OperatorOptions}" SelectedItem="{Binding Op}" Width="120" Margin="0,0,8,0"/>
+                                        <TextBox Text="{Binding Right}" Width="80" Margin="0,0,8,0" ToolTip="Number or another indicator id"/>
+                                        <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,4,8,0"/>
+                                        <TextBox Text="{Binding Weight}" Width="50"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="+ Add entry condition" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddEntryCondition_Click"/>
+                </StackPanel>
+            </Border>
 
             <!-- Exit rules -->
-            <TextBlock Text="Exit rules" FontWeight="Bold" Margin="0,0,0,6"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <TextBlock Text="Mode" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                <ComboBox x:Name="ExitModeCombo" ItemsSource="{StaticResource ModeOptions}" SelectedIndex="1" Width="100"/>
-            </StackPanel>
-            <ItemsControl x:Name="ExitConditionsList">
-                <ItemsControl.ItemTemplate>
-                    <DataTemplate>
-                        <Border Background="{StaticResource PanelBg}" CornerRadius="4" Padding="8" Margin="0,0,0,6">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBox Text="{Binding Left}" Width="70"/>
-                                <ComboBox ItemsSource="{StaticResource OperatorOptions}" SelectedItem="{Binding Op}" Width="110" Margin="6,0,0,0"/>
-                                <TextBox Text="{Binding Right}" Width="70" Margin="6,0,0,0"/>
-                                <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="6,4,4,0"/>
-                                <TextBox Text="{Binding Weight}" Width="40"/>
-                            </StackPanel>
-                        </Border>
-                    </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
-            <Button Content="+ Add exit condition" HorizontalAlignment="Left" Padding="8,4" Margin="0,0,0,20" Click="AddExitCondition_Click"/>
+            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="🚪 Exit rules" FontWeight="Bold" FontSize="14" Margin="0,0,0,12"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <TextBlock Text="Mode" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                        <ComboBox x:Name="ExitModeCombo" ItemsSource="{StaticResource ModeOptions}" SelectedIndex="1" Width="120"/>
+                    </StackPanel>
+                    <ItemsControl x:Name="ExitConditionsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBox Text="{Binding Left}" Width="80" Margin="0,0,8,0"/>
+                                        <ComboBox ItemsSource="{StaticResource OperatorOptions}" SelectedItem="{Binding Op}" Width="120" Margin="0,0,8,0"/>
+                                        <TextBox Text="{Binding Right}" Width="80" Margin="0,0,8,0"/>
+                                        <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,4,8,0"/>
+                                        <TextBox Text="{Binding Weight}" Width="50"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="+ Add exit condition" HorizontalAlignment="Left" Margin="0,4,0,0" Click="AddExitCondition_Click"/>
+                </StackPanel>
+            </Border>
 
             <StackPanel Orientation="Horizontal">
-                <Button Content="Save strategy" Padding="12,6" Click="SaveStrategy_Click"/>
-                <TextBlock x:Name="StatusText" Foreground="{StaticResource TextMuted}" Margin="12,0,0,0" VerticalAlignment="Center"/>
+                <Button Content="Save strategy" Padding="16,8" FontSize="13" Click="SaveStrategy_Click"/>
+                <TextBlock x:Name="StatusText" Foreground="{StaticResource TextMuted}" Margin="16,0,0,0" VerticalAlignment="Center"/>
             </StackPanel>
         </StackPanel>
     </ScrollViewer>
