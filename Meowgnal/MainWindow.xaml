@@ -295,8 +295,35 @@
                     </TextBlock>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                         <TextBlock x:Name="PaperStatusText" Text="" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,12,0"/>
-                        <TextBlock x:Name="UtcClockText" Text="--:--:--" FontSize="11" Foreground="{StaticResource TextMuted}"/>
-                        <TextBlock Text=" UTC" FontSize="11" Foreground="{StaticResource TextMuted}"/>
+                        <Button x:Name="ClockButton" Style="{StaticResource TvButton}" Click="ClockButton_Click"
+                                ToolTip="Clock time zone — click to change">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="ClockText" Text="--:--:--" FontSize="11"
+                                           Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ClockZoneText" Text="UTC" FontSize="11"
+                                           Foreground="{StaticResource TextMuted}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="▾" FontSize="8" Foreground="{StaticResource TextMuted}"
+                                           Margin="4,1,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                        <Popup x:Name="ClockPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Top" PlacementTarget="{Binding ElementName=ClockButton}">
+                            <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,0,0,4" Width="270">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="utc" Click="ClockMode_Click">
+                                        <TextBlock Text="UTC — exchange standard" FontSize="11"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="system" Click="ClockMode_Click">
+                                        <TextBlock Text="System local time" FontSize="11"/>
+                                    </Button>
+                                    <Border Height="1" Background="{StaticResource BorderLine}" Margin="4,4"/>
+                                    <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                                        <StackPanel x:Name="TimeZoneListPanel"/>
+                                    </ScrollViewer>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
                     </StackPanel>
                 </Grid>
             </Border>

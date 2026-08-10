@@ -26,4 +26,10 @@ public sealed class AppSettings
     public int PaperMaxOpenPositions { get; set; } = 5;
     public decimal PaperTakerFeePercent { get; set; } = 0.04m;
     public bool PaperAutoTradeEnabled { get; set; } = true;
+
+    // Status-bar clock display mode: "utc" | "system" | "custom".
+    public string ClockMode { get; set; } = "utc";
+
+    // Windows time-zone id used when ClockMode == "custom".
+    public string ClockTimeZoneId { get; set; } = "";
 }

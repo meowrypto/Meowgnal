@@ -1,4 +1,11 @@
-﻿using System;
+﻿using Meowgnal.DataProviders;
+using Meowgnal.Engine;
+using Meowgnal.Models;
+using Meowgnal.Services;
+using Meowgnal.Views;
+using Microsoft.Web.WebView2.Core;
+using OpenTK.Compute.OpenCL;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -10,12 +17,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
-using Microsoft.Web.WebView2.Core;
-using Meowgnal.DataProviders;
-using Meowgnal.Engine;
-using Meowgnal.Models;
-using Meowgnal.Services;
-using Meowgnal.Views;
 
 namespace Meowgnal;
 
@@ -109,8 +110,10 @@ public partial class MainWindow : Window
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
 
-        UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
-        _clockTimer.Tick += (_, _) => UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
+        // Live clock with selectable time zone (UTC / system / custom).
+        ApplyClockSettings();
+        UpdateClockText();
+        _clockTimer.Tick += (_, _) => UpdateClockText();
         _clockTimer.Start();
 
         _watchTimer.Tick += WatchTimer_Tick;
@@ -1268,6 +1271,119 @@ public partial class MainWindow : Window
             UseShellExecute = true
         });
         e.Handled = true;
+    }
+    // ------------------------------------------------------------------
+    // Status-bar clock with selectable time zone (TradingView style)
+    // ------------------------------------------------------------------
+
+    private string _clockMode = "utc";
+    private TimeZoneInfo? _clockZone;
+
+    // Reads the saved clock mode and refreshes the zone label.
+    private void ApplyClockSettings()
+    {
+        var s = SettingsStorageService.Load();
+        _clockMode = s.ClockMode;
+        _clockZone = null;
+
+        if (_clockMode == "custom" && !string.IsNullOrEmpty(s.ClockTimeZoneId))
+        {
+            try { _clockZone = TimeZoneInfo.FindSystemTimeZoneById(s.ClockTimeZoneId); }
+            catch { _clockMode = "utc"; } // saved zone no longer exists on this OS
+        }
+
+        ClockZoneText.Text = _clockMode switch
+        {
+            "system" => "LOCAL",
+            "custom" when _clockZone is not null => $"UTC{FormatUtcOffset(_clockZone.BaseUtcOffset)}",
+            _ => "UTC",
+        };
+    }
+
+    private static string FormatUtcOffset(TimeSpan offset)
+    {
+        var sign = offset < TimeSpan.Zero ? "-" : "+";
+        var abs = offset.Duration();
+        return $"{sign}{abs.Hours:00}:{abs.Minutes:00}";
+    }
+
+    // Called every second by the clock timer.
+    private void UpdateClockText()
+    {
+        var now = DateTime.UtcNow;
+        var shown = _clockMode switch
+        {
+            "system" => now.ToLocalTime(),
+            "custom" when _clockZone is not null => TimeZoneInfo.ConvertTimeFromUtc(now, _clockZone),
+            _ => now,
+        };
+        ClockText.Text = shown.ToString("HH:mm:ss");
+    }
+
+    private void ClockButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (ClockPopup.IsOpen)
+        {
+            ClockPopup.IsOpen = false;
+            return;
+        }
+        BuildTimeZoneMenu();
+        ClockPopup.IsOpen = true;
+    }
+
+    // Fills the scrollable list with ALL Windows time zones, ordered by
+    // UTC offset (exactly like TradingView's time-zone picker).
+    private void BuildTimeZoneMenu()
+    {
+        TimeZoneListPanel.Children.Clear();
+
+        var zones = TimeZoneInfo.GetSystemTimeZones()
+            .OrderBy(z => z.BaseUtcOffset)
+            .ThenBy(z => z.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var zone in zones)
+        {
+            var isSelected = _clockMode == "custom" && _clockZone?.Id == zone.Id;
+            var btn = new Button
+            {
+                Style = (Style)FindResource("TvButtonLeft"),
+                Tag = zone.Id,
+            };
+            btn.Click += TimeZoneItem_Click;
+            btn.Content = new TextBlock
+            {
+                Text = zone.DisplayName,
+                FontSize = 11,
+                Foreground = isSelected ? (Brush)FindResource("Accent") : (Brush)FindResource("TextSecondary"),
+            };
+            TimeZoneListPanel.Children.Add(btn);
+        }
+    }
+
+    private void ClockMode_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || b.Tag is not string mode) return;
+        var settings = SettingsStorageService.Load();
+        settings.ClockMode = mode;
+        SettingsStorageService.Save(settings);
+
+        ClockPopup.IsOpen = false;
+        ApplyClockSettings();
+        UpdateClockText();
+    }
+
+    private void TimeZoneItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button b || b.Tag is not string zoneId) return;
+        var settings = SettingsStorageService.Load();
+        settings.ClockMode = "custom";
+        settings.ClockTimeZoneId = zoneId;
+        SettingsStorageService.Save(settings);
+
+        ClockPopup.IsOpen = false;
+        ApplyClockSettings();
+        UpdateClockText();
     }
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await LoadDashboardAsync();
