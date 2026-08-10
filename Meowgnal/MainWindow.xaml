@@ -455,8 +455,11 @@
                             </Grid>
                             <TextBlock x:Name="PaperEquityText" Text="Equity: —" Foreground="{StaticResource TextMuted}"
                                        FontSize="10" Margin="0,6,0,0"/>
+                            <CheckBox x:Name="AutoTradeCheck" Content="Auto-trade signals"
+                                      Foreground="{StaticResource TextSecondary}"
+                                      Margin="0,10,0,0" Click="AutoTradeCheck_Click"/>
                             <Button x:Name="OpenPositionButton" Content="＋ Open position" Style="{StaticResource TvButton}"
-                                    HorizontalAlignment="Stretch" Margin="0,10,0,0" Click="OpenPositionButton_Click"/>
+                                    HorizontalAlignment="Stretch" Margin="0,6,0,0" Click="OpenPositionButton_Click"/>
 
                             <!-- Open-position popup -->
                             <Popup x:Name="OpenPositionPopup" StaysOpen="False" AllowsTransparency="True"

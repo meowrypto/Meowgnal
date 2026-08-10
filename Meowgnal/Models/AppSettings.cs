@@ -32,4 +32,8 @@ public sealed class AppSettings
     public decimal PaperMaxDailyLossPercent { get; set; } = 5m;
     public int PaperMaxOpenPositions { get; set; } = 5;
     public decimal PaperTakerFeePercent { get; set; } = 0.04m;
+
+    // When true, fresh Entry/Exit signals from the background monitor are
+    // executed automatically on the paper account.
+    public bool PaperAutoTradeEnabled { get; set; } = true;
 }

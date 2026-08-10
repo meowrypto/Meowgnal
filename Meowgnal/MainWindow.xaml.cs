@@ -178,6 +178,7 @@ public partial class MainWindow : Window
         _paperAccount = PaperAccountStorageService.Load();
         PaperTradingEngine.CheckDailyReset(_paperAccount);
         RebuildPaperPanel();
+        AutoTradeCheck.IsChecked = SettingsStorageService.Load().PaperAutoTradeEnabled;
 
         await LoadDashboardAsync();
         StartSignalMonitor();
@@ -674,10 +675,18 @@ public partial class MainWindow : Window
         price.ToString("0.00000000");
 
     // ------------------------------------------------------------------
-    // Paper trading (manual positions + live monitoring)
+    // Paper trading (manual positions + live monitoring + auto trading)
     // ------------------------------------------------------------------
 
     private void SavePaperAccount() => PaperAccountStorageService.Save(_paperAccount);
+
+    // Persists the auto-trade toggle immediately.
+    private void AutoTradeCheck_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = SettingsStorageService.Load();
+        settings.PaperAutoTradeEnabled = AutoTradeCheck.IsChecked == true;
+        SettingsStorageService.Save(settings);
+    }
 
     // Rebuilds the paper pane: balance card texts, open position rows and
     // the last-10 history list. Row price/PnL texts are kept per position so
@@ -1014,6 +1023,7 @@ public partial class MainWindow : Window
         SavePaperAccount();
         OpenPositionPopup.IsOpen = false;
         RebuildPaperPanel();
+        _ = SendPositionsToChartAsync();
         NotificationService.ShowToast("Meowgnal",
             $"{(side == PositionSide.Long ? "LONG" : "SHORT")} {symbol} opened: {result.Position!.Size} @ {FormatPrice(entry)} " +
             $"(margin {result.Position.Margin:N2} USDT, {leverage:0}x)");
@@ -1039,6 +1049,7 @@ public partial class MainWindow : Window
         CheckDailySuspension(settings);
         SavePaperAccount();
         RebuildPaperPanel();
+        _ = SendPositionsToChartAsync();
         NotificationService.ShowToast("Meowgnal", $"{trade.Symbol} closed: PnL {trade.PnL:+0.00;-0.00} USDT");
     }
 
@@ -1149,6 +1160,7 @@ public partial class MainWindow : Window
         {
             SavePaperAccount();
             RebuildPaperPanel();
+            _ = SendPositionsToChartAsync();
         }
 
         // In-place live updates for the remaining rows.
@@ -1163,6 +1175,105 @@ public partial class MainWindow : Window
         }
 
         UpdatePaperSummary(prices);
+    }
+
+    // ------------------------------------------------------------------
+    // Auto trading: executes fresh strategy signals on the paper account.
+    // Entry (buy)  -> open a LONG when the symbol has no open position.
+    // Exit  (sell) -> close any open position on the symbol.
+    // ------------------------------------------------------------------
+
+    private async Task AutoTradeSignalsAsync(List<FoundSignal> fresh, AppSettings settings)
+    {
+        var changed = false;
+
+        foreach (var f in fresh)
+        {
+            if (_paperAccount.IsSuspendedUntilTomorrow) break;
+
+            var symbol = f.Strategy.Symbol;
+            IDataProvider provider = f.Strategy.DataSource == "hyperliquid"
+                ? new HyperliquidDataProvider()
+                : new BinanceDataProvider();
+            var ticker = await SafeTickerAsync(provider, symbol);
+            if (ticker is null) continue;
+            var price = ticker.Last;
+
+            if (f.Signal.Type == SignalType.Entry)
+            {
+                if (_paperAccount.OpenPositions.Any(p => p.Symbol == symbol)) continue;
+
+                var slPrice = settings.PaperDefaultStopLossPercent > 0
+                    ? price * (1m - settings.PaperDefaultStopLossPercent / 100m)
+                    : 0m;
+                var tpPrice = settings.PaperDefaultTakeProfitPercent > 0
+                    ? price * (1m + settings.PaperDefaultTakeProfitPercent / 100m)
+                    : 0m;
+
+                var result = PaperTradingEngine.TryOpen(
+                    _paperAccount, settings, symbol, f.Strategy.DataSource, PositionSide.Long, price,
+                    settings.PaperDefaultLeverage, slPrice, tpPrice,
+                    trailingEnabled: false, trailingDistancePercent: 0m, trailingActivationPercent: 0m,
+                    customMarginUsdt: 0m, strategyId: f.Strategy.StrategyId);
+
+                if (result.Ok)
+                {
+                    changed = true;
+                    NotificationService.ShowToast("Meowgnal — auto trade",
+                        $"AUTO LONG {symbol} @ {FormatPrice(price)} (margin {result.Position!.Margin:N2} USDT) by {f.Strategy.Name}");
+                }
+            }
+            else
+            {
+                var pos = _paperAccount.OpenPositions.FirstOrDefault(p => p.Symbol == symbol);
+                if (pos is null) continue;
+
+                var trade = PaperTradingEngine.Close(_paperAccount, pos, price, CloseReason.SignalExit, settings.PaperTakerFeePercent);
+                changed = true;
+                CheckDailySuspension(settings);
+                NotificationService.ShowToast("Meowgnal — auto trade",
+                    $"AUTO CLOSE {trade.Symbol}: PnL {trade.PnL:+0.00;-0.00} USDT ({f.Strategy.Name})");
+            }
+        }
+
+        if (changed)
+        {
+            SavePaperAccount();
+            RebuildPaperPanel();
+            _ = SendPositionsToChartAsync();
+        }
+    }
+
+    // Sends the open positions of the current chart symbol to chart.html so
+    // it can draw entry/SL/TP price lines and an entry marker.
+    private async Task SendPositionsToChartAsync()
+    {
+        try
+        {
+            await _chartPageReady.Task;
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+        if (ChartWebView.CoreWebView2 is null) return;
+
+        var positions = _paperAccount.OpenPositions
+            .Where(p => p.Symbol == _chartSymbol)
+            .Select(p => new
+            {
+                side = p.Side == PositionSide.Long ? "long" : "short",
+                leverage = p.Leverage,
+                entryPrice = p.EntryPrice,
+                stopLoss = PaperTradingEngine.EffectiveStopLoss(p),
+                takeProfit = p.TakeProfit,
+                liquidation = p.LiquidationPrice,
+                openTime = new DateTimeOffset(p.OpenTime).ToUnixTimeSeconds(),
+            })
+            .ToArray();
+
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setPositions", positions }));
     }
 
     // Starts the embedded browser, points it at our local ChartHost folder
@@ -1675,6 +1786,7 @@ public partial class MainWindow : Window
         SetOhlcHeader(last.Open, last.High, last.Low, last.Close, prev.Open, prev.High, prev.Low, prev.Close);
 
         await SendCandlesToChartAsync(bars);
+        _ = SendPositionsToChartAsync();
     }
 
     // The C# -> JavaScript side of the bridge. Sends one JSON message;
@@ -1790,6 +1902,10 @@ public partial class MainWindow : Window
 
             if (settings.SoundNotificationsEnabled)
                 NotificationService.PlayAlertSound();
+
+            // Category B: execute fresh signals on the paper account.
+            if (settings.PaperAutoTradeEnabled)
+                await AutoTradeSignalsAsync(fresh, settings);
         }
         catch
         {
