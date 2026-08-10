@@ -42,12 +42,18 @@ public partial class BacktestWindow : Window
         BalanceResultText.Text = $"{result.StartingBalance:N0} → {result.FinalBalance:N0}";
         TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(result.Trades);
         var points = result.EquityCurve.Select(p => new ObservablePoint(p.Time.Ticks, (double)p.Balance));
+
+        // TradingView palette colors
+        var upColor = new SKColor(0x08, 0x99, 0x81);       // #089981 (TradingView Up)
+        var textMuted = new SKColor(0x78, 0x7B, 0x86);    // #787B86 (TradingView muted)
+        var gridColor = new SKColor(0x2A, 0x2E, 0x39);    // #2A2E39 (TradingView border)
+
         EquityChart.Series = new ISeries[]
         {
             new LineSeries<ObservablePoint>
             {
                 Values = new ObservableCollection<ObservablePoint>(points),
-                Stroke = new SolidColorPaint(new SKColor(0x26, 0xA6, 0x9A)) { StrokeThickness = 2 },
+                Stroke = new SolidColorPaint(upColor) { StrokeThickness = 2 },
                 Fill = null,
                 GeometrySize = 0
             }
@@ -57,12 +63,19 @@ public partial class BacktestWindow : Window
             new Axis
             {
                 Labeler = value => new DateTime((long)value).ToString("MM/dd HH:mm"),
-                LabelsPaint = new SolidColorPaint(new SKColor(0x8A, 0x8F, 0x9C)),
+                LabelsPaint = new SolidColorPaint(textMuted),
+                SeparatorsPaint = new SolidColorPaint(gridColor) { PathEffect = new SKPathEffect() },
+                TextSize = 11
             }
         };
         EquityChart.YAxes = new[]
         {
-            new Axis { LabelsPaint = new SolidColorPaint(new SKColor(0x8A, 0x8F, 0x9C)) }
+            new Axis
+            {
+                LabelsPaint = new SolidColorPaint(textMuted),
+                SeparatorsPaint = new SolidColorPaint(gridColor),
+                TextSize = 11
+            }
         };
     }
 }
