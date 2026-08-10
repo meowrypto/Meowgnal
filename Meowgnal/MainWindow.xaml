@@ -285,7 +285,7 @@
                 </Border>
             </StackPanel>
 
-            <!-- Bottom status bar: license link (left) + live UTC clock (right) -->
+            <!-- Bottom status bar: license link (left) + paper PnL + live UTC clock (right) -->
             <Border Grid.Row="5" Background="{StaticResource BgPanel}"
                     BorderBrush="{StaticResource BorderLine}" BorderThickness="0,1,0,0" Padding="10,4">
                 <Grid>
@@ -297,6 +297,7 @@
                                    TextDecorations="None">Chart powered by TradingView Lightweight Charts</Hyperlink>
                     </TextBlock>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                        <TextBlock x:Name="PaperStatusText" Text="" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,12,0"/>
                         <TextBlock x:Name="UtcClockText" Text="--:--:--" FontSize="11" Foreground="{StaticResource TextMuted}"/>
                         <TextBlock Text=" UTC" FontSize="11" Foreground="{StaticResource TextMuted}"/>
                     </StackPanel>
@@ -304,7 +305,7 @@
             </Border>
         </Grid>
 
-        <!-- Right panel: Watchlist / Signals tabs (TradingView style) -->
+        <!-- Right panel: Watchlist / Signals / Paper tabs (TradingView style) -->
         <Border Grid.Column="2" Background="#131722"
                 BorderBrush="{StaticResource BorderLine}" BorderThickness="1,0,0,0">
             <DockPanel>
@@ -315,11 +316,14 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Button x:Name="TabWatchlistButton" Content="Watchlist" Style="{StaticResource TvButton}"
                                 Background="{StaticResource Accent}" Foreground="White" Click="RightTabWatchlist_Click"/>
                         <Button x:Name="TabSignalsButton" Grid.Column="1" Content="Signals" Style="{StaticResource TvButton}"
                                 Click="RightTabSignals_Click"/>
+                        <Button x:Name="TabPaperButton" Grid.Column="2" Content="Paper" Style="{StaticResource TvButton}"
+                                Click="RightTabPaper_Click"/>
                     </Grid>
                 </Border>
 
@@ -426,6 +430,89 @@
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
+                </DockPanel>
+
+                <!-- Paper trading pane -->
+                <DockPanel x:Name="PaperPane" Visibility="Collapsed">
+                    <!-- Account card + open position button -->
+                    <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
+                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,10">
+                        <StackPanel>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="PAPER BALANCE" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                    <TextBlock x:Name="PaperBalanceText" Text="—" Foreground="{StaticResource TextPrimary}"
+                                               FontSize="16" FontWeight="Bold" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                    <TextBlock Text="UNREALIZED PNL" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                    <TextBlock x:Name="PaperUnrealizedText" Text="—" FontSize="14" FontWeight="Bold" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock x:Name="PaperEquityText" Text="Equity: —" Foreground="{StaticResource TextMuted}"
+                                       FontSize="10" Margin="0,6,0,0"/>
+                            <Button x:Name="OpenPositionButton" Content="＋ Open position" Style="{StaticResource TvButton}"
+                                    HorizontalAlignment="Stretch" Margin="0,10,0,0" Click="OpenPositionButton_Click"/>
+
+                            <!-- Open-position popup -->
+                            <Popup x:Name="OpenPositionPopup" StaysOpen="False" AllowsTransparency="True"
+                                   Placement="Left" PlacementTarget="{Binding ElementName=OpenPositionButton}">
+                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                        BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,4,0" Width="230">
+                                    <StackPanel>
+                                        <TextBlock Text="Symbol" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="PopSymbolBox" Text="BTC/USDT" Margin="0,4,0,8"/>
+
+                                        <TextBlock Text="Side" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                                            <RadioButton x:Name="PopSideLong" Content="Long" GroupName="PopSide"
+                                                         Foreground="{StaticResource Up}" IsChecked="True" Margin="0,0,14,0"/>
+                                            <RadioButton x:Name="PopSideShort" Content="Short" GroupName="PopSide"
+                                                         Foreground="{StaticResource Down}"/>
+                                        </StackPanel>
+
+                                        <TextBlock Text="Leverage" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="PopLeverageBox" Text="10" Margin="0,4,0,8"/>
+
+                                        <TextBlock Text="Stop-loss % (0 = none)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="PopSLBox" Text="2" Margin="0,4,0,8"/>
+
+                                        <TextBlock Text="Take-profit % (0 = none)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="PopTPBox" Text="4" Margin="0,4,0,8"/>
+
+                                        <CheckBox x:Name="PopTrailingCheck" Content="Trailing stop" Foreground="{StaticResource TextPrimary}"
+                                                  Margin="0,0,0,6"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                            <StackPanel Margin="0,0,10,0">
+                                                <TextBlock Text="Distance %" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                                <TextBox x:Name="PopTrailingDistBox" Text="2" Width="70" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <StackPanel>
+                                                <TextBlock Text="Activate after %" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                                <TextBox x:Name="PopTrailingActBox" Text="2" Width="70" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                        </StackPanel>
+
+                                        <Button Content="Open position" Style="{StaticResource TvButton}" Click="OpenPositionConfirm_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Positions + history -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="10,8,10,8">
+                            <TextBlock Text="OPEN POSITIONS" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,6"/>
+                            <StackPanel x:Name="PaperPositionsPanel"/>
+                            <TextBlock Text="HISTORY (last 10)" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,16,0,6"/>
+                            <StackPanel x:Name="PaperHistoryPanel"/>
+                        </StackPanel>
+                    </ScrollViewer>
                 </DockPanel>
             </DockPanel>
         </Border>

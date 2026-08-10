@@ -40,6 +40,15 @@ public partial class MainWindow : Window
         public TextBlock ChgText { get; init; } = new();
     }
 
+    // A rendered open paper position row; keeps references so the 5-second
+    // ticker can update price + PnL texts in place.
+    private sealed class PaperPositionRow
+    {
+        public PaperPosition Position { get; init; } = new();
+        public TextBlock PriceText { get; init; } = new();
+        public TextBlock PnLText { get; init; } = new();
+    }
+
     private readonly List<ChartTab> _tabs = new();
     private ChartTab? _activeTab;
 
@@ -49,6 +58,10 @@ public partial class MainWindow : Window
     private readonly List<WatchlistRow> _watchlistRows = new();
     private readonly DispatcherTimer _watchTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private bool _refreshingWatchlist;
+
+    // Paper trading state (persisted encrypted via DPAPI).
+    private PaperAccountFile _paperAccount = new();
+    private readonly List<PaperPositionRow> _paperRows = new();
 
     // Debounce for the add-symbol live preview while the user is typing.
     private readonly DispatcherTimer _symbolPreviewDebounce = new() { Interval = TimeSpan.FromMilliseconds(600) };
@@ -123,7 +136,7 @@ public partial class MainWindow : Window
         _clockTimer.Tick += (_, _) => UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
         _clockTimer.Start();
 
-        // Watchlist live prices every 5 seconds.
+        // Watchlist live prices + paper position monitoring every 5 seconds.
         _watchTimer.Tick += WatchTimer_Tick;
         _watchTimer.Start();
 
@@ -160,6 +173,11 @@ public partial class MainWindow : Window
         WatchlistNameText.Text = _activeWatchlist.Name;
         RebuildWatchlistPanel();
         _ = RefreshWatchlistPricesAsync();
+
+        // Paper trading account: load encrypted file and render the panel.
+        _paperAccount = PaperAccountStorageService.Load();
+        PaperTradingEngine.CheckDailyReset(_paperAccount);
+        RebuildPaperPanel();
 
         await LoadDashboardAsync();
         StartSignalMonitor();
@@ -309,29 +327,30 @@ public partial class MainWindow : Window
     }
 
     // ------------------------------------------------------------------
-    // Watchlist (right panel)
+    // Right panel tabs: Watchlist / Signals / Paper
     // ------------------------------------------------------------------
 
-    // Right-panel tab switching: Watchlist <-> Signals.
-    private void RightTabWatchlist_Click(object sender, RoutedEventArgs e)
+    private void SetRightTab(string which)
     {
-        WatchlistPane.Visibility = Visibility.Visible;
-        SignalsPane.Visibility = Visibility.Collapsed;
-        TabWatchlistButton.Background = (Brush)FindResource("Accent");
-        TabWatchlistButton.Foreground = Brushes.White;
-        TabSignalsButton.Background = Brushes.Transparent;
-        TabSignalsButton.Foreground = (Brush)FindResource("TextSecondary");
+        WatchlistPane.Visibility = which == "watchlist" ? Visibility.Visible : Visibility.Collapsed;
+        SignalsPane.Visibility = which == "signals" ? Visibility.Visible : Visibility.Collapsed;
+        PaperPane.Visibility = which == "paper" ? Visibility.Visible : Visibility.Collapsed;
+
+        TabWatchlistButton.Background = which == "watchlist" ? (Brush)FindResource("Accent") : Brushes.Transparent;
+        TabWatchlistButton.Foreground = which == "watchlist" ? Brushes.White : (Brush)FindResource("TextSecondary");
+        TabSignalsButton.Background = which == "signals" ? (Brush)FindResource("Accent") : Brushes.Transparent;
+        TabSignalsButton.Foreground = which == "signals" ? Brushes.White : (Brush)FindResource("TextSecondary");
+        TabPaperButton.Background = which == "paper" ? (Brush)FindResource("Accent") : Brushes.Transparent;
+        TabPaperButton.Foreground = which == "paper" ? Brushes.White : (Brush)FindResource("TextSecondary");
     }
 
-    private void RightTabSignals_Click(object sender, RoutedEventArgs e)
-    {
-        WatchlistPane.Visibility = Visibility.Collapsed;
-        SignalsPane.Visibility = Visibility.Visible;
-        TabSignalsButton.Background = (Brush)FindResource("Accent");
-        TabSignalsButton.Foreground = Brushes.White;
-        TabWatchlistButton.Background = Brushes.Transparent;
-        TabWatchlistButton.Foreground = (Brush)FindResource("TextSecondary");
-    }
+    private void RightTabWatchlist_Click(object sender, RoutedEventArgs e) => SetRightTab("watchlist");
+    private void RightTabSignals_Click(object sender, RoutedEventArgs e) => SetRightTab("signals");
+    private void RightTabPaper_Click(object sender, RoutedEventArgs e) => SetRightTab("paper");
+
+    // ------------------------------------------------------------------
+    // Watchlist (right panel)
+    // ------------------------------------------------------------------
 
     // Rebuilds the watchlist rows for the active list. Price texts are kept
     // per row so the 5-second ticker can update them in place.
@@ -610,6 +629,7 @@ public partial class MainWindow : Window
         try
         {
             await RefreshWatchlistPricesAsync();
+            await UpdatePaperLiveAsync();
         }
         finally
         {
@@ -652,6 +672,476 @@ public partial class MainWindow : Window
         price >= 1000 ? price.ToString("N2") :
         price >= 1 ? price.ToString("N4") :
         price.ToString("0.00000000");
+
+    // ------------------------------------------------------------------
+    // Paper trading (manual positions + live monitoring)
+    // ------------------------------------------------------------------
+
+    private void SavePaperAccount() => PaperAccountStorageService.Save(_paperAccount);
+
+    // Rebuilds the paper pane: balance card texts, open position rows and
+    // the last-10 history list. Row price/PnL texts are kept per position so
+    // the 5-second ticker can update them in place.
+    private void RebuildPaperPanel()
+    {
+        PaperPositionsPanel.Children.Clear();
+        PaperHistoryPanel.Children.Clear();
+        _paperRows.Clear();
+
+        if (_paperAccount.OpenPositions.Count == 0)
+        {
+            PaperPositionsPanel.Children.Add(new TextBlock
+            {
+                Text = _paperAccount.IsSuspendedUntilTomorrow
+                    ? "Suspended until tomorrow (UTC)."
+                    : "No open positions.",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 11,
+            });
+        }
+
+        foreach (var pos in _paperAccount.OpenPositions)
+        {
+            var border = new Border
+            {
+                Background = (Brush)FindResource("BgPanel"),
+                CornerRadius = new CornerRadius(4),
+                Padding = new Thickness(8),
+                Margin = new Thickness(0, 0, 0, 6),
+            };
+            var sp = new StackPanel();
+
+            // Row 1: symbol + side badge + leverage ... close button
+            var topRow = new Grid();
+            topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var symBox = new StackPanel { Orientation = Orientation.Horizontal };
+            symBox.Children.Add(new TextBlock
+            {
+                Text = pos.Symbol,
+                Foreground = (Brush)FindResource("TextPrimary"),
+                FontSize = 12,
+                FontWeight = FontWeights.Bold,
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            var sideBadge = new Border
+            {
+                Background = pos.Side == PositionSide.Long ? UpBrush : DownBrush,
+                CornerRadius = new CornerRadius(3),
+                Padding = new Thickness(6, 1, 6, 1),
+                Margin = new Thickness(6, 1, 0, 0),
+            };
+            sideBadge.Child = new TextBlock
+            {
+                Text = pos.Side == PositionSide.Long ? "LONG" : "SHORT",
+                Foreground = Brushes.White,
+                FontSize = 9,
+            };
+            symBox.Children.Add(sideBadge);
+            symBox.Children.Add(new TextBlock
+            {
+                Text = $"  {pos.Leverage:0}x",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 10,
+                VerticalAlignment = VerticalAlignment.Center,
+            });
+            topRow.Children.Add(symBox);
+
+            var closeBtn = new TextBlock
+            {
+                Text = "✕",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 10,
+                Tag = pos,
+                Cursor = Cursors.Hand,
+                VerticalAlignment = VerticalAlignment.Center,
+                ToolTip = "Close position at market",
+            };
+            closeBtn.MouseLeftButtonUp += PaperClose_Click;
+            Grid.SetColumn(closeBtn, 1);
+            topRow.Children.Add(closeBtn);
+            sp.Children.Add(topRow);
+
+            // Row 2: size @ entry
+            sp.Children.Add(new TextBlock
+            {
+                Text = $"{pos.Size} @ {FormatPrice(pos.EntryPrice)}",
+                Foreground = (Brush)FindResource("TextSecondary"),
+                FontSize = 10,
+                Margin = new Thickness(0, 3, 0, 0),
+            });
+
+            // Row 3: live price ... live PnL
+            var bottomRow = new Grid();
+            bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            var priceText = new TextBlock
+            {
+                Text = "—",
+                Foreground = (Brush)FindResource("TextSecondary"),
+                FontSize = 11,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            bottomRow.Children.Add(priceText);
+            var pnlText = new TextBlock
+            {
+                Text = "—",
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+            };
+            Grid.SetColumn(pnlText, 1);
+            bottomRow.Children.Add(pnlText);
+            sp.Children.Add(bottomRow);
+
+            // Row 4: SL / TP / liquidation reference line
+            sp.Children.Add(new TextBlock
+            {
+                Text = $"SL {(pos.StopLoss > 0 ? FormatPrice(PaperTradingEngine.EffectiveStopLoss(pos)) : "—")}  ·  " +
+                       $"TP {(pos.TakeProfit > 0 ? FormatPrice(pos.TakeProfit) : "—")}  ·  " +
+                       $"Liq {FormatPrice(pos.LiquidationPrice)}",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 9,
+                Margin = new Thickness(0, 3, 0, 0),
+            });
+
+            border.Child = sp;
+            PaperPositionsPanel.Children.Add(border);
+            _paperRows.Add(new PaperPositionRow { Position = pos, PriceText = priceText, PnLText = pnlText });
+        }
+
+        // ----- History (last 10) -----
+        if (_paperAccount.TradeHistory.Count == 0)
+        {
+            PaperHistoryPanel.Children.Add(new TextBlock
+            {
+                Text = "No closed trades yet.",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 11,
+            });
+        }
+
+        foreach (var trade in _paperAccount.TradeHistory.Take(10))
+        {
+            var tsp = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
+
+            var line1 = new Grid();
+            line1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            line1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var left = new StackPanel { Orientation = Orientation.Horizontal };
+            left.Children.Add(new TextBlock
+            {
+                Text = trade.Symbol,
+                Foreground = (Brush)FindResource("TextPrimary"),
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+            });
+            left.Children.Add(new TextBlock
+            {
+                Text = trade.Side == PositionSide.Long ? "  LONG" : "  SHORT",
+                Foreground = trade.Side == PositionSide.Long ? UpBrush : DownBrush,
+                FontSize = 9,
+            });
+            line1.Children.Add(left);
+
+            var pnl = new TextBlock
+            {
+                Text = $"{trade.PnL:+0.00;-0.00}",
+                Foreground = trade.PnL >= 0 ? UpBrush : DownBrush,
+                FontSize = 11,
+                FontWeight = FontWeights.Bold,
+            };
+            Grid.SetColumn(pnl, 1);
+            line1.Children.Add(pnl);
+            tsp.Children.Add(line1);
+
+            tsp.Children.Add(new TextBlock
+            {
+                Text = $"{trade.Reason} · {trade.CloseTime:MM/dd HH:mm}",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 9,
+                Margin = new Thickness(0, 1, 0, 0),
+            });
+
+            PaperHistoryPanel.Children.Add(tsp);
+        }
+
+        UpdatePaperSummary(new Dictionary<string, decimal>());
+    }
+
+    // Updates the balance card + the bottom status bar.
+    private void UpdatePaperSummary(Dictionary<string, decimal> prices)
+    {
+        var settings = SettingsStorageService.Load();
+
+        decimal unrealized = 0m;
+        foreach (var p in _paperAccount.OpenPositions)
+            if (prices.TryGetValue(p.Symbol, out var px))
+                unrealized += p.UnrealizedPnL(px, settings.PaperTakerFeePercent);
+
+        var equity = PaperTradingEngine.Equity(
+            _paperAccount,
+            p => prices.TryGetValue(p.Symbol, out var px) ? px : p.EntryPrice,
+            settings.PaperTakerFeePercent);
+
+        PaperBalanceText.Text = $"{_paperAccount.CurrentBalance:N2} USDT";
+        PaperUnrealizedText.Text = $"{unrealized:+0.00;-0.00} USDT";
+        PaperUnrealizedText.Foreground = unrealized >= 0 ? UpBrush : DownBrush;
+        PaperEquityText.Text = $"Equity: {equity:N2} USDT";
+
+        if (_paperAccount.IsSuspendedUntilTomorrow)
+        {
+            PaperStatusText.Text = "💼 Paper: suspended (daily loss limit)";
+            PaperStatusText.Foreground = DownBrush;
+        }
+        else if (_paperAccount.OpenPositions.Count == 0)
+        {
+            PaperStatusText.Text = $"💼 Paper: {equity:N2} USDT";
+            PaperStatusText.Foreground = (Brush)FindResource("TextMuted");
+        }
+        else
+        {
+            PaperStatusText.Text = $"💼 Paper: {equity:N2} USDT ({unrealized:+0.00;-0.00})";
+            PaperStatusText.Foreground = unrealized >= 0 ? UpBrush : DownBrush;
+        }
+    }
+
+    // Opens the manual order popup pre-filled with the current chart symbol
+    // and the default values from Settings -> Paper trading.
+    private void OpenPositionButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = SettingsStorageService.Load();
+        PopSymbolBox.Text = _chartSymbol;
+        PopLeverageBox.Text = settings.PaperDefaultLeverage.ToString();
+        PopSLBox.Text = settings.PaperDefaultStopLossPercent.ToString();
+        PopTPBox.Text = settings.PaperDefaultTakeProfitPercent.ToString();
+        PopTrailingCheck.IsChecked = false;
+        PopTrailingDistBox.Text = "2";
+        PopTrailingActBox.Text = "2";
+        PopSideLong.IsChecked = true;
+        OpenPositionPopup.IsOpen = true;
+    }
+
+    // Manual order: validates inputs, fetches the live entry price, replaces
+    // any existing position on the same symbol, then opens via the engine.
+    private async void OpenPositionConfirm_Click(object sender, RoutedEventArgs e)
+    {
+        var symbol = NormalizeSymbol(PopSymbolBox.Text);
+        if (symbol is null)
+        {
+            NotificationService.ShowToast("Meowgnal", "Please enter a valid symbol, e.g. BTC/USDT.");
+            return;
+        }
+
+        var settings = SettingsStorageService.Load();
+        var side = PopSideShort.IsChecked == true ? PositionSide.Short : PositionSide.Long;
+        var leverage = decimal.TryParse(PopLeverageBox.Text, out var lev) && lev >= 1 ? lev : settings.PaperDefaultLeverage;
+        var slPct = decimal.TryParse(PopSLBox.Text, out var slp) && slp > 0 ? slp : 0m;
+        var tpPct = decimal.TryParse(PopTPBox.Text, out var tpp) && tpp > 0 ? tpp : 0m;
+        var trailing = PopTrailingCheck.IsChecked == true;
+        var trailDist = decimal.TryParse(PopTrailingDistBox.Text, out var td) && td > 0 ? td : 2m;
+        var trailAct = decimal.TryParse(PopTrailingActBox.Text, out var ta) && ta > 0 ? ta : 2m;
+
+        // Entry price: prefer the current chart's source, fall back to the other.
+        IDataProvider primary = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
+        IDataProvider secondary = _chartDataSource == "hyperliquid" ? new BinanceDataProvider() : new HyperliquidDataProvider();
+        var primaryName = _chartDataSource == "hyperliquid" ? "hyperliquid" : "binance";
+        var secondaryName = _chartDataSource == "hyperliquid" ? "binance" : "hyperliquid";
+
+        var ticker = await SafeTickerAsync(primary, symbol);
+        var dataSource = primaryName;
+        if (ticker is null)
+        {
+            ticker = await SafeTickerAsync(secondary, symbol);
+            dataSource = secondaryName;
+        }
+        if (ticker is null)
+        {
+            NotificationService.ShowToast("Meowgnal", $"{symbol} is not available on either exchange.");
+            return;
+        }
+        var entry = ticker.Last;
+
+        // SL/TP prices from percentages, respecting the position side.
+        var slPrice = slPct > 0
+            ? (side == PositionSide.Long ? entry * (1m - slPct / 100m) : entry * (1m + slPct / 100m))
+            : 0m;
+        var tpPrice = tpPct > 0
+            ? (side == PositionSide.Long ? entry * (1m + tpPct / 100m) : entry * (1m - tpPct / 100m))
+            : 0m;
+
+        // One position per symbol: close any existing one at market first.
+        var existingPos = _paperAccount.OpenPositions.FirstOrDefault(p => p.Symbol == symbol);
+        if (existingPos is not null)
+        {
+            PaperTradingEngine.Close(_paperAccount, existingPos, entry, CloseReason.Manual, settings.PaperTakerFeePercent);
+            CheckDailySuspension(settings);
+        }
+
+        var result = PaperTradingEngine.TryOpen(
+            _paperAccount, settings, symbol, dataSource, side, entry, leverage,
+            slPrice, tpPrice, trailing, trailDist, trailAct, strategyId: null);
+
+        if (!result.Ok)
+        {
+            NotificationService.ShowToast("Meowgnal", result.Error);
+            return;
+        }
+
+        SavePaperAccount();
+        OpenPositionPopup.IsOpen = false;
+        RebuildPaperPanel();
+        NotificationService.ShowToast("Meowgnal",
+            $"{(side == PositionSide.Long ? "LONG" : "SHORT")} {symbol} opened: {result.Position!.Size} @ {FormatPrice(entry)} " +
+            $"(margin {result.Position.Margin:N2} USDT, {leverage:0}x)");
+    }
+
+    // Manual close at the live market price.
+    private async void PaperClose_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not TextBlock t || t.Tag is not PaperPosition pos) return;
+
+        var settings = SettingsStorageService.Load();
+        IDataProvider provider = pos.DataSource == "hyperliquid"
+            ? new HyperliquidDataProvider()
+            : new BinanceDataProvider();
+        var ticker = await SafeTickerAsync(provider, pos.Symbol);
+        if (ticker is null)
+        {
+            NotificationService.ShowToast("Meowgnal", "Exchange unreachable — could not close the position.");
+            return;
+        }
+
+        var trade = PaperTradingEngine.Close(_paperAccount, pos, ticker.Last, CloseReason.Manual, settings.PaperTakerFeePercent);
+        CheckDailySuspension(settings);
+        SavePaperAccount();
+        RebuildPaperPanel();
+        NotificationService.ShowToast("Meowgnal", $"{trade.Symbol} closed: PnL {trade.PnL:+0.00;-0.00} USDT");
+    }
+
+    // Sets the suspension flag once the realized daily loss crosses the limit.
+    private void CheckDailySuspension(AppSettings settings)
+    {
+        if (_paperAccount.IsSuspendedUntilTomorrow) return;
+        if (PaperTradingEngine.DailyLossLimitBreached(_paperAccount, settings))
+        {
+            _paperAccount.IsSuspendedUntilTomorrow = true;
+            NotificationService.ShowToast("Meowgnal — risk rule",
+                "Max daily loss reached. Paper trading is suspended until tomorrow (UTC).");
+        }
+    }
+
+    // Runs every 5 seconds with the watchlist tick: updates trailing stops,
+    // evaluates SL/TP/liquidation over the latest 1-minute candle range and
+    // refreshes all live paper texts (rows, card, status bar).
+    private async Task UpdatePaperLiveAsync()
+    {
+        var settings = SettingsStorageService.Load();
+        PaperTradingEngine.CheckDailyReset(_paperAccount);
+
+        if (_paperAccount.OpenPositions.Count == 0)
+        {
+            UpdatePaperSummary(new Dictionary<string, decimal>());
+            return;
+        }
+
+        // Live last prices grouped by source (batched calls).
+        var prices = new Dictionary<string, decimal>();
+        foreach (var group in _paperAccount.OpenPositions.GroupBy(p => p.DataSource).ToList())
+        {
+            try
+            {
+                IDataProvider provider = group.Key == "hyperliquid"
+                    ? new HyperliquidDataProvider()
+                    : new BinanceDataProvider();
+                var tickers = await provider.GetTickersAsync(group.Select(p => p.Symbol).Distinct());
+                foreach (var p in group)
+                    if (tickers.TryGetValue(p.Symbol, out var t)) prices[p.Symbol] = t.Last;
+            }
+            catch
+            {
+                // Exchange unreachable this tick — skip stop checks for it.
+            }
+        }
+
+        // Current 1-minute candle high/low per symbol for precise stop checks.
+        var highs = new Dictionary<string, decimal>();
+        var lows = new Dictionary<string, decimal>();
+        foreach (var symbol in _paperAccount.OpenPositions.Select(p => p.Symbol).Distinct())
+        {
+            try
+            {
+                var src = _paperAccount.OpenPositions.First(p => p.Symbol == symbol).DataSource;
+                IDataProvider provider = src == "hyperliquid"
+                    ? new HyperliquidDataProvider()
+                    : new BinanceDataProvider();
+                var candles = await provider.GetHistoricalCandlesAsync(symbol, "1m", limit: 1);
+                if (candles.Count > 0)
+                {
+                    highs[symbol] = candles[0].High;
+                    lows[symbol] = candles[0].Low;
+                }
+            }
+            catch
+            {
+                // Fall back to the last price only.
+            }
+        }
+
+        var closedTrades = new List<PaperTrade>();
+
+        foreach (var pos in _paperAccount.OpenPositions.ToList())
+        {
+            if (!prices.TryGetValue(pos.Symbol, out var last)) continue;
+
+            PaperTradingEngine.UpdateTrailing(pos, last);
+
+            var checkHigh = Math.Max(last, highs.TryGetValue(pos.Symbol, out var h) ? h : last);
+            var checkLow = Math.Min(last, lows.TryGetValue(pos.Symbol, out var l) ? l : last);
+
+            var reason = PaperTradingEngine.CheckStops(pos, checkHigh, checkLow);
+            if (reason is not null)
+                closedTrades.Add(PaperTradingEngine.Close(_paperAccount, pos, last, reason.Value, settings.PaperTakerFeePercent));
+        }
+
+        // Risk rule: max daily loss breached → close everything and suspend.
+        if (!_paperAccount.IsSuspendedUntilTomorrow &&
+            PaperTradingEngine.DailyLossLimitBreached(_paperAccount, settings))
+        {
+            foreach (var pos in _paperAccount.OpenPositions.ToList())
+            {
+                if (prices.TryGetValue(pos.Symbol, out var px))
+                    closedTrades.Add(PaperTradingEngine.Close(_paperAccount, pos, px, CloseReason.RiskRule, settings.PaperTakerFeePercent));
+            }
+            _paperAccount.IsSuspendedUntilTomorrow = true;
+            NotificationService.ShowToast("Meowgnal — risk rule",
+                "Max daily loss reached. All positions closed; paper trading suspended until tomorrow (UTC).");
+        }
+
+        foreach (var trade in closedTrades)
+            NotificationService.ShowToast($"Meowgnal — {trade.Symbol}",
+                $"Position closed ({trade.Reason}): PnL {trade.PnL:+0.00;-0.00} USDT");
+
+        if (closedTrades.Count > 0)
+        {
+            SavePaperAccount();
+            RebuildPaperPanel();
+        }
+
+        // In-place live updates for the remaining rows.
+        foreach (var row in _paperRows)
+        {
+            if (!prices.TryGetValue(row.Position.Symbol, out var last)) continue;
+            row.PriceText.Text = FormatPrice(last);
+            var pnl = row.Position.UnrealizedPnL(last, settings.PaperTakerFeePercent);
+            var roi = row.Position.UnrealizedRoiPercent(last, settings.PaperTakerFeePercent);
+            row.PnLText.Text = $"{pnl:+0.00;-0.00} ({roi:+0.0;-0.0}%)";
+            row.PnLText.Foreground = pnl >= 0 ? UpBrush : DownBrush;
+        }
+
+        UpdatePaperSummary(prices);
+    }
 
     // Starts the embedded browser, points it at our local ChartHost folder
     // (served under a virtual https host) and loads chart.html.
