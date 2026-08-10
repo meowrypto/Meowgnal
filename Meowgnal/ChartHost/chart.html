@@ -23,7 +23,6 @@
 <body>
     <div id="chart"></div>
     <script>
-        // TradingView "Dark" palette — exact values from the TV design system.
         const COLORS = {
             background: '#131722',
             grid: '#1E222D',
@@ -48,14 +47,8 @@
                 vertLines: { color: COLORS.grid },
                 horzLines: { color: COLORS.grid }
             },
-            rightPriceScale: {
-                borderColor: COLORS.border
-            },
-            timeScale: {
-                borderColor: COLORS.border,
-                timeVisible: true,
-                secondsVisible: false
-            },
+            rightPriceScale: { borderColor: COLORS.border },
+            timeScale: { borderColor: COLORS.border, timeVisible: true, secondsVisible: false },
             crosshair: {
                 mode: LightweightCharts.CrosshairMode.Normal,
                 vertLine: { color: COLORS.crosshair, labelBackgroundColor: COLORS.border },
@@ -63,7 +56,6 @@
             }
         });
 
-        // Volume histogram pinned to the bottom 20% of the pane (like TV).
         const volumeSeries = chart.addHistogramSeries({
             priceFormat: { type: 'volume' },
             priceScaleId: ''
@@ -72,14 +64,16 @@
             scaleMargins: { top: 0.8, bottom: 0 }
         });
 
-        // The raw candle dataset received from C#.
         let rawData = [];
-        // The dataset currently displayed (raw, Heikin Ashi, or close-only).
         let displayData = [];
         let chartType = 'candles';
         let activeSeries = null;
 
-        // Keeps the chart filling the whole WebView2 area when the window resizes.
+        // Paper-trading position overlay (lines + entry marker)
+        let lastPositions = [];
+        let positionLines = [];
+        let markersApi = null;
+
         function resizeChart() {
             chart.applyOptions({
                 width: document.body.clientWidth,
@@ -89,7 +83,6 @@
         window.addEventListener('resize', resizeChart);
         resizeChart();
 
-        // Creates a brand-new series object for the selected chart type.
         function createSeriesForType() {
             switch (chartType) {
                 case 'line':
@@ -116,7 +109,6 @@
             }
         }
 
-        // Heikin Ashi transformation of the raw candles.
         function heikinAshi(candles) {
             const ha = [];
             let prevOpen = null, prevClose = null;
@@ -124,8 +116,7 @@
                 const haClose = (c.open + c.high + c.low + c.close) / 4;
                 const haOpen = prevOpen === null ? (c.open + c.close) / 2 : (prevOpen + prevClose) / 2;
                 ha.push({
-                    time: c.time,
-                    open: haOpen,
+                    time: c.time, open: haOpen,
                     high: Math.max(c.high, haOpen, haClose),
                     low: Math.min(c.low, haOpen, haClose),
                     close: haClose
@@ -136,15 +127,13 @@
             return ha;
         }
 
-        // Builds the dataset to display for the current chart type.
         function buildDisplayData() {
             if (chartType === 'heikinashi') return heikinAshi(rawData);
             if (chartType === 'line' || chartType === 'area')
                 return rawData.map(function (c) { return { time: c.time, value: c.close }; });
-            return rawData; // candles and bars use raw OHLC
+            return rawData;
         }
 
-        // Volume bars colored by candle direction (independent of chart type).
         function renderVolume() {
             volumeSeries.setData(rawData.map(function (c) {
                 return {
@@ -155,32 +144,110 @@
             }));
         }
 
-        // Removes the old price series and renders again with the current type.
-        // (The volume series is permanent and never removed.)
+        function snapToBarTime(t) {
+            if (!rawData.length) return t;
+            let lo = 0, hi = rawData.length - 1, ans = rawData[0].time;
+            while (lo <= hi) {
+                const mid = (lo + hi) >> 1;
+                if (rawData[mid].time <= t) { ans = rawData[mid].time; lo = mid + 1; }
+                else hi = mid - 1;
+            }
+            return ans;
+        }
+
+        function applyPositions() {
+            if (activeSeries !== null) {
+                for (const line of positionLines) {
+                    try { activeSeries.removePriceLine(line); } catch (e) { }
+                }
+            }
+            positionLines = [];
+
+            if (markersApi !== null) {
+                try { markersApi.detach(); } catch (e) { }
+                markersApi = null;
+            }
+
+            if (activeSeries === null || !lastPositions || lastPositions.length === 0) return;
+
+            const markers = [];
+            for (const p of lastPositions) {
+                const isLong = p.side === 'long';
+                const label = (isLong ? 'LONG ' : 'SHORT ') + p.leverage + 'x';
+
+                positionLines.push(activeSeries.createPriceLine({
+                    price: p.entryPrice, color: COLORS.accent, lineWidth: 1,
+                    lineStyle: LightweightCharts.LineStyle.Solid,
+                    axisLabelVisible: true, title: label
+                }));
+
+                if (p.stopLoss > 0) {
+                    positionLines.push(activeSeries.createPriceLine({
+                        price: p.stopLoss, color: COLORS.down, lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dashed,
+                        axisLabelVisible: true, title: 'SL'
+                    }));
+                }
+
+                if (p.takeProfit > 0) {
+                    positionLines.push(activeSeries.createPriceLine({
+                        price: p.takeProfit, color: COLORS.up, lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dashed,
+                        axisLabelVisible: true, title: 'TP'
+                    }));
+                }
+
+                if (p.liquidation > 0) {
+                    positionLines.push(activeSeries.createPriceLine({
+                        price: p.liquidation, color: COLORS.down, lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dotted,
+                        axisLabelVisible: true, title: 'LIQ'
+                    }));
+                }
+
+                markers.push({
+                    time: snapToBarTime(p.openTime),
+                    position: isLong ? 'belowBar' : 'aboveBar',
+                    color: isLong ? COLORS.up : COLORS.down,
+                    shape: isLong ? 'arrowUp' : 'arrowDown',
+                    text: label
+                });
+            }
+
+            markers.sort((a, b) => a.time - b.time);
+
+            try {
+                if (typeof LightweightCharts.createSeriesMarkers === 'function') {
+                    markersApi = LightweightCharts.createSeriesMarkers(activeSeries, markers);
+                } else if (typeof activeSeries.setMarkers === 'function') {
+                    activeSeries.setMarkers(markers);
+                }
+            } catch (e) { }
+        }
+
         function renderWithCurrentType() {
             if (activeSeries !== null) {
                 chart.removeSeries(activeSeries);
                 activeSeries = null;
             }
+            markersApi = null;
+            positionLines = [];
+
             activeSeries = createSeriesForType();
             displayData = buildDisplayData();
             activeSeries.setData(displayData);
             renderVolume();
 
-            // TV-like initial view: show the last ~120 candles with a small
-            // right margin; the full deep history stays scrollable/zoomable.
             const total = displayData.length;
             if (total > 0) {
                 chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, total - 120), to: total + 4 });
             }
+
+            applyPositions();
         }
 
-        // Initial (empty) series so the page is ready before data arrives.
         renderWithCurrentType();
 
-        // ------------------------------------------------------------------
-        // Message bridge — receives commands from C#.
-        // ------------------------------------------------------------------
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.addEventListener('message', function (e) {
                 const msg = e.data;
@@ -200,13 +267,13 @@
                 } else if (msg.type === 'setChartType') {
                     chartType = msg.chartType;
                     renderWithCurrentType();
+                } else if (msg.type === 'setPositions') {
+                    lastPositions = msg.positions || [];
+                    applyPositions();
                 }
             });
         }
 
-        // Reports the hovered candle's OHLC (plus the previous candle's OHLC,
-        // so C# can color each value against the previous candle) back to C#.
-        // Works for every chart type: line/area fall back to the raw candles.
         chart.subscribeCrosshairMove(function (param) {
             if (!window.chrome || !window.chrome.webview) return;
 
@@ -224,7 +291,6 @@
                 return;
             }
 
-            // Previous candle for coloring: from the same OHLC-bearing list.
             const ohlcList = (displayData.length > 0 && displayData[0].open !== undefined) ? displayData : rawData;
             const idx = ohlcList.findIndex(function (d) { return d.time === hovered.time; });
             const prev = idx > 0 ? ohlcList[idx - 1] : hovered;

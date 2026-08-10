@@ -21,8 +21,6 @@ namespace Meowgnal;
 
 public partial class MainWindow : Window
 {
-    // One open chart tab per symbol (TradingView style). Each tab remembers
-    // its own symbol, timeframe, chart type and data source.
     private sealed class ChartTab
     {
         public string Symbol { get; set; } = "BTC/USDT";
@@ -31,8 +29,6 @@ public partial class MainWindow : Window
         public string DataSource { get; set; } = "binance";
     }
 
-    // A rendered watchlist row; keeps references so live ticks can update
-    // the two price texts in place without rebuilding the whole panel.
     private sealed class WatchlistRow
     {
         public WatchlistItem Item { get; init; } = new();
@@ -40,8 +36,6 @@ public partial class MainWindow : Window
         public TextBlock ChgText { get; init; } = new();
     }
 
-    // A rendered open paper position row; keeps references so the 5-second
-    // ticker can update price + PnL texts in place.
     private sealed class PaperPositionRow
     {
         public PaperPosition Position { get; init; } = new();
@@ -52,43 +46,31 @@ public partial class MainWindow : Window
     private readonly List<ChartTab> _tabs = new();
     private ChartTab? _activeTab;
 
-    // Watchlist state: all lists + the one currently shown.
     private WatchlistsFile _watchlistsFile = new();
     private WatchlistDefinition _activeWatchlist = new();
     private readonly List<WatchlistRow> _watchlistRows = new();
     private readonly DispatcherTimer _watchTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private bool _refreshingWatchlist;
 
-    // Paper trading state (persisted encrypted via DPAPI).
     private PaperAccountFile _paperAccount = new();
     private readonly List<PaperPositionRow> _paperRows = new();
 
-    // Debounce for the add-symbol live preview while the user is typing.
     private readonly DispatcherTimer _symbolPreviewDebounce = new() { Interval = TimeSpan.FromMilliseconds(600) };
 
     private readonly ObservableCollection<SignalDisplayItem> _signals = new();
 
-    // Completes once chart.html has fully loaded inside the WebView2.
-    // Candle data sent before that moment simply waits, so we never post
-    // messages into a page that isn't ready yet.
     private readonly TaskCompletionSource<bool> _chartPageReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    // Background signal monitor: periodically rescans all strategies and
-    // raises toast/sound alerts only for signals it hasn't seen before.
     private DispatcherTimer? _monitorTimer;
     private readonly HashSet<string> _knownSignalKeys = new();
     private bool _baselineSeeded;
     private bool _isScanning;
 
-    // Live UTC clock in the bottom status bar (TradingView style).
     private readonly DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
-    // Exact TradingView up/down colors for the OHLC legend.
     private static readonly SolidColorBrush UpBrush = new(Color.FromRgb(0x08, 0x99, 0x81));
     private static readonly SolidColorBrush DownBrush = new(Color.FromRgb(0xF2, 0x36, 0x45));
 
-    // Full timeframe catalog shown in the dropdown menu (TradingView style),
-    // from seconds up to months. Also defines the stable sort order.
     private static readonly (string Group, string[] Items)[] TimeframeCatalog =
     {
         ("SECONDS", new[] { "1s", "5s", "15s", "30s" }),
@@ -120,27 +102,20 @@ public partial class MainWindow : Window
         InitializeComponent();
         SignalsList.ItemsSource = _signals;
 
-        // Matches the chart page background so there is no white flash
-        // while the WebView2 is starting up.
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
 
-        // Default chart type: candlestick (sets button icon + label).
         ApplyChartType("candles");
 
-        // Starred timeframes (persisted encrypted with the other settings).
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
 
-        // Live UTC clock.
         UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
         _clockTimer.Tick += (_, _) => UtcClockText.Text = DateTime.UtcNow.ToString("HH:mm:ss");
         _clockTimer.Start();
 
-        // Watchlist live prices + paper position monitoring every 5 seconds.
         _watchTimer.Tick += WatchTimer_Tick;
         _watchTimer.Start();
 
-        // Add-symbol preview refresh while typing (debounced).
         _symbolPreviewDebounce.Tick += async (_, _) =>
         {
             _symbolPreviewDebounce.Stop();
@@ -154,7 +129,6 @@ public partial class MainWindow : Window
     {
         _ = InitializeChartWebViewAsync();
 
-        // First tab comes from the first saved strategy (or the default pair).
         var first = StrategyStorageService.LoadAll().FirstOrDefault();
         var firstTab = new ChartTab
         {
@@ -166,7 +140,6 @@ public partial class MainWindow : Window
         _tabs.Add(firstTab);
         await ActivateTabAsync(firstTab);
 
-        // Watchlists: load encrypted file, pick the saved active list.
         _watchlistsFile = WatchlistStorageService.Load();
         _activeWatchlist = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == _watchlistsFile.ActiveListName)
                            ?? _watchlistsFile.Lists[0];
@@ -174,7 +147,6 @@ public partial class MainWindow : Window
         RebuildWatchlistPanel();
         _ = RefreshWatchlistPricesAsync();
 
-        // Paper trading account: load encrypted file and render the panel.
         _paperAccount = PaperAccountStorageService.Load();
         PaperTradingEngine.CheckDailyReset(_paperAccount);
         RebuildPaperPanel();
@@ -184,11 +156,6 @@ public partial class MainWindow : Window
         StartSignalMonitor();
     }
 
-    // ------------------------------------------------------------------
-    // Chart tabs (one per symbol)
-    // ------------------------------------------------------------------
-
-    // Rebuilds the tab strip; the active tab is highlighted.
     private void RebuildTabsBar()
     {
         TabsPanel.Children.Clear();
@@ -244,7 +211,7 @@ public partial class MainWindow : Window
     private void TabClose_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is not TextBlock t || t.Tag is not ChartTab tab) return;
-        if (_tabs.Count <= 1) return; // always keep at least one tab open
+        if (_tabs.Count <= 1) return;
 
         _tabs.Remove(tab);
         if (_activeTab == tab)
@@ -275,7 +242,6 @@ public partial class MainWindow : Window
 
         NewTabPopup.IsOpen = false;
 
-        // Same symbol already open? Just switch to that tab.
         var existing = _tabs.FirstOrDefault(t => t.Symbol == symbol);
         if (existing is not null)
         {
@@ -283,8 +249,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Data source: follow a strategy on this symbol if one exists,
-        // otherwise fall back to the default in Settings.
         var dataSource = StrategyStorageService.LoadAll().FirstOrDefault(s => s.Symbol == symbol)?.DataSource
                          ?? SettingsStorageService.Load().DefaultDataSource;
 
@@ -299,7 +263,6 @@ public partial class MainWindow : Window
         await ActivateTabAsync(tab);
     }
 
-    // "ethusdt" -> "ETH/USDT", "btc/usdt" -> "BTC/USDT", "ETH" -> "ETH/USDT".
     private static string? NormalizeSymbol(string input)
     {
         var s = input.Trim().ToUpperInvariant();
@@ -310,7 +273,6 @@ public partial class MainWindow : Window
         return s + "/USDT";
     }
 
-    // Makes the given tab active and restores all of its saved chart state.
     private async Task ActivateTabAsync(ChartTab tab)
     {
         _activeTab = tab;
@@ -326,10 +288,6 @@ public partial class MainWindow : Window
 
         await LoadChartAsync();
     }
-
-    // ------------------------------------------------------------------
-    // Right panel tabs: Watchlist / Signals / Paper
-    // ------------------------------------------------------------------
 
     private void SetRightTab(string which)
     {
@@ -349,18 +307,11 @@ public partial class MainWindow : Window
     private void RightTabSignals_Click(object sender, RoutedEventArgs e) => SetRightTab("signals");
     private void RightTabPaper_Click(object sender, RoutedEventArgs e) => SetRightTab("paper");
 
-    // ------------------------------------------------------------------
-    // Watchlist (right panel)
-    // ------------------------------------------------------------------
-
-    // Rebuilds the watchlist rows for the active list. Price texts are kept
-    // per row so the 5-second ticker can update them in place.
     private void RebuildWatchlistPanel()
     {
         WatchlistRowsPanel.Children.Clear();
         _watchlistRows.Clear();
 
-        // Column headers.
         var header = new Grid();
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -430,8 +381,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // Clicking a watchlist row opens (or switches to) the chart tab for it,
-    // using the source the user originally picked for that row.
     private async void WatchlistRow_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Grid g || g.Tag is not WatchlistItem item) return;
@@ -450,7 +399,7 @@ public partial class MainWindow : Window
 
     private void RemoveSymbol_Click(object sender, MouseButtonEventArgs e)
     {
-        e.Handled = true; // don't let the row-click (open tab) fire as well
+        e.Handled = true;
         if (sender is not TextBlock t || t.Tag is not WatchlistItem item) return;
 
         _activeWatchlist.Items.Remove(item);
@@ -458,8 +407,6 @@ public partial class MainWindow : Window
         RebuildWatchlistPanel();
         _ = RefreshWatchlistPricesAsync();
     }
-
-    // ----- List management -----
 
     private void WatchlistNameButton_Click(object sender, RoutedEventArgs e)
     {
@@ -532,8 +479,6 @@ public partial class MainWindow : Window
         RebuildWatchlistPanel();
     }
 
-    // ----- Add symbol with dual-source live preview -----
-
     private void AddSymbolButton_Click(object sender, RoutedEventArgs e)
     {
         if (AddSymbolPopup.IsOpen)
@@ -551,9 +496,6 @@ public partial class MainWindow : Window
         _symbolPreviewDebounce.Start();
     }
 
-    // Fetches the live price of the typed symbol from BOTH exchanges and
-    // shows them next to the source radio buttons (like TradingView's
-    // exchange picker). Unavailable sources get disabled.
     private async Task UpdateSymbolPreviewAsync()
     {
         var symbol = NormalizeSymbol(AddSymbolBox.Text);
@@ -576,7 +518,6 @@ public partial class MainWindow : Window
         SourceHyperRadio.IsEnabled = h is not null;
         SourceHyperRadio.Content = h is null ? "Hyperliquid — not available" : $"Hyperliquid — {FormatPrice(h.Last)}";
 
-        // Auto-select the first available source.
         if (b is not null) SourceBinanceRadio.IsChecked = true;
         else if (h is not null) SourceHyperRadio.IsChecked = true;
     }
@@ -621,8 +562,6 @@ public partial class MainWindow : Window
 
     private void SaveWatchlists() => WatchlistStorageService.Save(_watchlistsFile);
 
-    // ----- Live prices (every 5 seconds) -----
-
     private async void WatchTimer_Tick(object? sender, EventArgs e)
     {
         if (_refreshingWatchlist) return;
@@ -638,8 +577,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // Groups rows by their own source and asks each exchange for live
-    // prices in one batched call, then updates the row texts in place.
     private async Task RefreshWatchlistPricesAsync()
     {
         if (_watchlistRows.Count == 0) return;
@@ -663,24 +600,17 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // Exchange unreachable this tick — keep last known values.
             }
         }
     }
 
-    // Big prices with 2 decimals, small ones with enough precision (like TV).
     private static string FormatPrice(decimal price) =>
         price >= 1000 ? price.ToString("N2") :
         price >= 1 ? price.ToString("N4") :
         price.ToString("0.00000000");
 
-    // ------------------------------------------------------------------
-    // Paper trading (manual positions + live monitoring + auto trading)
-    // ------------------------------------------------------------------
-
     private void SavePaperAccount() => PaperAccountStorageService.Save(_paperAccount);
 
-    // Persists the auto-trade toggle immediately.
     private void AutoTradeCheck_Click(object sender, RoutedEventArgs e)
     {
         var settings = SettingsStorageService.Load();
@@ -688,9 +618,6 @@ public partial class MainWindow : Window
         SettingsStorageService.Save(settings);
     }
 
-    // Rebuilds the paper pane: balance card texts, open position rows and
-    // the last-10 history list. Row price/PnL texts are kept per position so
-    // the 5-second ticker can update them in place.
     private void RebuildPaperPanel()
     {
         PaperPositionsPanel.Children.Clear();
@@ -720,7 +647,6 @@ public partial class MainWindow : Window
             };
             var sp = new StackPanel();
 
-            // Row 1: symbol + side badge ... locked margin
             var topRow = new Grid();
             topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -768,7 +694,6 @@ public partial class MainWindow : Window
             topRow.Children.Add(marginText);
             sp.Children.Add(topRow);
 
-            // Row 2: size @ entry
             sp.Children.Add(new TextBlock
             {
                 Text = $"{pos.Size} @ {FormatPrice(pos.EntryPrice)}",
@@ -777,7 +702,6 @@ public partial class MainWindow : Window
                 Margin = new Thickness(0, 3, 0, 0),
             });
 
-            // Row 3: live price ... live PnL
             var bottomRow = new Grid();
             bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -799,7 +723,6 @@ public partial class MainWindow : Window
             bottomRow.Children.Add(pnlText);
             sp.Children.Add(bottomRow);
 
-            // Row 4: SL / TP / liquidation reference line
             sp.Children.Add(new TextBlock
             {
                 Text = $"SL {(pos.StopLoss > 0 ? FormatPrice(PaperTradingEngine.EffectiveStopLoss(pos)) : "—")}  ·  " +
@@ -810,7 +733,6 @@ public partial class MainWindow : Window
                 Margin = new Thickness(0, 3, 0, 0),
             });
 
-            // Row 5: clear close-position button inside the card
             var closeBtn = new Button
             {
                 Content = "⏹ Close position",
@@ -830,7 +752,6 @@ public partial class MainWindow : Window
             _paperRows.Add(new PaperPositionRow { Position = pos, PriceText = priceText, PnLText = pnlText });
         }
 
-        // ----- History (last 10) -----
         if (_paperAccount.TradeHistory.Count == 0)
         {
             PaperHistoryPanel.Children.Add(new TextBlock
@@ -890,7 +811,6 @@ public partial class MainWindow : Window
         UpdatePaperSummary(new Dictionary<string, decimal>());
     }
 
-    // Updates the balance card + the bottom status bar.
     private void UpdatePaperSummary(Dictionary<string, decimal> prices)
     {
         var settings = SettingsStorageService.Load();
@@ -927,8 +847,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // Opens the manual order popup pre-filled with the current chart symbol
-    // and the default values from Settings -> Paper trading.
     private void OpenPositionButton_Click(object sender, RoutedEventArgs e)
     {
         var settings = SettingsStorageService.Load();
@@ -941,8 +859,6 @@ public partial class MainWindow : Window
         PopTrailingActBox.Text = "2";
         PopSideLong.IsChecked = true;
 
-        // Suggested margin (editable): risk-based estimate when enabled,
-        // otherwise the fixed % of balance from Settings.
         var balance = _paperAccount.CurrentBalance;
         var slDefault = settings.PaperDefaultStopLossPercent;
         var suggested = settings.PaperUseRiskBasedSizing && slDefault > 0
@@ -953,8 +869,6 @@ public partial class MainWindow : Window
         OpenPositionPopup.IsOpen = true;
     }
 
-    // Manual order: validates inputs, fetches the live entry price, replaces
-    // any existing position on the same symbol, then opens via the engine.
     private async void OpenPositionConfirm_Click(object sender, RoutedEventArgs e)
     {
         var symbol = NormalizeSymbol(PopSymbolBox.Text);
@@ -974,7 +888,6 @@ public partial class MainWindow : Window
         var trailAct = decimal.TryParse(PopTrailingActBox.Text, out var ta) && ta > 0 ? ta : 2m;
         var marginUsdt = decimal.TryParse(PopMarginBox.Text, out var mu) && mu > 0 ? mu : 0m;
 
-        // Entry price: prefer the current chart's source, fall back to the other.
         IDataProvider primary = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
         IDataProvider secondary = _chartDataSource == "hyperliquid" ? new BinanceDataProvider() : new HyperliquidDataProvider();
         var primaryName = _chartDataSource == "hyperliquid" ? "hyperliquid" : "binance";
@@ -994,7 +907,6 @@ public partial class MainWindow : Window
         }
         var entry = ticker.Last;
 
-        // SL/TP prices from percentages, respecting the position side.
         var slPrice = slPct > 0
             ? (side == PositionSide.Long ? entry * (1m - slPct / 100m) : entry * (1m + slPct / 100m))
             : 0m;
@@ -1002,7 +914,6 @@ public partial class MainWindow : Window
             ? (side == PositionSide.Long ? entry * (1m + tpPct / 100m) : entry * (1m - tpPct / 100m))
             : 0m;
 
-        // One position per symbol: close any existing one at market first.
         var existingPos = _paperAccount.OpenPositions.FirstOrDefault(p => p.Symbol == symbol);
         if (existingPos is not null)
         {
@@ -1029,7 +940,6 @@ public partial class MainWindow : Window
             $"(margin {result.Position.Margin:N2} USDT, {leverage:0}x)");
     }
 
-    // Manual close at the live market price.
     private async void PaperClose_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button b || b.Tag is not PaperPosition pos) return;
@@ -1053,7 +963,6 @@ public partial class MainWindow : Window
         NotificationService.ShowToast("Meowgnal", $"{trade.Symbol} closed: PnL {trade.PnL:+0.00;-0.00} USDT");
     }
 
-    // Sets the suspension flag once the realized daily loss crosses the limit.
     private void CheckDailySuspension(AppSettings settings)
     {
         if (_paperAccount.IsSuspendedUntilTomorrow) return;
@@ -1065,9 +974,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // Runs every 5 seconds with the watchlist tick: updates trailing stops,
-    // evaluates SL/TP/liquidation over the latest 1-minute candle range and
-    // refreshes all live paper texts (rows, card, status bar).
     private async Task UpdatePaperLiveAsync()
     {
         var settings = SettingsStorageService.Load();
@@ -1079,7 +985,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Live last prices grouped by source (batched calls).
         var prices = new Dictionary<string, decimal>();
         foreach (var group in _paperAccount.OpenPositions.GroupBy(p => p.DataSource).ToList())
         {
@@ -1094,11 +999,9 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // Exchange unreachable this tick — skip stop checks for it.
             }
         }
 
-        // Current 1-minute candle high/low per symbol for precise stop checks.
         var highs = new Dictionary<string, decimal>();
         var lows = new Dictionary<string, decimal>();
         foreach (var symbol in _paperAccount.OpenPositions.Select(p => p.Symbol).Distinct())
@@ -1118,7 +1021,6 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // Fall back to the last price only.
             }
         }
 
@@ -1138,7 +1040,6 @@ public partial class MainWindow : Window
                 closedTrades.Add(PaperTradingEngine.Close(_paperAccount, pos, last, reason.Value, settings.PaperTakerFeePercent));
         }
 
-        // Risk rule: max daily loss breached → close everything and suspend.
         if (!_paperAccount.IsSuspendedUntilTomorrow &&
             PaperTradingEngine.DailyLossLimitBreached(_paperAccount, settings))
         {
@@ -1163,7 +1064,6 @@ public partial class MainWindow : Window
             _ = SendPositionsToChartAsync();
         }
 
-        // In-place live updates for the remaining rows.
         foreach (var row in _paperRows)
         {
             if (!prices.TryGetValue(row.Position.Symbol, out var last)) continue;
@@ -1176,12 +1076,6 @@ public partial class MainWindow : Window
 
         UpdatePaperSummary(prices);
     }
-
-    // ------------------------------------------------------------------
-    // Auto trading: executes fresh strategy signals on the paper account.
-    // Entry (buy)  -> open a LONG when the symbol has no open position.
-    // Exit  (sell) -> close any open position on the symbol.
-    // ------------------------------------------------------------------
 
     private async Task AutoTradeSignalsAsync(List<FoundSignal> fresh, AppSettings settings)
     {
@@ -1244,8 +1138,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // Sends the open positions of the current chart symbol to chart.html so
-    // it can draw entry/SL/TP price lines and an entry marker.
     private async Task SendPositionsToChartAsync()
     {
         try
@@ -1276,8 +1168,6 @@ public partial class MainWindow : Window
             JsonSerializer.Serialize(new { type = "setPositions", positions }));
     }
 
-    // Starts the embedded browser, points it at our local ChartHost folder
-    // (served under a virtual https host) and loads chart.html.
     private async Task InitializeChartWebViewAsync()
     {
         try
@@ -1286,8 +1176,6 @@ public partial class MainWindow : Window
 
             var core = ChartWebView.CoreWebView2;
 
-            // App-like feel: no browser chrome, no right-click menu,
-            // no page zoom (the chart library handles zoom/pan itself).
             core.Settings.AreDefaultContextMenusEnabled = false;
             core.Settings.AreDevToolsEnabled = false;
             core.Settings.IsStatusBarEnabled = false;
@@ -1295,7 +1183,6 @@ public partial class MainWindow : Window
 
             core.NavigationCompleted += (_, _) => _chartPageReady.TrySetResult(true);
 
-            // JavaScript -> C# side of the bridge (crosshair OHLC updates).
             core.WebMessageReceived += OnChartWebMessageReceived;
 
             var hostFolder = Path.Combine(AppContext.BaseDirectory, "ChartHost");
@@ -1324,13 +1211,8 @@ public partial class MainWindow : Window
         }
     }
 
-    // JavaScript -> C# message handler. The chart page reports which candle
-    // the mouse is hovering over; we mirror its OHLC into the header bar,
-    // coloring each value against the previous candle (like TradingView).
     private void OnChartWebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
-        // Some WebView2 runtime versions hand us the message as a quoted
-        // JSON string instead of an object — unwrap one level so both work.
         var json = e.WebMessageAsJson;
         using (var probe = JsonDocument.Parse(json))
         {
@@ -1357,15 +1239,12 @@ public partial class MainWindow : Window
         }
         else if (_currentBars.Count > 0)
         {
-            // Mouse left the chart: show the newest candle again.
             var last = _currentBars[^1];
             var prev = _currentBars.Count > 1 ? _currentBars[^2] : last;
             SetOhlcHeader(last.Open, last.High, last.Low, last.Close, prev.Open, prev.High, prev.Low, prev.Close);
         }
     }
 
-    // Writes the four OHLC values into the header bar, coloring each one
-    // green/red (TradingView palette) by comparing it with the previous candle.
     private void SetOhlcHeader(
         decimal open, decimal high, decimal low, decimal close,
         decimal prevOpen, decimal prevHigh, decimal prevLow, decimal prevClose)
@@ -1381,8 +1260,6 @@ public partial class MainWindow : Window
         OhlcCloseText.Foreground = close >= prevClose ? UpBrush : DownBrush;
     }
 
-    // Opens tradingview.com in the default browser. This visible attribution
-    // link is required by the Lightweight Charts license.
     private void TradingViewLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
     {
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
@@ -1402,15 +1279,9 @@ public partial class MainWindow : Window
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         new SettingsWindow().ShowDialog();
-        StartSignalMonitor(); // apply a changed check interval immediately
+        StartSignalMonitor();
     }
 
-    // ------------------------------------------------------------------
-    // Timeframe toolbar + full TradingView-style menu with favorites
-    // ------------------------------------------------------------------
-
-    // Rebuilds the toolbar buttons in a STABLE order: always smallest to
-    // largest interval, left to right — selecting one never moves buttons.
     private void RebuildTimeframeBar()
     {
         TimeframePanel.Children.Clear();
@@ -1460,13 +1331,8 @@ public partial class MainWindow : Window
         TimeframePopup.IsOpen = true;
     }
 
-    // Keeps the dropdown INSIDE the app window: measures the free space from
-    // the button down to the window's own bottom edge. Small window → shorter
-    // menu that scrolls inside itself; big/fullscreen window → tall menu.
     private void FitTimeframeMenuToWindow()
     {
-        // Both values are in the window's own coordinate space, so the OS
-        // window chrome (title bar/borders) can never skew the measurement.
         var buttonBottomY = TimeframeMenuButton.TranslatePoint(
             new Point(0, TimeframeMenuButton.ActualHeight), this).Y;
         var clientBottomY = (Content as FrameworkElement)?.ActualHeight ?? ActualHeight;
@@ -1475,15 +1341,12 @@ public partial class MainWindow : Window
         TimeframeMenuScroll.MaxHeight = Math.Clamp(available, 160, 640);
     }
 
-    // Fills the dropdown: grouped catalog (seconds → months), each section
-    // separated by a line and collapsible via its header arrow (like TV).
     private void BuildTimeframeMenu()
     {
         TimeframeMenuPanel.Children.Clear();
 
         foreach (var (group, items) in TimeframeCatalog)
         {
-            // Separator line between sections.
             if (TimeframeMenuPanel.Children.Count > 0)
             {
                 TimeframeMenuPanel.Children.Add(new Border
@@ -1496,7 +1359,6 @@ public partial class MainWindow : Window
 
             var isCollapsed = _collapsedGroups.Contains(group);
 
-            // Section header with collapse arrow.
             var header = new Button
             {
                 Style = (Style)FindResource("TvButtonLeft"),
@@ -1522,7 +1384,6 @@ public partial class MainWindow : Window
             header.Click += TimeframeGroupHeader_Click;
             TimeframeMenuPanel.Children.Add(header);
 
-            // Collapsible body of the section.
             var groupPanel = new StackPanel
             {
                 Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible,
@@ -1565,7 +1426,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // Collapses / expands one section of the timeframe menu.
     private void TimeframeGroupHeader_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string group) return;
@@ -1588,8 +1448,6 @@ public partial class MainWindow : Window
     {
         if (sender is not Button btn || btn.Tag is not string tf) return;
 
-        // Remove returns false when the item wasn't there → then we add it
-        // (respecting the 6-star cap).
         if (!_favoriteTfs.Remove(tf))
         {
             if (_favoriteTfs.Count >= MaxFavoriteTimeframes)
@@ -1608,10 +1466,6 @@ public partial class MainWindow : Window
         BuildTimeframeMenu();
     }
 
-    // ------------------------------------------------------------------
-    // Chart type dropdown (TradingView style, with mini icons)
-    // ------------------------------------------------------------------
-
     private void ChartTypeButton_Click(object sender, RoutedEventArgs e) =>
         ChartTypePopup.IsOpen = !ChartTypePopup.IsOpen;
 
@@ -1623,7 +1477,6 @@ public partial class MainWindow : Window
         _ = SendChartTypeAsync(type);
     }
 
-    // Updates the toolbar button's icon + label for the given chart type.
     private void ApplyChartType(string type)
     {
         _chartType = type;
@@ -1682,9 +1535,6 @@ public partial class MainWindow : Window
         }
     }
 
-    // WebView2 captures its own web content directly — this is the only
-    // reliable way to screenshot the chart now (the old WPF render method
-    // would produce a blank image for web content).
     private async void ScreenshotButton_Click(object sender, RoutedEventArgs e)
     {
         if (ChartWebView.CoreWebView2 is null) return;
@@ -1713,8 +1563,6 @@ public partial class MainWindow : Window
         }
         catch (Exception ex)
         {
-            // e.g. a timeframe the current exchange doesn't support (seconds
-            // on Hyperliquid), or a temporary network failure — never crash.
             MessageBox.Show(
                 $"Could not load chart data for {_chartSymbol} / {_chartTimeframe}:\n{ex.Message}",
                 "Meowgnal",
@@ -1752,8 +1600,6 @@ public partial class MainWindow : Window
 
             foreach (var s in signals)
             {
-                // Remember everything that already exists so the background
-                // monitor never toasts for old signals.
                 _knownSignalKeys.Add(MakeSignalKey(strategy.StrategyId, s));
 
                 allSignals.Add((new SignalDisplayItem
@@ -1775,8 +1621,6 @@ public partial class MainWindow : Window
             _signals.Add(item);
     }
 
-    // Updates the OHLC header (newest candle) and pushes all candles
-    // to the TradingView chart running inside the WebView2.
     private async Task UpdateChartAsync(List<Bar> bars)
     {
         _currentBars = bars;
@@ -1789,8 +1633,6 @@ public partial class MainWindow : Window
         _ = SendPositionsToChartAsync();
     }
 
-    // The C# -> JavaScript side of the bridge. Sends one JSON message;
-    // chart.html listens for it and redraws the chart.
     private async Task SendCandlesToChartAsync(List<Bar> bars)
     {
         try
@@ -1799,7 +1641,7 @@ public partial class MainWindow : Window
         }
         catch (TaskCanceledException)
         {
-            return; // WebView2 runtime was missing — nothing to send to.
+            return;
         }
 
         if (ChartWebView.CoreWebView2 is null) return;
@@ -1807,11 +1649,9 @@ public partial class MainWindow : Window
         var payload = new
         {
             type = "setCandles",
-            // Second-based timeframes need seconds shown on the time axis.
             secondsVisible = _chartTimeframe.EndsWith('s'),
             data = bars.Select(b => new
             {
-                // Lightweight Charts expects UTC Unix time in SECONDS.
                 time = new DateTimeOffset(b.Timestamp).ToUnixTimeSeconds(),
                 open = b.Open,
                 high = b.High,
@@ -1824,17 +1664,11 @@ public partial class MainWindow : Window
         ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
     }
 
-    // ------------------------------------------------------------------
-    // Background signal monitor
-    // ------------------------------------------------------------------
-
     private sealed record FoundSignal(StrategyDefinition Strategy, SignalEvent Signal);
 
     private static string MakeSignalKey(string strategyId, SignalEvent signal) =>
         $"{strategyId}|{signal.Timestamp:O}|{(int)signal.Type}";
 
-    // Starts (or re-syncs) the periodic scan timer using the interval stored
-    // in Settings -> Notifications (default 60 seconds).
     private void StartSignalMonitor()
     {
         var seconds = Math.Clamp(SettingsStorageService.Load().SignalCheckIntervalSeconds, 10, 3600);
@@ -1854,7 +1688,7 @@ public partial class MainWindow : Window
 
     private async Task MonitorTickAsync()
     {
-        if (_isScanning) return; // previous scan still running on a slow network
+        if (_isScanning) return;
         _isScanning = true;
         try
         {
@@ -1863,8 +1697,6 @@ public partial class MainWindow : Window
 
             if (!_baselineSeeded)
             {
-                // First scan after startup with no strategies loaded yet:
-                // silently remember everything so we never toast old signals.
                 _baselineSeeded = true;
                 foreach (var f in found) _knownSignalKeys.Add(MakeSignalKey(f.Strategy.StrategyId, f.Signal));
                 return;
@@ -1892,7 +1724,7 @@ public partial class MainWindow : Window
 
             if (settings.ToastNotificationsEnabled)
             {
-                foreach (var f in fresh.Take(5)) // avoid a toast flood
+                foreach (var f in fresh.Take(5))
                 {
                     NotificationService.ShowToast(
                         $"Meowgnal — {f.Strategy.Symbol} ({f.Strategy.Timeframe})",
@@ -1903,13 +1735,11 @@ public partial class MainWindow : Window
             if (settings.SoundNotificationsEnabled)
                 NotificationService.PlayAlertSound();
 
-            // Category B: execute fresh signals on the paper account.
             if (settings.PaperAutoTradeEnabled)
                 await AutoTradeSignalsAsync(fresh, settings);
         }
         catch
         {
-            // A failed scan tick must never crash the app; retry next tick.
         }
         finally
         {
@@ -1931,7 +1761,6 @@ public partial class MainWindow : Window
             }
             catch
             {
-                // Skip strategies whose exchange is unreachable this tick.
             }
         }
         return found;

@@ -14,15 +14,12 @@ public partial class SettingsWindow : Window
         InitializeComponent();
         _settings = SettingsStorageService.Load();
 
-        // Data sources
         SourceBinance.IsChecked = _settings.DefaultDataSource == "binance";
         SourceHyperliquid.IsChecked = _settings.DefaultDataSource == "hyperliquid";
 
-        // API keys
         ApiKeyBox.Text = _settings.BinanceApiKey;
         ApiSecretBox.Password = _settings.BinanceApiSecret;
 
-        // Notifications
         ToastCheck.IsChecked = _settings.ToastNotificationsEnabled;
         SoundCheck.IsChecked = _settings.SoundNotificationsEnabled;
         IntervalCombo.SelectedIndex = _settings.SignalCheckIntervalSeconds switch
@@ -33,7 +30,6 @@ public partial class SettingsWindow : Window
             _ => 1
         };
 
-        // Paper Trading
         PaperBalanceBox.Text = _settings.PaperStartingBalance.ToString();
         PaperLeverageBox.Text = _settings.PaperDefaultLeverage.ToString();
         PaperTakerFeeBox.Text = _settings.PaperTakerFeePercent.ToString();
@@ -61,7 +57,7 @@ public partial class SettingsWindow : Window
 
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {
-        if (PanelDataSources is null) return; // fires once during InitializeComponent, before panels exist
+        if (PanelDataSources is null) return;
         PanelDataSources.Visibility = NavDataSources.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelApiKeys.Visibility = NavApiKeys.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelPaperTrading.Visibility = NavPaperTrading.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
@@ -69,7 +65,6 @@ public partial class SettingsWindow : Window
         PanelLicense.Visibility = NavLicense.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    // Lets the user verify toast + sound right here, without waiting for a real signal.
     private void TestNotificationButton_Click(object sender, RoutedEventArgs e)
     {
         if (ToastCheck.IsChecked == true)
@@ -84,8 +79,7 @@ public partial class SettingsWindow : Window
             "This will permanently delete all paper trading history and reset your balance.\n\n" +
             "This action cannot be undone. Continue?",
             "Reset Paper Account",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+            MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
         if (result != MessageBoxResult.Yes) return;
 
@@ -95,50 +89,29 @@ public partial class SettingsWindow : Window
             CurrentBalance = _settings.PaperStartingBalance
         };
         PaperAccountStorageService.Save(account);
-
         NotificationService.ShowToast("Meowgnal", "Paper account has been reset. Restart the app to see the new balance.");
     }
 
     private void SaveAndClose()
     {
-        // Data sources
         _settings.DefaultDataSource = SourceHyperliquid.IsChecked == true ? "hyperliquid" : "binance";
-
-        // API keys
         _settings.BinanceApiKey = ApiKeyBox.Text;
         _settings.BinanceApiSecret = ApiSecretBox.Password;
-
-        // Notifications
         _settings.ToastNotificationsEnabled = ToastCheck.IsChecked == true;
         _settings.SoundNotificationsEnabled = SoundCheck.IsChecked == true;
         _settings.SignalCheckIntervalSeconds = IntervalCombo.SelectedItem is ComboBoxItem item
-            && item.Tag is string tag
-            && int.TryParse(tag, out var seconds)
-            ? seconds
-            : 60;
+            && item.Tag is string tag && int.TryParse(tag, out var seconds) ? seconds : 60;
 
-        // Paper Trading
-        if (decimal.TryParse(PaperBalanceBox.Text, out var balance))
-            _settings.PaperStartingBalance = balance;
-        if (decimal.TryParse(PaperLeverageBox.Text, out var leverage))
-            _settings.PaperDefaultLeverage = leverage;
-        if (decimal.TryParse(PaperTakerFeeBox.Text, out var fee))
-            _settings.PaperTakerFeePercent = fee;
-
+        if (decimal.TryParse(PaperBalanceBox.Text, out var balance)) _settings.PaperStartingBalance = balance;
+        if (decimal.TryParse(PaperLeverageBox.Text, out var leverage)) _settings.PaperDefaultLeverage = leverage;
+        if (decimal.TryParse(PaperTakerFeeBox.Text, out var fee)) _settings.PaperTakerFeePercent = fee;
         _settings.PaperUseRiskBasedSizing = PaperUseRiskSizingCheck.IsChecked == true;
-
-        if (decimal.TryParse(PaperRiskPercentBox.Text, out var risk))
-            _settings.PaperRiskPercentPerTrade = risk;
-        if (decimal.TryParse(PaperPositionSizeBox.Text, out var posSize))
-            _settings.PaperPositionSizePercent = posSize;
-        if (decimal.TryParse(PaperDefaultSLBox.Text, out var sl))
-            _settings.PaperDefaultStopLossPercent = sl;
-        if (decimal.TryParse(PaperDefaultTPBox.Text, out var tp))
-            _settings.PaperDefaultTakeProfitPercent = tp;
-        if (decimal.TryParse(PaperMaxDailyLossBox.Text, out var maxLoss))
-            _settings.PaperMaxDailyLossPercent = maxLoss;
-        if (int.TryParse(PaperMaxPositionsBox.Text, out var maxPos))
-            _settings.PaperMaxOpenPositions = maxPos;
+        if (decimal.TryParse(PaperRiskPercentBox.Text, out var risk)) _settings.PaperRiskPercentPerTrade = risk;
+        if (decimal.TryParse(PaperPositionSizeBox.Text, out var posSize)) _settings.PaperPositionSizePercent = posSize;
+        if (decimal.TryParse(PaperDefaultSLBox.Text, out var sl)) _settings.PaperDefaultStopLossPercent = sl;
+        if (decimal.TryParse(PaperDefaultTPBox.Text, out var tp)) _settings.PaperDefaultTakeProfitPercent = tp;
+        if (decimal.TryParse(PaperMaxDailyLossBox.Text, out var maxLoss)) _settings.PaperMaxDailyLossPercent = maxLoss;
+        if (int.TryParse(PaperMaxPositionsBox.Text, out var maxPos)) _settings.PaperMaxOpenPositions = maxPos;
 
         SettingsStorageService.Save(_settings);
     }

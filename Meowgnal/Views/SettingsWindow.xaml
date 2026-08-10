@@ -4,7 +4,6 @@
         Title="Settings" Height="620" Width="680"
         Background="#131722" WindowStartupLocation="CenterOwner">
     <Window.Resources>
-        <!-- TradingView Dark Palette -->
         <SolidColorBrush x:Key="PanelBg" Color="#1E222D"/>
         <SolidColorBrush x:Key="BorderColor" Color="#2A2E39"/>
         <SolidColorBrush x:Key="TextColor" Color="#D1D4DC"/>
@@ -13,12 +12,10 @@
         <SolidColorBrush x:Key="DangerColor" Color="#F23645"/>
         <SolidColorBrush x:Key="SuccessColor" Color="#089981"/>
 
-        <!-- Base Text Style -->
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
         </Style>
 
-        <!-- Left Nav Item -->
         <Style x:Key="NavItem" TargetType="RadioButton">
             <Setter Property="Padding" Value="12,10"/>
             <Setter Property="Foreground" Value="{StaticResource TextMuted}"/>
@@ -44,13 +41,11 @@
             </Setter>
         </Style>
 
-        <!-- Content Radio Button -->
         <Style TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="Cursor" Value="Hand"/>
         </Style>
 
-        <!-- TextBox -->
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="#1E222D"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
@@ -65,7 +60,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- PasswordBox -->
         <Style TargetType="PasswordBox">
             <Setter Property="Background" Value="#1E222D"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
@@ -80,7 +74,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Button -->
         <Style TargetType="Button">
             <Setter Property="Background" Value="{StaticResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -106,12 +99,10 @@
             </Setter>
         </Style>
 
-        <!-- Danger Button (for reset account) -->
         <Style x:Key="DangerButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{StaticResource DangerColor}"/>
         </Style>
 
-        <!-- CheckBox -->
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -139,7 +130,6 @@
             </Setter>
         </Style>
 
-        <!-- ComboBox -->
         <Style TargetType="ComboBox">
             <Setter Property="Background" Value="#1E222D"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
@@ -165,7 +155,6 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Left nav -->
         <Border Grid.Column="0" Background="{StaticResource PanelBg}" BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,1,0">
             <StackPanel Margin="0,15,0,0">
                 <RadioButton x:Name="NavDataSources" Content="Data sources" GroupName="Nav" Style="{StaticResource NavItem}" IsChecked="True" Checked="Nav_Checked"/>
@@ -176,10 +165,8 @@
             </StackPanel>
         </Border>
 
-        <!-- Right content -->
         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
             <Grid Margin="25">
-                <!-- Data sources -->
                 <StackPanel x:Name="PanelDataSources">
                     <TextBlock Text="Default candle/price source for new strategies" Foreground="{StaticResource TextMuted}" Margin="0,0,0,15" FontSize="13"/>
                     <RadioButton x:Name="SourceBinance" Content="Binance" GroupName="Source" Margin="0,0,0,10"/>
@@ -188,7 +175,6 @@
                                Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"/>
                 </StackPanel>
 
-                <!-- API keys -->
                 <StackPanel x:Name="PanelApiKeys" Visibility="Collapsed">
                     <Border Background="#2A2215" CornerRadius="4" Padding="12" Margin="0,0,0,20">
                         <TextBlock Text="⚠️ Only ever provide a Read-Only API key here. Never a key with trade or withdrawal permission."
@@ -200,25 +186,20 @@
                     <PasswordBox x:Name="ApiSecretBox" Margin="0,0,0,15"/>
                 </StackPanel>
 
-                <!-- Paper Trading -->
                 <StackPanel x:Name="PanelPaperTrading" Visibility="Collapsed">
                     <TextBlock Text="Paper Trading Configuration" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,20"/>
 
-                    <!-- Account Setup -->
                     <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock Text="💰 Account Setup" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
-
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                 <TextBlock Text="Starting balance (USDT)" Width="200" VerticalAlignment="Center"/>
                                 <TextBox x:Name="PaperBalanceBox" Width="120"/>
                             </StackPanel>
-
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                 <TextBlock Text="Default leverage" Width="200" VerticalAlignment="Center"/>
                                 <TextBox x:Name="PaperLeverageBox" Width="120"/>
                             </StackPanel>
-
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Taker fee %" Width="200" VerticalAlignment="Center"/>
                                 <TextBox x:Name="PaperTakerFeeBox" Width="120"/>
@@ -226,18 +207,14 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Position Sizing -->
                     <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock Text="📏 Position Sizing" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
-
                             <CheckBox x:Name="PaperUseRiskSizingCheck" Content="Use risk-based sizing (professional standard)" Margin="0,0,0,12"/>
-
                             <StackPanel x:Name="RiskSizingPanel" Orientation="Horizontal" Margin="0,0,0,10">
                                 <TextBlock Text="Risk per trade %" Width="200" VerticalAlignment="Center"/>
                                 <TextBox x:Name="PaperRiskPercentBox" Width="120"/>
                             </StackPanel>
-
                             <StackPanel x:Name="FixedSizePanel" Orientation="Horizontal">
                                 <TextBlock Text="Position size % of balance" Width="200" VerticalAlignment="Center"/>
                                 <TextBox x:Name="PaperPositionSizeBox" Width="120"/>
@@ -245,16 +222,13 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Default SL/TP -->
                     <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock Text="🎯 Default SL/TP (for signals without explicit targets)" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
-
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                 <TextBlock Text="Stop-loss %" Width="200" VerticalAlignment="Center" Foreground="{StaticResource DangerColor}"/>
                                 <TextBox x:Name="PaperDefaultSLBox" Width="120"/>
                             </StackPanel>
-
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Take-profit %" Width="200" VerticalAlignment="Center" Foreground="{StaticResource SuccessColor}"/>
                                 <TextBox x:Name="PaperDefaultTPBox" Width="120"/>
@@ -262,16 +236,13 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Risk Management -->
                     <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
                         <StackPanel>
                             <TextBlock Text="🛡️ Risk Management" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
-
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                 <TextBlock Text="Max daily loss % (0 = disabled)" Width="200" VerticalAlignment="Center"/>
                                 <TextBox x:Name="PaperMaxDailyLossBox" Width="120"/>
                             </StackPanel>
-
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Max open positions (0 = unlimited)" Width="200" VerticalAlignment="Center"/>
                                 <TextBox x:Name="PaperMaxPositionsBox" Width="120"/>
@@ -279,18 +250,16 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- Account Reset -->
                     <Border Background="#2A1520" CornerRadius="6" Padding="16">
                         <StackPanel>
                             <TextBlock Text="⚠️ Danger Zone" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" Margin="0,0,0,8"/>
-                            <TextBlock Text="Reset paper account to starting balance. This will close all open positions and clear trade history." 
+                            <TextBlock Text="Reset paper account to starting balance. This will close all open positions and clear trade history."
                                        Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,12"/>
                             <Button Content="Reset Paper Account" Style="{StaticResource DangerButton}" HorizontalAlignment="Left" Click="ResetPaperAccount_Click"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>
 
-                <!-- Notifications -->
                 <StackPanel x:Name="PanelNotifications" Visibility="Collapsed">
                     <CheckBox x:Name="ToastCheck" Content="Windows toast notification on new signal" Margin="0,0,0,12"/>
                     <CheckBox x:Name="SoundCheck" Content="Play alert sound on new signal" Margin="0,0,0,20"/>
@@ -308,7 +277,6 @@
                                Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,15,0,0"/>
                 </StackPanel>
 
-                <!-- License -->
                 <StackPanel x:Name="PanelLicense" Visibility="Collapsed">
                     <TextBlock Text="License management is coming in a future update." Foreground="{StaticResource TextMuted}"/>
                 </StackPanel>

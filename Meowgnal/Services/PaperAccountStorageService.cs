@@ -6,10 +6,6 @@ using Meowgnal.Models;
 
 namespace Meowgnal.Services;
 
-/// <summary>
-/// Encrypted (DPAPI) storage for the paper trading account.
-/// Persists balance, open positions and trade history across app restarts.
-/// </summary>
 public static class PaperAccountStorageService
 {
     private static readonly string FilePath = AppPaths.PaperAccountFile;
@@ -25,10 +21,7 @@ public static class PaperAccountStorageService
             var json = System.Text.Encoding.UTF8.GetString(ProtectedData.Unprotect(encrypted, Entropy, DataProtectionScope.CurrentUser));
             return JsonSerializer.Deserialize<PaperAccountFile>(json, JsonOptions) ?? new PaperAccountFile();
         }
-        catch
-        {
-            return new PaperAccountFile();
-        }
+        catch { return new PaperAccountFile(); }
     }
 
     public static void Save(PaperAccountFile account)

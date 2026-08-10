@@ -3,21 +3,10 @@ using Meowgnal.Models;
 
 namespace Meowgnal.Services;
 
-/// <summary>
-/// Pure paper-trading math and account mutations: position sizing, fees,
-/// liquidation, stop-loss / take-profit / trailing-stop evaluation.
-/// No UI and no storage here — MainWindow orchestrates, services persist.
-/// </summary>
 public static class PaperTradingEngine
 {
-    // Binance-style maintenance margin rate used for the liquidation estimate.
     public const decimal MaintenanceMarginRate = 0.005m;
 
-    // ------------------------------------------------------------------
-    // Daily risk bookkeeping
-    // ------------------------------------------------------------------
-
-    /// <summary>Rolls the daily PnL counter over when the UTC day changes.</summary>
     public static void CheckDailyReset(PaperAccountFile account)
     {
         var today = DateTime.UtcNow.Date;
@@ -29,7 +18,6 @@ public static class PaperTradingEngine
         }
     }
 
-    /// <summary>True when the realized daily loss has crossed the configured limit.</summary>
     public static bool DailyLossLimitBreached(PaperAccountFile account, AppSettings settings)
     {
         if (settings.PaperMaxDailyLossPercent <= 0) return false;
@@ -37,43 +25,22 @@ public static class PaperTradingEngine
         return account.DailyRealizedPnL <= -limit;
     }
 
-    // ------------------------------------------------------------------
-    // Opening positions
-    // ------------------------------------------------------------------
-
     public sealed record OpenResult(bool Ok, string Error, PaperPosition? Position)
     {
         public static OpenResult Fail(string error) => new(false, error, null);
     }
 
-    /// <summary>
-    /// Validates and opens a paper position.
-    /// Margin priority: 1) explicit margin from the order form (customMarginUsdt),
-    /// 2) risk-based sizing from Settings, 3) fixed % of balance from Settings.
-    /// The two last parameters are optional so older call sites still compile.
-    /// </summary>
     public static OpenResult TryOpen(
-        PaperAccountFile account,
-        AppSettings settings,
-        string symbol,
-        string dataSource,
-        PositionSide side,
-        decimal entryPrice,
-        decimal leverage,
-        decimal stopLossPrice,
-        decimal takeProfitPrice,
-        bool trailingEnabled,
-        decimal trailingDistancePercent,
-        decimal trailingActivationPercent,
-        decimal customMarginUsdt = 0m,
-        string? strategyId = null)
+        PaperAccountFile account, AppSettings settings, string symbol, string dataSource,
+        PositionSide side, decimal entryPrice, decimal leverage,
+        decimal stopLossPrice, decimal takeProfitPrice,
+        bool trailingEnabled, decimal trailingDistancePercent, decimal trailingActivationPercent,
+        decimal customMarginUsdt = 0m, string? strategyId = null)
     {
         CheckDailyReset(account);
-
         if (account.IsSuspendedUntilTomorrow)
             return OpenResult.Fail("Trading is suspended until tomorrow (max daily loss reached).");
-        if (entryPrice <= 0)
-            return OpenResult.Fail("Invalid entry price.");
+        if (entryPrice <= 0) return OpenResult.Fail("Invalid entry price.");
 
         leverage = Math.Clamp(leverage, 1m, 125m);
 
@@ -81,7 +48,6 @@ public static class PaperTradingEngine
             account.OpenPositions.Count >= settings.PaperMaxOpenPositions)
             return OpenResult.Fail($"Maximum open positions reached ({settings.PaperMaxOpenPositions}).");
 
-        // Validate SL/TP side correctness (very important for precision).
         if (stopLossPrice > 0)
         {
             if (side == PositionSide.Long && stopLossPrice >= entryPrice)
@@ -98,17 +64,10 @@ public static class PaperTradingEngine
         }
 
         var fee = settings.PaperTakerFeePercent;
-
-        // ----- Position sizing -----
         decimal margin;
-        if (customMarginUsdt > 0)
-        {
-            // Manual order: the user chose the exact capital for this trade.
-            margin = customMarginUsdt;
-        }
+        if (customMarginUsdt > 0) margin = customMarginUsdt;
         else if (settings.PaperUseRiskBasedSizing && stopLossPrice > 0)
         {
-            // Professional mode: risk a fixed % of balance based on SL distance.
             var riskAmount = account.CurrentBalance * settings.PaperRiskPercentPerTrade / 100m;
             var distancePerUnit = Math.Abs(entryPrice - stopLossPrice);
             var riskSize = distancePerUnit > 0 ? riskAmount / distancePerUnit : 0m;
@@ -116,21 +75,17 @@ public static class PaperTradingEngine
         }
         else
         {
-            // Simple mode: fixed % of balance as margin.
             margin = account.CurrentBalance * settings.PaperPositionSizePercent / 100m;
         }
 
-        // Cap the margin so margin + entry fee never exceed the free balance.
         var maxMargin = account.CurrentBalance / (1m + leverage * fee / 100m);
         if (margin > maxMargin) margin = maxMargin;
         margin = Math.Round(margin, 2);
-        if (margin <= 0)
-            return OpenResult.Fail("Insufficient balance for this position.");
+        if (margin <= 0) return OpenResult.Fail("Insufficient balance for this position.");
 
         var notional = margin * leverage;
         var size = Math.Round(notional / entryPrice, 8);
-        if (size <= 0)
-            return OpenResult.Fail("Computed position size is zero — balance too small or margin too low.");
+        if (size <= 0) return OpenResult.Fail("Computed position size is zero.");
 
         var entryFee = notional * fee / 100m;
 
@@ -163,15 +118,9 @@ public static class PaperTradingEngine
         return new OpenResult(true, "", position);
     }
 
-    // ------------------------------------------------------------------
-    // Trailing stop + stop checks
-    // ------------------------------------------------------------------
-
-    /// <summary>Advances the trailing stop using the latest market price.</summary>
     public static void UpdateTrailing(PaperPosition position, decimal currentPrice)
     {
         if (!position.TrailingEnabled || position.TrailingDistancePercent <= 0) return;
-
         if (currentPrice > position.HighestPriceSinceEntry) position.HighestPriceSinceEntry = currentPrice;
         if (currentPrice < position.LowestPriceSinceEntry) position.LowestPriceSinceEntry = currentPrice;
 
@@ -196,7 +145,6 @@ public static class PaperTradingEngine
         }
     }
 
-    /// <summary>The stop-loss actually in force (original SL vs trailing stop).</summary>
     public static decimal EffectiveStopLoss(PaperPosition position)
     {
         if (!position.TrailingEnabled || position.TrailingCurrentStop == 0) return position.StopLoss;
@@ -206,17 +154,11 @@ public static class PaperTradingEngine
             : Math.Min(position.StopLoss, position.TrailingCurrentStop);
     }
 
-    /// <summary>
-    /// Conservative stop evaluation over a price range (high/low since the
-    /// previous check). Order: liquidation, then stop-loss, then take-profit.
-    /// If both SL and TP were touched inside the same interval, SL wins.
-    /// </summary>
     public static CloseReason? CheckStops(PaperPosition position, decimal checkHigh, decimal checkLow)
     {
         if (position.Side == PositionSide.Long)
         {
             if (checkLow <= position.LiquidationPrice) return CloseReason.Liquidation;
-
             var sl = EffectiveStopLoss(position);
             if (sl > 0 && checkLow <= sl)
             {
@@ -224,13 +166,11 @@ public static class PaperTradingEngine
                                  (position.StopLoss == 0 || position.TrailingCurrentStop > position.StopLoss);
                 return byTrailing ? CloseReason.TrailingStop : CloseReason.StopLoss;
             }
-
             if (position.TakeProfit > 0 && checkHigh >= position.TakeProfit) return CloseReason.TakeProfit;
         }
         else
         {
             if (checkHigh >= position.LiquidationPrice) return CloseReason.Liquidation;
-
             var sl = EffectiveStopLoss(position);
             if (sl > 0 && checkHigh >= sl)
             {
@@ -238,34 +178,22 @@ public static class PaperTradingEngine
                                  (position.StopLoss == 0 || position.TrailingCurrentStop < position.StopLoss);
                 return byTrailing ? CloseReason.TrailingStop : CloseReason.StopLoss;
             }
-
             if (position.TakeProfit > 0 && checkLow <= position.TakeProfit) return CloseReason.TakeProfit;
         }
         return null;
     }
 
-    // ------------------------------------------------------------------
-    // Closing positions
-    // ------------------------------------------------------------------
-
-    /// <summary>
-    /// Closes a position, updates balance, daily PnL and history.
-    /// For liquidations the exit price is forced to the liquidation price
-    /// and the entire locked margin is lost.
-    /// </summary>
-    public static PaperTrade Close(PaperAccountFile account, PaperPosition position, decimal exitPrice, CloseReason reason, decimal takerFeePercent)
+    public static PaperTrade Close(PaperAccountFile account, PaperPosition position,
+        decimal exitPrice, CloseReason reason, decimal takerFeePercent)
     {
-        decimal gross;
-        decimal exitFee;
-        decimal netPnL;
+        decimal gross, exitFee, netPnL;
 
         if (reason == CloseReason.Liquidation)
         {
             exitPrice = position.LiquidationPrice;
-            gross = -position.Margin; // entire margin wiped
+            gross = -position.Margin;
             exitFee = 0m;
             netPnL = -position.Margin - position.EntryFee;
-            // balance += 0 → the locked margin is simply never returned.
         }
         else
         {
@@ -302,12 +230,10 @@ public static class PaperTradingEngine
         account.TradeHistory.Insert(0, trade);
         if (account.TradeHistory.Count > 200)
             account.TradeHistory.RemoveRange(200, account.TradeHistory.Count - 200);
-
         account.DailyRealizedPnL += netPnL;
         return trade;
     }
 
-    /// <summary>Account equity = free balance + locked margins ± unrealized PnL.</summary>
     public static decimal Equity(PaperAccountFile account, Func<PaperPosition, decimal> priceOf, decimal takerFeePercent)
     {
         var equity = account.CurrentBalance;
