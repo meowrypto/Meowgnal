@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Runtime.Versioning;
 using System.Windows;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
@@ -14,6 +15,7 @@ using Meowgnal.Services;
 
 namespace Meowgnal.Views;
 
+[SupportedOSPlatform("windows")]
 public partial class BacktestWindow : Window
 {
     public BacktestWindow()
@@ -41,15 +43,16 @@ public partial class BacktestWindow : Window
         TradesText.Text = result.Trades.Count.ToString();
         BalanceResultText.Text = $"{result.StartingBalance:N0} → {result.FinalBalance:N0}";
         TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(result.Trades);
-        var points = result.EquityCurve.Select(p => new ObservablePoint(p.Time.Ticks, (double)p.Balance));
+
+        var points = result.EquityCurve.Select(p => new ObservablePoint(p.Time.Ticks, (double)p.Balance)).ToList();
 
         // TradingView palette colors
         var upColor = new SKColor(0x08, 0x99, 0x81);       // #089981 (TradingView Up)
         var textMuted = new SKColor(0x78, 0x7B, 0x86);    // #787B86 (TradingView muted)
         var gridColor = new SKColor(0x2A, 0x2E, 0x39);    // #2A2E39 (TradingView border)
 
-        EquityChart.Series = new ISeries[]
-        {
+        EquityChart.Series =
+        [
             new LineSeries<ObservablePoint>
             {
                 Values = new ObservableCollection<ObservablePoint>(points),
@@ -57,25 +60,27 @@ public partial class BacktestWindow : Window
                 Fill = null,
                 GeometrySize = 0
             }
-        };
-        EquityChart.XAxes = new[]
-        {
+        ];
+
+        EquityChart.XAxes =
+        [
             new Axis
             {
                 Labeler = value => new DateTime((long)value).ToString("MM/dd HH:mm"),
                 LabelsPaint = new SolidColorPaint(textMuted),
-                SeparatorsPaint = new SolidColorPaint(gridColor) { PathEffect = new SKPathEffect() },
+                SeparatorsPaint = new SolidColorPaint(gridColor),
                 TextSize = 11
             }
-        };
-        EquityChart.YAxes = new[]
-        {
+        ];
+
+        EquityChart.YAxes =
+        [
             new Axis
             {
                 LabelsPaint = new SolidColorPaint(textMuted),
                 SeparatorsPaint = new SolidColorPaint(gridColor),
                 TextSize = 11
             }
-        };
+        ];
     }
 }

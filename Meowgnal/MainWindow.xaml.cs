@@ -603,7 +603,7 @@ public partial class MainWindow : Window
 
     // ----- Live prices (every 5 seconds) -----
 
-    private async void WatchTimer_Tick(object sender, EventArgs e)
+    private async void WatchTimer_Tick(object? sender, EventArgs e)
     {
         if (_refreshingWatchlist) return;
         _refreshingWatchlist = true;

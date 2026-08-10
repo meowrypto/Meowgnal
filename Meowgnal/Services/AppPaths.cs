@@ -10,8 +10,11 @@ public static class AppPaths
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Meowgnal");
 
     public static string StrategiesFolder =>
-    Path.Combine(AppDataFolder, "Strategies");
+        Path.Combine(AppDataFolder, "Strategies");
 
     public static string WatchlistsFile =>
         Path.Combine(AppDataFolder, "watchlists.dat");
+
+    public static string PaperAccountFile =>
+        Path.Combine(AppDataFolder, "paper_account.dat");
 }
