@@ -48,6 +48,61 @@
             <Rectangle Canvas.Left="10" Canvas.Top="2" Width="5" Height="6" RadiusX="1.5" RadiusY="1.5" Fill="#089981"/>
         </Canvas>
 
+        <!-- Drawing tool icons (TradingView style) -->
+        <Canvas x:Key="Icon_cursor" x:Shared="False" Width="18" Height="18">
+            <Path Data="M5,2 L5,15 L8.5,11.5 L11,16.5 L13,15.5 L10.5,10.5 L15,10.5 Z" Fill="#B2B5BE"/>
+        </Canvas>
+        <Canvas x:Key="Icon_hline" x:Shared="False" Width="18" Height="18">
+            <Line X1="1" Y1="9" X2="17" Y2="9" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Ellipse Canvas.Left="7" Canvas.Top="7" Width="4" Height="4" Fill="#B2B5BE"/>
+        </Canvas>
+        <Canvas x:Key="Icon_trend" x:Shared="False" Width="18" Height="18">
+            <Line X1="3" Y1="15" X2="15" Y2="3" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Ellipse Canvas.Left="1" Canvas.Top="13" Width="4" Height="4" Fill="#B2B5BE"/>
+            <Ellipse Canvas.Left="13" Canvas.Top="1" Width="4" Height="4" Fill="#B2B5BE"/>
+        </Canvas>
+        <Canvas x:Key="Icon_fib" x:Shared="False" Width="18" Height="18">
+            <Line X1="1" Y1="2" X2="17" Y2="2" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+            <Line X1="1" Y1="7" X2="17" Y2="7" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+            <Line X1="1" Y1="11" X2="17" Y2="11" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+            <Line X1="1" Y1="16" X2="17" Y2="16" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+        </Canvas>
+        <Canvas x:Key="Icon_autosr" x:Shared="False" Width="18" Height="18">
+            <Path Data="M9,1 L10.5,6.5 L16,8 L10.5,9.5 L9,15 L7.5,9.5 L2,8 L7.5,6.5 Z" Fill="#B2B5BE"/>
+            <Ellipse Canvas.Left="13" Canvas.Top="12" Width="3" Height="3" Fill="#B2B5BE"/>
+        </Canvas>
+        <Canvas x:Key="Icon_trash" x:Shared="False" Width="18" Height="18">
+            <Line X1="3" Y1="4" X2="15" Y2="4" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Line X1="7" Y1="2" X2="11" Y2="2" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Path Data="M4,6 L5,16 L13,16 L14,6" Stroke="#B2B5BE" StrokeThickness="1.5" Fill="Transparent"/>
+            <Line X1="7.5" Y1="8" X2="7.5" Y2="14" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+            <Line X1="10.5" Y1="8" X2="10.5" Y2="14" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+        </Canvas>
+
+        <Style x:Key="RailButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Width" Value="40"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="HorizontalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="TvButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
@@ -105,14 +160,39 @@
             <ColumnDefinition Width="250"/>
         </Grid.ColumnDefinitions>
 
-        <!-- Left tool rail -->
+        <!-- Left tool rail (TradingView style drawing toolbar) -->
         <Border Grid.Column="0" Background="{StaticResource BgPanel}"
                 BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,1,0">
-            <StackPanel VerticalAlignment="Top" Margin="0,10,0,0">
-                <TextBlock Text="📊" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,16" Foreground="{StaticResource TextPrimary}"/>
-                <TextBlock Text="🧩" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,16" Foreground="{StaticResource TextMuted}"/>
-                <TextBlock Text="📈" FontSize="16" HorizontalAlignment="Center" Margin="0,0,0,16" Foreground="{StaticResource TextMuted}"/>
-                <TextBlock Text="🔔" FontSize="16" HorizontalAlignment="Center" Foreground="{StaticResource TextMuted}"/>
+            <StackPanel VerticalAlignment="Top" Margin="0,8,0,0">
+                <TextBlock Text="🐱" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="{StaticResource TextPrimary}"/>
+
+                <Button x:Name="ToolCursorButton" Style="{StaticResource RailButton}" Tag="cursor"
+                        Click="ToolButton_Click" ToolTip="Cursor — normal mode">
+                    <ContentControl Content="{StaticResource Icon_cursor}" Width="18" Height="18"/>
+                </Button>
+                <Button x:Name="ToolHLineButton" Style="{StaticResource RailButton}" Tag="horizontal"
+                        Click="ToolButton_Click" ToolTip="Horizontal Line — one click on chart">
+                    <ContentControl Content="{StaticResource Icon_hline}" Width="18" Height="18"/>
+                </Button>
+                <Button x:Name="ToolTrendButton" Style="{StaticResource RailButton}" Tag="trend"
+                        Click="ToolButton_Click" ToolTip="Trend Line — click two points">
+                    <ContentControl Content="{StaticResource Icon_trend}" Width="18" Height="18"/>
+                </Button>
+                <Button x:Name="ToolFibButton" Style="{StaticResource RailButton}" Tag="fib"
+                        Click="ToolButton_Click" ToolTip="Fibonacci Retracement — click two points">
+                    <ContentControl Content="{StaticResource Icon_fib}" Width="18" Height="18"/>
+                </Button>
+
+                <Rectangle Width="24" Height="1" Fill="{StaticResource BorderLine}" Margin="0,6,0,6"/>
+
+                <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
+                        Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
+                    <ContentControl Content="{StaticResource Icon_autosr}" Width="18" Height="18"/>
+                </Button>
+                <Button x:Name="ToolClearButton" Style="{StaticResource RailButton}" Tag="clear"
+                        Click="ToolButton_Click" ToolTip="Clear All Drawings">
+                    <ContentControl Content="{StaticResource Icon_trash}" Width="18" Height="18"/>
+                </Button>
             </StackPanel>
         </Border>
 

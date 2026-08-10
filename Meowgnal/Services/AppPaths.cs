@@ -15,6 +15,6 @@ public static class AppPaths
     public static string WatchlistsFile =>
         Path.Combine(AppDataFolder, "watchlists.dat");
 
-    public static string PaperAccountFile =>
-        Path.Combine(AppDataFolder, "paper_account.dat");
+    public static string PaperAccountFile => Path.Combine(AppDataFolder, "paper_account.dat");
+    public static string DrawingsFile => Path.Combine(AppDataFolder, "drawings.dat");
 }

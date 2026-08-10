@@ -3,6 +3,7 @@ using Meowgnal.Engine;
 using Meowgnal.Models;
 using Meowgnal.Services;
 using Meowgnal.Views;
+using Drawing = Meowgnal.Models.Drawing;
 using Microsoft.Web.WebView2.Core;
 using OpenTK.Compute.OpenCL;
 using System;
@@ -69,6 +70,10 @@ public partial class MainWindow : Window
 
     private readonly DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
+    // Drawing tools state
+    private DrawingsFile _drawingsFile = new();
+    private string? _activeDrawingMode = null;
+
     private static readonly SolidColorBrush UpBrush = new(Color.FromRgb(0x08, 0x99, 0x81));
     private static readonly SolidColorBrush DownBrush = new(Color.FromRgb(0xF2, 0x36, 0x45));
 
@@ -106,6 +111,7 @@ public partial class MainWindow : Window
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
 
         ApplyChartType("candles");
+        SetActiveTool(null);
 
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
@@ -143,6 +149,7 @@ public partial class MainWindow : Window
         _tabs.Add(firstTab);
         await ActivateTabAsync(firstTab);
 
+        _drawingsFile = DrawingStorageService.Load();
         _watchlistsFile = WatchlistStorageService.Load();
         _activeWatchlist = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == _watchlistsFile.ActiveListName)
                            ?? _watchlistsFile.Lists[0];
@@ -1226,7 +1233,60 @@ public partial class MainWindow : Window
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
 
-        if (!root.TryGetProperty("type", out var typeProp) || typeProp.GetString() != "crosshair") return;
+        if (!root.TryGetProperty("type", out var typeProp)) return;
+        var msgType = typeProp.GetString();
+
+        if (msgType == "requestDrawings")
+        {
+            _ = SendDrawingsToChartAsync();
+            return;
+        }
+
+        if (msgType == "drawingCompleted")
+        {
+            try
+            {
+                if (root.TryGetProperty("drawing", out var drawingEl))
+                {
+                    var kindStr = drawingEl.TryGetProperty("kind", out var k) ? k.GetString() : "horizontal";
+                    var kind = kindStr switch
+                    {
+                        "trend" => DrawingKind.TrendLine,
+                        "fib" => DrawingKind.Fibonacci,
+                        _ => DrawingKind.HorizontalLine,
+                    };
+
+                    var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", "") };
+
+                    if (drawingEl.TryGetProperty("points", out var pts))
+                    {
+                        foreach (var pt in pts.EnumerateArray())
+                        {
+                            newDrawing.Points.Add(new DrawingPoint
+                            {
+                                TimeUnix = pt.GetProperty("time").GetInt64(),
+                                Price = pt.GetProperty("price").GetDecimal(),
+                            });
+                        }
+                    }
+
+                    if (newDrawing.Points.Count > 0)
+                    {
+                        _drawingsFile.Drawings.Add(newDrawing);
+                        DrawingStorageService.Save(_drawingsFile);
+                    }
+
+                    _activeDrawingMode = null;
+                    SetActiveTool(null);
+                    _ = SendDrawingModeToChartAsync("none");
+                    _ = SendDrawingsToChartAsync();
+                }
+            }
+            catch { }
+            return;
+        }
+
+        if (msgType != "crosshair") return;
 
         if (root.TryGetProperty("hasData", out var hasData) && hasData.GetBoolean())
         {
@@ -1582,6 +1642,84 @@ public partial class MainWindow : Window
         BuildTimeframeMenu();
     }
 
+    private async void ToolButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string tag) return;
+
+        var symbolClean = _chartSymbol.Replace("/", "");
+
+        if (tag == "clear")
+        {
+            var res = MessageBox.Show($"Delete all drawings for {_chartSymbol}?", "Meowgnal", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (res != MessageBoxResult.Yes) return;
+
+            _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
+            DrawingStorageService.Save(_drawingsFile);
+            await SendDrawingsToChartAsync();
+            return;
+        }
+
+        if (tag == "auto_sr")
+        {
+            if (_currentBars.Count == 0) return;
+            var autoLevels = SupportResistanceDetector.Detect(_chartSymbol, _currentBars);
+
+            // Remove previous auto-detected levels for this symbol to avoid duplicates
+            _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean && d.IsAutoDetected);
+            _drawingsFile.Drawings.AddRange(autoLevels);
+            DrawingStorageService.Save(_drawingsFile);
+            await SendDrawingsToChartAsync();
+            NotificationService.ShowToast("Meowgnal", $"Detected {autoLevels.Count} important S/R levels.");
+            return;
+        }
+
+        // cursor exits drawing mode; other tags enter it
+        var mode = tag == "cursor" ? "none" : tag;
+        SetActiveTool(tag == "cursor" ? null : btn);
+        await SendDrawingModeToChartAsync(mode);
+    }
+
+    private void SetActiveTool(Button? active)
+    {
+        var railButtons = new[] { ToolCursorButton, ToolHLineButton, ToolTrendButton, ToolFibButton };
+        foreach (var b in railButtons)
+            b.Background = Brushes.Transparent;
+
+        (active ?? ToolCursorButton).Background = (Brush)FindResource("Accent");
+    }
+    
+
+    private async Task SendDrawingModeToChartAsync(string mode)
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setDrawingMode", mode }));
+    }
+
+    private async Task SendDrawingsToChartAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+
+        var symbolClean = _chartSymbol.Replace("/", "");
+        var drawings = _drawingsFile.Drawings
+            .Where(d => d.Symbol == symbolClean)
+            .Select(d => new
+            {
+                id = d.Id,
+                kind = d.Kind.ToString().ToLowerInvariant(),
+                color = d.Color,
+                label = d.Label,
+                alert = d.AlertOnCross,
+                points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
+            }).ToArray();
+
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setDrawings", drawings }));
+    }
+
     private void ChartTypeButton_Click(object sender, RoutedEventArgs e) =>
         ChartTypePopup.IsOpen = !ChartTypePopup.IsOpen;
 
@@ -1747,6 +1885,7 @@ public partial class MainWindow : Window
 
         await SendCandlesToChartAsync(bars);
         _ = SendPositionsToChartAsync();
+        _ = SendDrawingsToChartAsync();
     }
 
     private async Task SendCandlesToChartAsync(List<Bar> bars)
