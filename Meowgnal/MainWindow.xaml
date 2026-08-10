@@ -476,7 +476,12 @@
                                         </StackPanel>
 
                                         <TextBlock Text="Leverage" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBlock Text="Leverage" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        
                                         <TextBox x:Name="PopLeverageBox" Text="10" Margin="0,4,0,8"/>
+
+                                        <TextBlock Text="Margin (USDT) — your capital in this trade" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="PopMarginBox" Text="1000" Margin="0,4,0,8"/>
 
                                         <TextBlock Text="Stop-loss % (0 = none)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
                                         <TextBox x:Name="PopSLBox" Text="2" Margin="0,4,0,8"/>

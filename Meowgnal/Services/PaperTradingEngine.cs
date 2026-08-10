@@ -1,7 +1,5 @@
-﻿using LiveChartsCore.Measure;
+﻿using System;
 using Meowgnal.Models;
-using System;
-using System.Drawing;
 
 namespace Meowgnal.Services;
 
@@ -48,6 +46,12 @@ public static class PaperTradingEngine
         public static OpenResult Fail(string error) => new(false, error, null);
     }
 
+    /// <summary>
+    /// Validates and opens a paper position.
+    /// Margin priority: 1) explicit margin from the order form (customMarginUsdt),
+    /// 2) risk-based sizing from Settings, 3) fixed % of balance from Settings.
+    /// The two last parameters are optional so older call sites still compile.
+    /// </summary>
     public static OpenResult TryOpen(
         PaperAccountFile account,
         AppSettings settings,
@@ -61,7 +65,8 @@ public static class PaperTradingEngine
         bool trailingEnabled,
         decimal trailingDistancePercent,
         decimal trailingActivationPercent,
-        string? strategyId)
+        decimal customMarginUsdt = 0m,
+        string? strategyId = null)
     {
         CheckDailyReset(account);
 
@@ -95,37 +100,38 @@ public static class PaperTradingEngine
         var fee = settings.PaperTakerFeePercent;
 
         // ----- Position sizing -----
-        decimal size;
-        if (settings.PaperUseRiskBasedSizing && stopLossPrice > 0)
+        decimal margin;
+        if (customMarginUsdt > 0)
+        {
+            // Manual order: the user chose the exact capital for this trade.
+            margin = customMarginUsdt;
+        }
+        else if (settings.PaperUseRiskBasedSizing && stopLossPrice > 0)
         {
             // Professional mode: risk a fixed % of balance based on SL distance.
             var riskAmount = account.CurrentBalance * settings.PaperRiskPercentPerTrade / 100m;
             var distancePerUnit = Math.Abs(entryPrice - stopLossPrice);
-            size = distancePerUnit > 0 ? riskAmount / distancePerUnit : 0m;
+            var riskSize = distancePerUnit > 0 ? riskAmount / distancePerUnit : 0m;
+            margin = riskSize * entryPrice / leverage;
         }
         else
         {
             // Simple mode: fixed % of balance as margin.
-            var marginWanted = account.CurrentBalance * settings.PaperPositionSizePercent / 100m;
-            size = marginWanted * leverage / entryPrice;
+            margin = account.CurrentBalance * settings.PaperPositionSizePercent / 100m;
         }
 
-        size = Math.Round(size, 8);
-        if (size <= 0)
-            return OpenResult.Fail("Computed position size is zero — balance too small or risk too low.");
-
-        // Cap the notional so margin + entry fee never exceed the free balance.
-        var maxNotional = account.CurrentBalance / (1m / leverage + fee / 100m);
-        var notional = size * entryPrice;
-        if (notional > maxNotional)
-        {
-            notional = maxNotional;
-            size = Math.Round(notional / entryPrice, 8);
-        }
-        if (size <= 0)
+        // Cap the margin so margin + entry fee never exceed the free balance.
+        var maxMargin = account.CurrentBalance / (1m + leverage * fee / 100m);
+        if (margin > maxMargin) margin = maxMargin;
+        margin = Math.Round(margin, 2);
+        if (margin <= 0)
             return OpenResult.Fail("Insufficient balance for this position.");
 
-        var margin = notional / leverage;
+        var notional = margin * leverage;
+        var size = Math.Round(notional / entryPrice, 8);
+        if (size <= 0)
+            return OpenResult.Fail("Computed position size is zero — balance too small or margin too low.");
+
         var entryFee = notional * fee / 100m;
 
         var position = new PaperPosition
@@ -293,7 +299,7 @@ public static class PaperTradingEngine
             StrategyId = position.StrategyId,
         };
 
-    account.TradeHistory.Insert(0, trade);
+        account.TradeHistory.Insert(0, trade);
         if (account.TradeHistory.Count > 200)
             account.TradeHistory.RemoveRange(200, account.TradeHistory.Count - 200);
 

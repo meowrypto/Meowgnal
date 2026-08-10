@@ -711,7 +711,7 @@ public partial class MainWindow : Window
             };
             var sp = new StackPanel();
 
-            // Row 1: symbol + side badge + leverage ... close button
+            // Row 1: symbol + side badge ... locked margin
             var topRow = new Grid();
             topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             topRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -748,19 +748,15 @@ public partial class MainWindow : Window
             });
             topRow.Children.Add(symBox);
 
-            var closeBtn = new TextBlock
+            var marginText = new TextBlock
             {
-                Text = "✕",
+                Text = $"Margin {pos.Margin:N2}",
                 Foreground = (Brush)FindResource("TextMuted"),
                 FontSize = 10,
-                Tag = pos,
-                Cursor = Cursors.Hand,
                 VerticalAlignment = VerticalAlignment.Center,
-                ToolTip = "Close position at market",
             };
-            closeBtn.MouseLeftButtonUp += PaperClose_Click;
-            Grid.SetColumn(closeBtn, 1);
-            topRow.Children.Add(closeBtn);
+            Grid.SetColumn(marginText, 1);
+            topRow.Children.Add(marginText);
             sp.Children.Add(topRow);
 
             // Row 2: size @ entry
@@ -804,6 +800,21 @@ public partial class MainWindow : Window
                 FontSize = 9,
                 Margin = new Thickness(0, 3, 0, 0),
             });
+
+            // Row 5: clear close-position button inside the card
+            var closeBtn = new Button
+            {
+                Content = "⏹ Close position",
+                Style = (Style)FindResource("TvButton"),
+                Foreground = DownBrush,
+                FontSize = 10,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Margin = new Thickness(0, 6, 0, 0),
+                Tag = pos,
+                ToolTip = "Close at market price",
+            };
+            closeBtn.Click += PaperClose_Click;
+            sp.Children.Add(closeBtn);
 
             border.Child = sp;
             PaperPositionsPanel.Children.Add(border);
@@ -920,6 +931,16 @@ public partial class MainWindow : Window
         PopTrailingDistBox.Text = "2";
         PopTrailingActBox.Text = "2";
         PopSideLong.IsChecked = true;
+
+        // Suggested margin (editable): risk-based estimate when enabled,
+        // otherwise the fixed % of balance from Settings.
+        var balance = _paperAccount.CurrentBalance;
+        var slDefault = settings.PaperDefaultStopLossPercent;
+        var suggested = settings.PaperUseRiskBasedSizing && slDefault > 0
+            ? balance * settings.PaperRiskPercentPerTrade / (slDefault * settings.PaperDefaultLeverage)
+            : balance * settings.PaperPositionSizePercent / 100m;
+        if (suggested <= 0) suggested = 100m;
+        PopMarginBox.Text = Math.Round(Math.Min(suggested, balance), 2).ToString();
         OpenPositionPopup.IsOpen = true;
     }
 
@@ -942,6 +963,7 @@ public partial class MainWindow : Window
         var trailing = PopTrailingCheck.IsChecked == true;
         var trailDist = decimal.TryParse(PopTrailingDistBox.Text, out var td) && td > 0 ? td : 2m;
         var trailAct = decimal.TryParse(PopTrailingActBox.Text, out var ta) && ta > 0 ? ta : 2m;
+        var marginUsdt = decimal.TryParse(PopMarginBox.Text, out var mu) && mu > 0 ? mu : 0m;
 
         // Entry price: prefer the current chart's source, fall back to the other.
         IDataProvider primary = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
@@ -981,7 +1003,7 @@ public partial class MainWindow : Window
 
         var result = PaperTradingEngine.TryOpen(
             _paperAccount, settings, symbol, dataSource, side, entry, leverage,
-            slPrice, tpPrice, trailing, trailDist, trailAct, strategyId: null);
+            slPrice, tpPrice, trailing, trailDist, trailAct, marginUsdt, strategyId: null);
 
         if (!result.Ok)
         {
@@ -998,9 +1020,9 @@ public partial class MainWindow : Window
     }
 
     // Manual close at the live market price.
-    private async void PaperClose_Click(object sender, MouseButtonEventArgs e)
+    private async void PaperClose_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not TextBlock t || t.Tag is not PaperPosition pos) return;
+        if (sender is not Button b || b.Tag is not PaperPosition pos) return;
 
         var settings = SettingsStorageService.Load();
         IDataProvider provider = pos.DataSource == "hyperliquid"
