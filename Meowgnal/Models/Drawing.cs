@@ -23,7 +23,25 @@ public enum DrawingKind
     Pitchfork,
     SchiffPitchfork,
     ModifiedSchiffPitchfork,
-    InsidePitchfork
+    InsidePitchfork,
+    FibExtension,
+    FibTimeZone,
+    FibCircles,
+    FibSpiral,
+    FibArcs,
+    FibWedge,
+    FibSpeedFan,
+    Pitchfan,
+    GannBox,
+    GannSquare,
+    GannFan,
+    Rectangle,
+    RotatedRectangle,
+    Circle,
+    Ellipse,
+    Triangle,
+    Polyline,
+    Arc
 }
 
 /// <summary>Standard Fibonacci retracement levels.</summary>

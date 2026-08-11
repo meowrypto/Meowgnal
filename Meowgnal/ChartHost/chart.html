@@ -231,7 +231,7 @@
 
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
-            const g = { lines: [], dashed: [], circles: [], labels: [] };
+            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [] };
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return g;
             const X = i => px(pts[i].time), Y = i => py(pts[i].price);
@@ -315,7 +315,156 @@
                     g.lines.push([0, yM(0), W, yM(W)], [0, y2At(0), W, y2At(W)], [0, y3At(0), W, y3At(W)]);
                     break;
                 }
-                // __MORE_TOOLS__
+                case 'fibextension': {
+                    const lo = Math.min(x1, x2);
+                    const diff = pts[1].price - pts[0].price;
+                    g.lines.push([x1, y1, x2, y2]);
+                    for (const lvl of FIB_LEVELS) {
+                        const yy = py(pts[0].price + diff * lvl);
+                        if (yy !== null) { g.dashed.push([lo, yy, W, yy]); g.labels.push([(lvl * 100).toFixed(1) + '%', W - 46, yy - 4]); }
+                    }
+                    break;
+                }
+                case 'fibtimezone': {
+                    const dx = x2 - x1;
+                    for (const r of [0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.618, 2.618]) {
+                        const xx = x1 + dx * r;
+                        if (xx >= 0 && xx <= W) g.dashed.push([xx, 0, xx, H]);
+                    }
+                    break;
+                }
+                case 'fibcircles': {
+                    const dist = Math.hypot(x2 - x1, y2 - y1);
+                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.circles.push([x2, y2, dist * lvl]);
+                    break;
+                }
+                case 'fibspiral': {
+                    const dist = Math.hypot(x2 - x1, y2 - y1);
+                    const startAng = Math.atan2(y1 - y2, x1 - x2);
+                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x2, y2, dist * lvl, startAng, startAng + Math.PI]);
+                    break;
+                }
+                case 'fibarcs': {
+                    const dist = Math.hypot(x2 - x1, y2 - y1);
+                    const ang = Math.atan2(y2 - y1, x2 - x1);
+                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x1, y1, dist * lvl, ang - 0.6, ang + 0.6]);
+                    break;
+                }
+                case 'fibwedge': {
+                    g.lines.push(slopeCoords(x1, y1, x2, y2, 'ray'));
+                    g.lines.push([x1, y1, W, y1]);
+                    const diff = pts[1].price - pts[0].price;
+                    for (const lvl of FIB_LEVELS) {
+                        const yy = py(pts[0].price + diff * lvl);
+                        if (yy !== null) g.dashed.push([Math.min(x1, x2), yy, Math.max(x1, x2), yy]);
+                    }
+                    break;
+                }
+                case 'fibspeedfan': {
+                    for (const lvl of FIB_LEVELS) {
+                        const yy = y1 + (y2 - y1) * lvl;
+                        g.lines.push([x1, y1, x2, yy]);
+                    }
+                    break;
+                }
+                case 'pitchfan': {
+                    for (const lvl of FIB_LEVELS) {
+                        const yy = y1 + (y2 - y1) * lvl;
+                        g.lines.push(slopeCoords(x1, y1, x2, yy, 'ray'));
+                    }
+                    break;
+                }
+                case 'gannbox': {
+                    g.lines.push([x1, y1, x2, y1], [x1, y2, x2, y2], [x1, y1, x1, y2], [x2, y1, x2, y2]);
+                    for (const r of [0.25, 0.5, 0.75]) {
+                        const xx = x1 + (x2 - x1) * r;
+                        const yy = y1 + (y2 - y1) * r;
+                        g.dashed.push([xx, y1, xx, y2], [x1, yy, x2, yy]);
+                    }
+                    break;
+                }
+                case 'gannsquare': {
+                    const side = Math.max(Math.abs(x2 - x1), Math.abs(y2 - y1));
+                    const sx = x2 >= x1 ? 1 : -1, sy = y2 >= y1 ? 1 : -1;
+                    const xe = x1 + side * sx, ye = y1 + side * sy;
+                    g.lines.push([x1, y1, xe, y1], [x1, ye, xe, ye], [x1, y1, x1, ye], [xe, y1, xe, ye]);
+                    for (const r of [0.25, 0.5, 0.75]) {
+                        g.dashed.push([x1 + side * r * sx, y1, x1 + side * r * sx, ye], [x1, y1 + side * r * sy, xe, y1 + side * r * sy]);
+                    }
+                    break;
+                }
+                case 'gannfan': {
+                    if (m === null) break;
+                    for (const r of [0.25, 0.5, 1, 2, 4]) {
+                        const yAt = x => y1 + m * r * (x - x1);
+                        g.lines.push([x1, y1, W, yAt(W)]);
+                    }
+                    break;
+                }
+                case 'rectangle': {
+                    const xL = Math.min(x1, x2), xR = Math.max(x1, x2);
+                    const yT = Math.min(y1, y2), yB = Math.max(y1, y2);
+                    g.lines.push([xL, yT, xR, yT], [xR, yT, xR, yB], [xR, yB, xL, yB], [xL, yB, xL, yT]);
+                    break;
+                }
+                case 'rotatedrectangle': {
+                    // Use three points: two define one side, third defines perpendicular distance
+                    if (x3 === null || m === null) break;
+                    const pm = -1 / m;
+                    const dist = Math.abs((pm * (x3 - x2) - (y3 - y2)) / Math.hypot(pm, 1));
+                    const ux = (x2 - x1) / Math.hypot(x2 - x1, y2 - y1);
+                    const uy = (y2 - y1) / Math.hypot(x2 - x1, y2 - y1);
+                    const px = -uy, py = ux;
+                    const x2p = x2 + px * dist, y2p = y2 + py * dist;
+                    const x1p = x1 + px * dist, y1p = y1 + py * dist;
+                    g.lines.push([x1, y1, x2, y2], [x2, y2, x2p, y2p], [x2p, y2p, x1p, y1p], [x1p, y1p, x1, y1]);
+                    break;
+                }
+                case 'circle': {
+                    const r = Math.hypot(x2 - x1, y2 - y1);
+                    g.circles.push([x1, y1, r]);
+                    break;
+                }
+                case 'ellipse': {
+                    // Approximate ellipse as stretched circle (axis-aligned bounding box)
+                    const rx = Math.abs(x2 - x1);
+                    const ry = Math.abs(y2 - y1);
+                    const segs = 48;
+                    const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+                    let px = cx + rx, py = cy;
+                    for (let i = 1; i <= segs; i++) {
+                        const a = (i / segs) * Math.PI * 2;
+                        const nx = cx + rx * Math.cos(a);
+                        const ny = cy + ry * Math.sin(a);
+                        g.lines.push([px, py, nx, ny]);
+                        px = nx; py = ny;
+                    }
+                    break;
+                }
+                case 'triangle': {
+                    if (x3 === null) break;
+                    g.lines.push([x1, y1, x2, y2], [x2, y2, x3, y3], [x3, y3, x1, y1]);
+                    break;
+                }
+                case 'polyline': {
+                    for (let i = 0; i < pts.length - 1; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        if (xa !== null && ya !== null && xb !== null && yb !== null)
+                            g.lines.push([xa, ya, xb, yb]);
+                    }
+                    break;
+                }
+                case 'arc': {
+                    if (x3 === null) break;
+                    const ang1 = Math.atan2(y2 - y1, x2 - x1);
+                    const ang2 = Math.atan2(y3 - y1, x3 - x1);
+                    const r = Math.hypot(x2 - x1, y2 - y1);
+                    let a1 = ang1, a2 = ang2;
+                    if (a2 < a1) a2 += Math.PI * 2;
+                    g.arcs.push([x1, y1, r, a1, a2]);
+                    break;
+                }
             }
             return g;
         }
@@ -327,6 +476,8 @@
                 if (segDist(x, y, L[0], L[1], L[2], L[3]) <= tol) return true;
             for (const c of g.circles)
                 if (Math.abs(Math.hypot(x - c[0], y - c[1]) - c[2]) <= tol) return true;
+            for (const a of g.arcs)
+                if (Math.abs(Math.hypot(x - a[0], y - a[1]) - a[2]) <= tol) return true;
             return false;
         }
 
@@ -352,6 +503,7 @@
                 for (const L of g.dashed) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
                 ctx.setLineDash([]);
                 for (const c of g.circles) { ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2); ctx.stroke(); }
+                for (const a of g.arcs) { ctx.beginPath(); ctx.arc(a[0], a[1], a[2], a[3], a[4]); ctx.stroke(); }
                 for (const t of g.labels) ctx.fillText(t[0], t[1], t[2]);
             }
         }
@@ -414,6 +566,17 @@
                     applyTheme(msg.colors);
                 } else if (msg.type === 'setDrawingMode') {
                     const m = msg.mode;
+                    // Finish polyline when switching modes
+                    if (drawingMode === 'polyline' && m !== 'polyline' && pendingPoints.length >= 2) {
+                        const drawing = {
+                            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                            kind: 'polyline',
+                            color: '#2962FF', label: '', alert: false,
+                            points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
+                        };
+                        post({ type: 'drawingCompleted', drawing: drawing });
+                    }
+
                     if (m === 'cross' || m === 'dot' || m === 'arrow') {
                         cursorMode = m; drawingMode = null;
                         chart.applyOptions({ crosshair: { mode: m === 'arrow' ? LightweightCharts.CrosshairMode.Hidden : LightweightCharts.CrosshairMode.Normal } });
@@ -489,7 +652,9 @@
             horizontal: 1, verticalline: 1, crossline: 1,
             parallelchannel: 3, flattopbottom: 3,
             pitchfork: 3, schiffpitchfork: 3, modifiedschiffpitchfork: 3, insidepitchfork: 3,
-            disjointchannel: 4
+            disjointchannel: 4,
+            rectangle: 2, circle: 2, ellipse: 2, arc: 3, triangle: 3,
+            polyline: 20, rotatedrectangle: 3
         };
 
         chart.subscribeClick(function (param) {
@@ -513,7 +678,9 @@
             pendingPoints.push({ time: param.time, price: price });
 
             const need = NEED[drawingMode] || 2;
-            if (pendingPoints.length >= need) {
+            const isPolyline = drawingMode === 'polyline';
+
+            if (!isPolyline && pendingPoints.length >= need) {
                 const drawing = {
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     kind: drawingMode,

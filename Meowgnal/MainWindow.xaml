@@ -89,7 +89,15 @@
             <Line X1="7.5" Y1="8" X2="7.5" Y2="14" Stroke="#B2B5BE" StrokeThickness="1.2"/>
             <Line X1="10.5" Y1="8" X2="10.5" Y2="14" Stroke="#B2B5BE" StrokeThickness="1.2"/>
         </Canvas>
-
+        <Canvas x:Key="Icon_gann" x:Shared="False" Width="18" Height="18">
+            <Rectangle Canvas.Left="2" Canvas.Top="2" Width="14" Height="14" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
+            <Line X1="9" Y1="2" X2="9" Y2="16" Stroke="#B2B5BE" StrokeThickness="1"/>
+            <Line X1="2" Y1="9" X2="16" Y2="9" Stroke="#B2B5BE" StrokeThickness="1"/>
+        </Canvas>
+        <Canvas x:Key="Icon_shapes" x:Shared="False" Width="18" Height="18">
+            <Rectangle Canvas.Left="1" Canvas.Top="1" Width="8" Height="8" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
+            <Ellipse Canvas.Left="9" Canvas.Top="9" Width="8" Height="8" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
+        </Canvas>
         <!-- Window Control Buttons -->
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -405,10 +413,104 @@
                             </Border>
                         </Popup>
 
-                        <Button x:Name="ToolFibButton" Style="{StaticResource RailButton}" Tag="fib"
-                                Click="ToolButton_Click" ToolTip="Fibonacci Retracement — click two points">
+                        <!-- Fibonacci group -->
+                        <Button x:Name="FibGroupButton" Style="{StaticResource RailButton}"
+                                Click="FibGroup_Click" ToolTip="Fibonacci tools">
                             <ContentControl Content="{StaticResource Icon_fib}" Width="18" Height="18"/>
                         </Button>
+                        <Popup x:Name="FibPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=FibGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fib" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Retracement" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibextension" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Extension" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibtimezone" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Time Zone" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibcircles" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Circles" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibspiral" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Spiral" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibarcs" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Arcs" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibwedge" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Wedge" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibspeedfan" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Speed Fan" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="pitchfan" Click="ToolButton_Click">
+                                        <TextBlock Text="Pitchfan" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
+                        <!-- Gann group -->
+                        <Button x:Name="GannGroupButton" Style="{StaticResource RailButton}"
+                                Click="GannGroup_Click" ToolTip="Gann tools">
+                            <ContentControl Content="{StaticResource Icon_gann}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="GannPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=GannGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="gannbox" Click="ToolButton_Click">
+                                        <TextBlock Text="Gann Box" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="gannsquare" Click="ToolButton_Click">
+                                        <TextBlock Text="Gann Square" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="gannfan" Click="ToolButton_Click">
+                                        <TextBlock Text="Gann Fan" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
+                        <!-- Shapes group -->
+                        <Button x:Name="ShapesGroupButton" Style="{StaticResource RailButton}"
+                                Click="ShapesGroup_Click" ToolTip="Geometric shapes">
+                            <ContentControl Content="{StaticResource Icon_shapes}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="ShapesPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=ShapesGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="rectangle" Click="ToolButton_Click">
+                                        <TextBlock Text="Rectangle (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="rotatedrectangle" Click="ToolButton_Click">
+                                        <TextBlock Text="Rotated Rectangle" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="circle" Click="ToolButton_Click">
+                                        <TextBlock Text="Circle (center + radius)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="ellipse" Click="ToolButton_Click">
+                                        <TextBlock Text="Ellipse" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="triangle" Click="ToolButton_Click">
+                                        <TextBlock Text="Triangle (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="polyline" Click="ToolButton_Click">
+                                        <TextBlock Text="Polyline (multi-click, right-click to finish)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arc" Click="ToolButton_Click">
+                                        <TextBlock Text="Arc (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
 
                         <Rectangle Width="24" Height="1" Fill="{DynamicResource BorderLine}" Margin="0,6,0,6"/>
 
