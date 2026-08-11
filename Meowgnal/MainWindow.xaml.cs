@@ -1934,13 +1934,24 @@ public partial class MainWindow : Window
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
         LinePopup.IsOpen = false;
+        ChannelPopup.IsOpen = false;
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
 
     private void LineGroup_Click(object sender, RoutedEventArgs e)
     {
         CursorPopup.IsOpen = false;
-        LinePopup.IsOpen = !LinePopup.IsOpen;
+        LinePopup.IsOpen = false;
+        ChannelPopup.IsOpen = false;
+
+        // Highlight the group button that owns this tool
+    }
+
+    private void ChannelGroup_Click(object sender, RoutedEventArgs e)
+    {
+        CursorPopup.IsOpen = false;
+        LinePopup.IsOpen = false;
+        ChannelPopup.IsOpen = !ChannelPopup.IsOpen;
     }
 
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
@@ -1981,6 +1992,9 @@ public partial class MainWindow : Window
         {
             "fib" => ToolFibButton,
             "cursor" or "dot" or "arrow" or "eraser" => CursorGroupButton,
+            "parallelchannel" or "regressiontrend" or "flattopbottom" or "disjointchannel"
+                or "pitchfork" or "schiffpitchfork" or "modifiedschiffpitchfork" or "insidepitchfork"
+                => ChannelGroupButton,
             _ => LineGroupButton,
         };
 
@@ -1991,8 +2005,7 @@ public partial class MainWindow : Window
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, ToolFibButton };
-        foreach (var b in railButtons)
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, ChannelGroupButton, ToolFibButton }; foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
 
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");

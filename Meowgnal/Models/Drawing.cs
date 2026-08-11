@@ -15,7 +15,15 @@ public enum DrawingKind
     VerticalLine,
     Crossline,
     InfoLine,
-    TrendAngle
+    TrendAngle,
+    ParallelChannel,
+    RegressionTrend,
+    FlatTopBottom,
+    DisjointChannel,
+    Pitchfork,
+    SchiffPitchfork,
+    ModifiedSchiffPitchfork,
+    InsidePitchfork
 }
 
 /// <summary>Standard Fibonacci retracement levels.</summary>

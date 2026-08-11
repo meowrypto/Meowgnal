@@ -56,29 +56,20 @@
     <div id="ctxMenu"></div>
     <script>
         const COLORS = {
-            background: '#131722',
-            grid: '#1E222D',
-            border: '#2A2E39',
-            textMuted: '#787B86',
-            crosshair: '#758696',
-            up: '#089981',
-            down: '#F23645',
-            accent: '#2962FF',
-            volumeUp: 'rgba(8, 153, 129, 0.35)',
-            volumeDown: 'rgba(242, 54, 69, 0.35)'
+            background: '#131722', grid: '#1E222D', border: '#2A2E39',
+            textMuted: '#787B86', crosshair: '#758696', accent: '#2962FF',
+            up: '#089981', down: '#F23645',
+            volumeUp: 'rgba(8, 153, 129, 0.35)', volumeDown: 'rgba(242, 54, 69, 0.35)'
         };
+        const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
 
         const chart = LightweightCharts.createChart(document.getElementById('chart'), {
             layout: {
                 background: { type: LightweightCharts.ColorType.Solid, color: COLORS.background },
-                textColor: COLORS.textMuted,
-                fontSize: 11,
+                textColor: COLORS.textMuted, fontSize: 11,
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, Helvetica, Arial, sans-serif"
             },
-            grid: {
-                vertLines: { color: COLORS.grid },
-                horzLines: { color: COLORS.grid }
-            },
+            grid: { vertLines: { color: COLORS.grid }, horzLines: { color: COLORS.grid } },
             rightPriceScale: { borderColor: COLORS.border },
             timeScale: { borderColor: COLORS.border, timeVisible: true, secondsVisible: false },
             crosshair: {
@@ -88,31 +79,23 @@
             }
         });
 
-        const volumeSeries = chart.addHistogramSeries({
-            priceFormat: { type: 'volume' },
-            priceScaleId: ''
-        });
-        chart.priceScale('').applyOptions({
-            scaleMargins: { top: 0.8, bottom: 0 }
-        });
+        const volumeSeries = chart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: '' });
+        chart.priceScale('').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
         let rawData = [];
         let displayData = [];
         let chartType = 'candles';
         let activeSeries = null;
 
-        // Paper-trading position overlay
         let lastPositions = [];
         let positionLines = [];
         let markersApi = null;
 
-        // Drawing tools state
         let drawingMode = null;
         let cursorMode = 'cross';
         let pendingPoints = [];
         let customDrawings = [];
 
-        // Transparent overlay canvas for drawings
         const drawCanvas = document.createElement('canvas');
         drawCanvas.style.position = 'absolute';
         drawCanvas.style.top = '0';
@@ -123,17 +106,13 @@
         const ctx = drawCanvas.getContext('2d');
 
         function resizeCanvas() {
-            const chartEl = document.getElementById('chart');
-            drawCanvas.width = chartEl.clientWidth;
-            drawCanvas.height = chartEl.clientHeight;
+            const el = document.getElementById('chart');
+            drawCanvas.width = el.clientWidth;
+            drawCanvas.height = el.clientHeight;
             renderCustomDrawings();
         }
-
         function resizeChart() {
-            chart.applyOptions({
-                width: document.body.clientWidth,
-                height: document.body.clientHeight
-            });
+            chart.applyOptions({ width: document.body.clientWidth, height: document.body.clientHeight });
             resizeCanvas();
         }
         window.addEventListener('resize', resizeChart);
@@ -146,44 +125,25 @@
 
         function createSeriesForType() {
             switch (chartType) {
-                case 'line':
-                    return chart.addLineSeries({ color: COLORS.accent, lineWidth: 2 });
-                case 'area':
-                    return chart.addAreaSeries({
-                        lineColor: COLORS.accent,
-                        topColor: 'rgba(41, 98, 255, 0.35)',
-                        bottomColor: 'rgba(41, 98, 255, 0.03)',
-                        lineWidth: 2
-                    });
-                case 'bars':
-                    return chart.addBarSeries({ upColor: COLORS.up, downColor: COLORS.down });
-                default:
-                    return chart.addCandlestickSeries({
-                        upColor: COLORS.up,
-                        downColor: COLORS.down,
-                        borderUpColor: COLORS.up,
-                        borderDownColor: COLORS.down,
-                        wickUpColor: COLORS.up,
-                        wickDownColor: COLORS.down,
-                        priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
-                    });
+                case 'line': return chart.addLineSeries({ color: COLORS.accent, lineWidth: 2 });
+                case 'area': return chart.addAreaSeries({ lineColor: COLORS.accent, topColor: 'rgba(41, 98, 255, 0.35)', bottomColor: 'rgba(41, 98, 255, 0.03)', lineWidth: 2 });
+                case 'bars': return chart.addBarSeries({ upColor: COLORS.up, downColor: COLORS.down });
+                default: return chart.addCandlestickSeries({
+                    upColor: COLORS.up, downColor: COLORS.down,
+                    borderUpColor: COLORS.up, borderDownColor: COLORS.down,
+                    wickUpColor: COLORS.up, wickDownColor: COLORS.down,
+                    priceFormat: { type: 'price', precision: 2, minMove: 0.01 }
+                });
             }
         }
 
         function heikinAshi(candles) {
-            const ha = [];
-            let prevOpen = null, prevClose = null;
+            const ha = []; let po = null, pc = null;
             for (const c of candles) {
-                const haClose = (c.open + c.high + c.low + c.close) / 4;
-                const haOpen = prevOpen === null ? (c.open + c.close) / 2 : (prevOpen + prevClose) / 2;
-                ha.push({
-                    time: c.time, open: haOpen,
-                    high: Math.max(c.high, haOpen, haClose),
-                    low: Math.min(c.low, haOpen, haClose),
-                    close: haClose
-                });
-                prevOpen = haOpen;
-                prevClose = haClose;
+                const hc = (c.open + c.high + c.low + c.close) / 4;
+                const ho = po === null ? (c.open + c.close) / 2 : (po + pc) / 2;
+                ha.push({ time: c.time, open: ho, high: Math.max(c.high, ho, hc), low: Math.min(c.low, ho, hc), close: hc });
+                po = ho; pc = hc;
             }
             return ha;
         }
@@ -191,105 +151,60 @@
         function buildDisplayData() {
             if (chartType === 'heikinashi') return heikinAshi(rawData);
             if (chartType === 'line' || chartType === 'area')
-                return rawData.map(function (c) { return { time: c.time, value: c.close }; });
+                return rawData.map(c => ({ time: c.time, value: c.close }));
             return rawData;
         }
 
         function renderVolume() {
-            volumeSeries.setData(rawData.map(function (c) {
-                return {
-                    time: c.time,
-                    value: c.volume,
-                    color: c.close >= c.open ? COLORS.volumeUp : COLORS.volumeDown
-                };
-            }));
+            volumeSeries.setData(rawData.map(c => ({
+                time: c.time, value: c.volume,
+                color: c.close >= c.open ? COLORS.volumeUp : COLORS.volumeDown
+            })));
         }
 
         function snapToBarTime(t) {
             if (!rawData.length) return t;
             let lo = 0, hi = rawData.length - 1, ans = rawData[0].time;
-            while (lo <= hi) {
-                const mid = (lo + hi) >> 1;
-                if (rawData[mid].time <= t) { ans = rawData[mid].time; lo = mid + 1; }
-                else hi = mid - 1;
-            }
+            while (lo <= hi) { const mid = (lo + hi) >> 1; if (rawData[mid].time <= t) { ans = rawData[mid].time; lo = mid + 1; } else hi = mid - 1; }
             return ans;
         }
 
         function applyPositions() {
-            if (activeSeries !== null) {
-                for (const line of positionLines) {
-                    try { activeSeries.removePriceLine(line); } catch (e) { }
-                }
-            }
+            if (activeSeries !== null) for (const l of positionLines) { try { activeSeries.removePriceLine(l); } catch (e) { } }
             positionLines = [];
-
-            if (markersApi !== null) {
-                try { markersApi.detach(); } catch (e) { }
-                markersApi = null;
-            }
-
-            if (activeSeries === null || !lastPositions || lastPositions.length === 0) return;
+            if (markersApi !== null) { try { markersApi.detach(); } catch (e) { } markersApi = null; }
+            if (activeSeries === null || !lastPositions || !lastPositions.length) return;
 
             const markers = [];
             for (const p of lastPositions) {
                 const isLong = p.side === 'long';
                 const label = (isLong ? 'LONG ' : 'SHORT ') + p.leverage + 'x';
-
-                positionLines.push(activeSeries.createPriceLine({
-                    price: p.entryPrice, color: COLORS.accent, lineWidth: 1,
-                    lineStyle: LightweightCharts.LineStyle.Solid,
-                    axisLabelVisible: true, title: label
-                }));
-
-                if (p.stopLoss > 0) {
-                    positionLines.push(activeSeries.createPriceLine({
-                        price: p.stopLoss, color: COLORS.down, lineWidth: 1,
-                        lineStyle: LightweightCharts.LineStyle.Dashed,
-                        axisLabelVisible: true, title: 'SL'
-                    }));
-                }
-
-                if (p.takeProfit > 0) {
-                    positionLines.push(activeSeries.createPriceLine({
-                        price: p.takeProfit, color: COLORS.up, lineWidth: 1,
-                        lineStyle: LightweightCharts.LineStyle.Dashed,
-                        axisLabelVisible: true, title: 'TP'
-                    }));
-                }
-
-                if (p.liquidation > 0) {
-                    positionLines.push(activeSeries.createPriceLine({
-                        price: p.liquidation, color: COLORS.down, lineWidth: 1,
-                        lineStyle: LightweightCharts.LineStyle.Dotted,
-                        axisLabelVisible: true, title: 'LIQ'
-                    }));
-                }
-
-                markers.push({
-                    time: snapToBarTime(p.openTime),
-                    position: isLong ? 'belowBar' : 'aboveBar',
-                    color: isLong ? COLORS.up : COLORS.down,
-                    shape: isLong ? 'arrowUp' : 'arrowDown',
-                    text: label
-                });
+                positionLines.push(activeSeries.createPriceLine({ price: p.entryPrice, color: COLORS.accent, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid, axisLabelVisible: true, title: label }));
+                if (p.stopLoss > 0) positionLines.push(activeSeries.createPriceLine({ price: p.stopLoss, color: COLORS.down, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'SL' }));
+                if (p.takeProfit > 0) positionLines.push(activeSeries.createPriceLine({ price: p.takeProfit, color: COLORS.up, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: true, title: 'TP' }));
+                if (p.liquidation > 0) positionLines.push(activeSeries.createPriceLine({ price: p.liquidation, color: COLORS.down, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'LIQ' }));
+                markers.push({ time: snapToBarTime(p.openTime), position: isLong ? 'belowBar' : 'aboveBar', color: isLong ? COLORS.up : COLORS.down, shape: isLong ? 'arrowUp' : 'arrowDown', text: label });
             }
-
             markers.sort((a, b) => a.time - b.time);
-
             try {
-                if (typeof LightweightCharts.createSeriesMarkers === 'function') {
-                    markersApi = LightweightCharts.createSeriesMarkers(activeSeries, markers);
-                } else if (typeof activeSeries.setMarkers === 'function') {
-                    activeSeries.setMarkers(markers);
-                }
+                if (typeof LightweightCharts.createSeriesMarkers === 'function') markersApi = LightweightCharts.createSeriesMarkers(activeSeries, markers);
+                else if (typeof activeSeries.setMarkers === 'function') activeSeries.setMarkers(markers);
             } catch (e) { }
         }
 
-        // ---------- drawing geometry helpers ----------
+        // ---------- generic drawing engine ----------
         function px(t) { return chart.timeScale().timeToCoordinate(t); }
         function py(p) { return activeSeries ? activeSeries.priceToCoordinate(p) : null; }
-        function line(a, b, c, e) { ctx.beginPath(); ctx.moveTo(a, b); ctx.lineTo(c, e); ctx.stroke(); }
+
+        function slopeCoords(x1, y1, x2, y2, mode) {
+            const W = drawCanvas.width, H = drawCanvas.height;
+            if (x2 === x1) return mode === 'seg' ? [x1, y1, x2, y2] : [x1, 0, x1, H];
+            const m = (y2 - y1) / (x2 - x1);
+            const yAt = x => y1 + m * (x - x1);
+            if (mode === 'seg') return [x1, y1, x2, y2];
+            if (mode === 'ray') { const xe = x2 >= x1 ? W : 0; return [x1, y1, xe, yAt(xe)]; }
+            return [0, yAt(0), W, yAt(W)];
+        }
 
         function segDist(x, y, x1, y1, x2, y2) {
             const dx = x2 - x1, dy = y2 - y1;
@@ -299,63 +214,126 @@
             return Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy));
         }
 
-        function lineDist(x, y, x1, y1, x2, y2) {
-            const dx = x2 - x1, dy = y2 - y1;
-            const len = Math.hypot(dx, dy);
-            if (len === 0) return Math.hypot(x - x1, y - y1);
-            return Math.abs(dy * (x - x1) - dx * (y - y1)) / len;
+        function regressionSeg(t1, t2) {
+            const lo = Math.min(t1, t2), hi = Math.max(t1, t2);
+            const idx = rawData.filter(c => c.time >= lo && c.time <= hi);
+            if (idx.length < 2) return null;
+            let sx = 0, sy = 0, sxy = 0, sxx = 0;
+            idx.forEach((c, i) => { sx += i; sy += c.close; sxy += i * c.close; sxx += i * i; });
+            const nn = idx.length;
+            const b = (nn * sxy - sx * sy) / ((nn * sxx - sx * sx) || 1);
+            const a = (sy - b * sx) / nn;
+            const xa = px(idx[0].time), xb = px(idx[nn - 1].time);
+            const ya = py(a), yb = py(a + b * (nn - 1));
+            if (xa === null || xb === null || ya === null || yb === null) return null;
+            return [xa, ya, xb, yb];
         }
 
-        function drawSlope(x1, y1, x2, y2, mode) {
-            const W = drawCanvas.width;
-            if (x2 === x1) { line(x1, 0, x1, drawCanvas.height); return; }
-            const m = (y2 - y1) / (x2 - x1);
-            const yAt = x => y1 + m * (x - x1);
-            if (mode === 'seg') line(x1, y1, x2, y2);
-            else if (mode === 'ray') { const xe = x2 >= x1 ? W : 0; line(x1, y1, xe, yAt(xe)); }
-            else line(0, yAt(0), W, yAt(W));
+        function geometry(d) {
+            const W = drawCanvas.width, H = drawCanvas.height;
+            const g = { lines: [], dashed: [], circles: [], labels: [] };
+            const pts = d.points || [];
+            if (!pts.length || !activeSeries) return g;
+            const X = i => px(pts[i].time), Y = i => py(pts[i].price);
+            const n = pts.length;
+            const x1 = X(0), y1 = Y(0);
+            const x2 = n > 1 ? X(1) : null, y2 = n > 1 ? Y(1) : null;
+            const x3 = n > 2 ? X(2) : null, y3 = n > 2 ? Y(2) : null;
+            const x4 = n > 3 ? X(3) : null, y4 = n > 3 ? Y(3) : null;
+            const m = (x1 !== null && x2 !== null && x2 !== x1) ? (y2 - y1) / (x2 - x1) : null;
+
+            switch (d.kind) {
+                case 'horizontalline':
+                    g.lines.push([0, y1, W, y1]);
+                    if (d.label) g.labels.push([d.label, 8, y1 - 5]);
+                    break;
+                case 'horizontalray': {
+                    const right = x2 === null || x2 >= x1;
+                    g.lines.push([right ? x1 : 0, y1, right ? W : x1, y1]);
+                    break;
+                }
+                case 'verticalline': g.lines.push([x1, 0, x1, H]); break;
+                case 'crossline': g.lines.push([0, y1, W, y1], [x1, 0, x1, H]); break;
+                case 'trendline': g.lines.push([x1, y1, x2, y2]); break;
+                case 'ray': g.lines.push(slopeCoords(x1, y1, x2, y2, 'ray')); break;
+                case 'extendedline': g.lines.push(slopeCoords(x1, y1, x2, y2, 'full')); break;
+                case 'infoline': {
+                    g.lines.push([x1, y1, x2, y2]);
+                    const chg = ((pts[1].price - pts[0].price) / pts[0].price) * 100;
+                    g.labels.push([(chg >= 0 ? '+' : '') + chg.toFixed(2) + '%', x2 + 6, y2 - 6]);
+                    break;
+                }
+                case 'trendangle': {
+                    g.lines.push([x1, y1, x2, y2]);
+                    const ang = Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI;
+                    g.labels.push([ang.toFixed(1) + '°', x2 + 6, y2 - 6]);
+                    break;
+                }
+                case 'fibonacci': {
+                    g.lines.push([x1, y1, x2, y2]);
+                    const lo = Math.min(x1, x2) - 60, hi = Math.max(x1, x2) + 60;
+                    const diff = pts[1].price - pts[0].price;
+                    for (const lvl of FIB_LEVELS) {
+                        const yy = py(pts[0].price + diff * lvl);
+                        if (yy !== null) { g.dashed.push([lo, yy, hi, yy]); g.labels.push([(lvl * 100).toFixed(1) + '%', hi + 5, yy + 4]); }
+                    }
+                    break;
+                }
+                case 'parallelchannel': {
+                    if (m === null || x3 === null) break;
+                    g.lines.push(slopeCoords(x1, y1, x2, y2, 'full'));
+                    const yAt = x => y3 + m * (x - x3);
+                    g.lines.push([0, yAt(0), W, yAt(W)]);
+                    break;
+                }
+                case 'flattopbottom':
+                    g.lines.push([0, y1, W, y1], [0, y3, W, y3]);
+                    break;
+                case 'disjointchannel':
+                    g.lines.push([x1, y1, x2, y2], [x3, y3, x4, y4]);
+                    break;
+                case 'regressiontrend': {
+                    const r = regressionSeg(pts[0].time, pts[1].time);
+                    if (r) g.lines.push(r);
+                    break;
+                }
+                case 'pitchfork':
+                case 'schiffpitchfork':
+                case 'modifiedschiffpitchfork':
+                case 'insidepitchfork': {
+                    if (x3 === null) break;
+                    let ax = x1, ay = y1;
+                    if (d.kind === 'schiffpitchfork') { ax = (x1 + x2) / 2; ay = (y1 + y2) / 2; }
+                    else if (d.kind === 'modifiedschiffpitchfork') { ax = (x1 + (x1 + x2) / 2) / 2; ay = (y1 + (y1 + y2) / 2) / 2; }
+                    else if (d.kind === 'insidepitchfork') { ax = (x2 + x3) / 2; ay = (y2 + y3) / 2; }
+                    const mx = (x2 + x3) / 2, my = (y2 + y3) / 2;
+                    if (mx === ax) break;
+                    const mm = (my - ay) / (mx - ax);
+                    const yM = x => ay + mm * (x - ax);
+                    const y2At = x => y2 + mm * (x - x2);
+                    const y3At = x => y3 + mm * (x - x3);
+                    g.lines.push([0, yM(0), W, yM(W)], [0, y2At(0), W, y2At(W)], [0, y3At(0), W, y3At(W)]);
+                    break;
+                }
+                // __MORE_TOOLS__
+            }
+            return g;
         }
 
         function hitTest(d, x, y) {
             const tol = 8;
-            const pts = d.points || [];
-            if (!pts.length || !activeSeries) return false;
-            const x1 = px(pts[0].time), y1 = py(pts[0].price);
-            const has2 = pts.length >= 2;
-            const x2 = has2 ? px(pts[1].time) : null, y2 = has2 ? py(pts[1].price) : null;
-
-            if (d.kind === 'horizontalline' || d.kind === 'horizontalray' || d.kind === 'crossline') {
-                if (y1 !== null && Math.abs(y - y1) <= tol) return true;
-                if (d.kind !== 'crossline') return false;
-            }
-            if (d.kind === 'verticalline' || d.kind === 'crossline') {
-                if (x1 !== null && Math.abs(x - x1) <= tol) return true;
-                if (d.kind === 'verticalline') return false;
-            }
-            if (x1 !== null && y1 !== null && x2 !== null && y2 !== null) {
-                if (d.kind === 'trendline') return segDist(x, y, x1, y1, x2, y2) <= tol;
-                if (d.kind === 'fibonacci') {
-                    const lo = Math.min(x1, x2) - 60, hi = Math.max(x1, x2) + 60;
-                    if (x < lo || x > hi) return false;
-                    const diff = pts[1].price - pts[0].price;
-                    const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-                    for (const lvl of levels) {
-                        const yy = py(pts[0].price + diff * lvl);
-                        if (yy !== null && Math.abs(y - yy) <= tol) return true;
-                    }
-                    return false;
-                }
-                return lineDist(x, y, x1, y1, x2, y2) <= tol;
-            }
+            const g = geometry(d);
+            for (const L of g.lines.concat(g.dashed))
+                if (segDist(x, y, L[0], L[1], L[2], L[3]) <= tol) return true;
+            for (const c of g.circles)
+                if (Math.abs(Math.hypot(x - c[0], y - c[1]) - c[2]) <= tol) return true;
             return false;
         }
 
         function renderCustomDrawings() {
             if (!ctx || !activeSeries) return;
-            const W = drawCanvas.width, H = drawCanvas.height;
-            ctx.clearRect(0, 0, W, H);
+            ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
 
-            // pending first-click marker
             for (const p of pendingPoints) {
                 const x = px(p.time), y = py(p.price);
                 if (x !== null && y !== null) {
@@ -365,69 +343,16 @@
             }
 
             for (const d of customDrawings) {
-                const pts = d.points || [];
-                if (!pts.length) continue;
+                const g = geometry(d);
                 ctx.strokeStyle = d.color; ctx.fillStyle = d.color;
                 ctx.lineWidth = 2; ctx.font = '11px Trebuchet MS';
-                const x1 = px(pts[0].time), y1 = py(pts[0].price);
-                const has2 = pts.length >= 2;
-                const x2 = has2 ? px(pts[1].time) : null, y2 = has2 ? py(pts[1].price) : null;
-
-                switch (d.kind) {
-                    case 'horizontalline':
-                        if (y1 !== null) { line(0, y1, W, y1); if (d.label) ctx.fillText(d.label, 8, y1 - 5); }
-                        break;
-                    case 'horizontalray':
-                        if (x1 !== null && y1 !== null) {
-                            const right = !has2 || x2 === null || x2 >= x1;
-                            line(right ? x1 : 0, y1, right ? W : x1, y1);
-                        }
-                        break;
-                    case 'verticalline':
-                        if (x1 !== null) line(x1, 0, x1, H);
-                        break;
-                    case 'crossline':
-                        if (y1 !== null) line(0, y1, W, y1);
-                        if (x1 !== null) line(x1, 0, x1, H);
-                        break;
-                    case 'trendline':
-                        if (x1 !== null && y1 !== null && x2 !== null && y2 !== null) line(x1, y1, x2, y2);
-                        break;
-                    case 'ray':
-                    case 'extendedline':
-                    case 'infoline':
-                    case 'trendangle':
-                        if (x1 !== null && y1 !== null && x2 !== null && y2 !== null) {
-                            drawSlope(x1, y1, x2, y2,
-                                d.kind === 'ray' ? 'ray' : d.kind === 'extendedline' ? 'full' : 'seg');
-                            if (d.kind === 'infoline') {
-                                const chg = ((pts[1].price - pts[0].price) / pts[0].price) * 100;
-                                ctx.fillText((chg >= 0 ? '+' : '') + chg.toFixed(2) + '%', x2 + 6, y2 - 6);
-                            }
-                            if (d.kind === 'trendangle') {
-                                const ang = Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI;
-                                ctx.fillText(ang.toFixed(1) + '°', x2 + 6, y2 - 6);
-                            }
-                        }
-                        break;
-                    case 'fibonacci':
-                        if (x1 !== null && y1 !== null && x2 !== null && y2 !== null) {
-                            line(x1, y1, x2, y2);
-                            const lo = Math.min(x1, x2) - 60, hi = Math.max(x1, x2) + 60;
-                            const diff = pts[1].price - pts[0].price;
-                            ctx.setLineDash([5, 5]);
-                            const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-                            for (const lvl of levels) {
-                                const yy = py(pts[0].price + diff * lvl);
-                                if (yy !== null) {
-                                    line(lo, yy, hi, yy);
-                                    ctx.fillText((lvl * 100).toFixed(1) + '%', hi + 5, yy + 4);
-                                }
-                            }
-                            ctx.setLineDash([]);
-                        }
-                        break;
-                }
+                ctx.setLineDash([]);
+                for (const L of g.lines) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
+                ctx.setLineDash([5, 5]);
+                for (const L of g.dashed) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
+                ctx.setLineDash([]);
+                for (const c of g.circles) { ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2); ctx.stroke(); }
+                for (const t of g.labels) ctx.fillText(t[0], t[1], t[2]);
             }
         }
 
@@ -443,21 +368,14 @@
                 grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
                 rightPriceScale: { borderColor: c.border },
                 timeScale: { borderColor: c.border },
-                crosshair: {
-                    vertLine: { color: c.crosshair, labelBackgroundColor: c.border },
-                    horzLine: { color: c.crosshair, labelBackgroundColor: c.border }
-                }
+                crosshair: { vertLine: { color: c.crosshair, labelBackgroundColor: c.border }, horzLine: { color: c.crosshair, labelBackgroundColor: c.border } }
             });
             renderWithCurrentType();
         }
 
         function renderWithCurrentType() {
-            if (activeSeries !== null) {
-                chart.removeSeries(activeSeries);
-                activeSeries = null;
-            }
-            markersApi = null;
-            positionLines = [];
+            if (activeSeries !== null) { chart.removeSeries(activeSeries); activeSeries = null; }
+            markersApi = null; positionLines = [];
 
             activeSeries = createSeriesForType();
             displayData = buildDisplayData();
@@ -465,16 +383,13 @@
             renderVolume();
 
             const total = displayData.length;
-            if (total > 0) {
-                chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, total - 120), to: total + 4 });
-            }
+            if (total > 0) chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, total - 120), to: total + 4 });
 
             applyPositions();
             renderCustomDrawings();
         }
 
         renderWithCurrentType();
-
         chart.timeScale().subscribeVisibleTimeRangeChange(renderCustomDrawings);
 
         if (window.chrome && window.chrome.webview) {
@@ -486,13 +401,6 @@
                     rawData = msg.data;
                     chart.applyOptions({ timeScale: { secondsVisible: msg.secondsVisible === true } });
                     renderWithCurrentType();
-                } else if (msg.type === 'updateCandle') {
-                    if (activeSeries !== null) activeSeries.update(msg.data);
-                    volumeSeries.update({
-                        time: msg.data.time,
-                        value: msg.data.volume || 0,
-                        color: msg.data.close >= msg.data.open ? COLORS.volumeUp : COLORS.volumeDown
-                    });
                 } else if (msg.type === 'setChartType') {
                     chartType = msg.chartType;
                     renderWithCurrentType();
@@ -507,11 +415,8 @@
                 } else if (msg.type === 'setDrawingMode') {
                     const m = msg.mode;
                     if (m === 'cross' || m === 'dot' || m === 'arrow') {
-                        cursorMode = m;
-                        drawingMode = null;
-                        chart.applyOptions({
-                            crosshair: { mode: m === 'arrow' ? LightweightCharts.CrosshairMode.Hidden : LightweightCharts.CrosshairMode.Normal }
-                        });
+                        cursorMode = m; drawingMode = null;
+                        chart.applyOptions({ crosshair: { mode: m === 'arrow' ? LightweightCharts.CrosshairMode.Hidden : LightweightCharts.CrosshairMode.Normal } });
                         document.getElementById('chart').style.cursor = m === 'arrow' ? 'default' : 'crosshair';
                     } else if (m === 'eraser') {
                         drawingMode = 'eraser';
@@ -535,45 +440,30 @@
             if (p >= 1) return p.toFixed(4);
             return p.toFixed(8);
         }
-
         function menuItem(label, act) {
             const d = document.createElement('div');
-            d.className = 'ctx-item';
-            d.textContent = label;
+            d.className = 'ctx-item'; d.textContent = label;
             d.onmousedown = function (e) { e.stopPropagation(); };
             d.onclick = function () { ctxMenu.style.display = 'none'; act(); };
             return d;
         }
-
-        function menuSep() {
-            const d = document.createElement('div');
-            d.className = 'ctx-sep';
-            return d;
-        }
+        function menuSep() { const d = document.createElement('div'); d.className = 'ctx-sep'; return d; }
 
         function openCtxMenu(x, y, price) {
             ctxPrice = price;
             ctxMenu.innerHTML = '';
             ctxMenu.style.background = COLORS.background;
             ctxMenu.style.borderColor = COLORS.border;
-
             ctxMenu.appendChild(menuItem('Reset chart view', function () {
                 const total = displayData.length;
                 if (total > 0) chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, total - 120), to: total + 4 });
             }));
             if (price != null) {
-                ctxMenu.appendChild(menuItem('Copy price ' + fmtPrice(price), function () {
-                    post({ type: 'copyPrice', price: price });
-                }));
-                ctxMenu.appendChild(menuItem('Add alert at ' + fmtPrice(price), function () {
-                    post({ type: 'addAlert', price: price });
-                }));
+                ctxMenu.appendChild(menuItem('Copy price ' + fmtPrice(price), function () { post({ type: 'copyPrice', price: price }); }));
+                ctxMenu.appendChild(menuItem('Add alert at ' + fmtPrice(price), function () { post({ type: 'addAlert', price: price }); }));
             }
             ctxMenu.appendChild(menuSep());
-            ctxMenu.appendChild(menuItem('Chart settings…', function () {
-                post({ type: 'openChartSettings' });
-            }));
-
+            ctxMenu.appendChild(menuItem('Chart settings…', function () { post({ type: 'openChartSettings' }); }));
             ctxMenu.style.display = 'block';
             const mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
             ctxMenu.style.left = Math.min(x, window.innerWidth - mw - 8) + 'px';
@@ -590,13 +480,17 @@
             }
             openCtxMenu(e.clientX, e.clientY, price);
         });
-
         document.addEventListener('mousedown', function (e) {
             if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
         });
 
         // ---------- drawing clicks + eraser ----------
-        const ONE_CLICK = { horizontal: 1, verticalline: 1, crossline: 1 };
+        const NEED = {
+            horizontal: 1, verticalline: 1, crossline: 1,
+            parallelchannel: 3, flattopbottom: 3,
+            pitchfork: 3, schiffpitchfork: 3, modifiedschiffpitchfork: 3, insidepitchfork: 3,
+            disjointchannel: 4
+        };
 
         chart.subscribeClick(function (param) {
             if (!param.point) return;
@@ -618,7 +512,7 @@
 
             pendingPoints.push({ time: param.time, price: price });
 
-            const need = ONE_CLICK[drawingMode] === 1 ? 1 : 2;
+            const need = NEED[drawingMode] || 2;
             if (pendingPoints.length >= need) {
                 const drawing = {
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
@@ -626,7 +520,7 @@
                     color: '#2962FF',
                     label: '',
                     alert: false,
-                    points: pendingPoints.slice(0, need).map(function (p) { return { time: p.time, price: p.price }; })
+                    points: pendingPoints.slice(0, need).map(p => ({ time: p.time, price: p.price }))
                 };
                 post({ type: 'drawingCompleted', drawing: drawing });
                 pendingPoints = [];
@@ -638,28 +532,21 @@
 
         chart.subscribeCrosshairMove(function (param) {
             if (!window.chrome || !window.chrome.webview) return;
-
             if (!param || !param.time) {
                 window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
                 return;
             }
-
-            let hovered = displayData.find(function (d) { return d.time === param.time; });
-            if (!hovered || hovered.open === undefined) {
-                hovered = rawData.find(function (d) { return d.time === param.time; });
-            }
+            let hovered = displayData.find(d => d.time === param.time);
+            if (!hovered || hovered.open === undefined) hovered = rawData.find(d => d.time === param.time);
             if (!hovered || hovered.open === undefined) {
                 window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
                 return;
             }
-
             const ohlcList = (displayData.length > 0 && displayData[0].open !== undefined) ? displayData : rawData;
-            const idx = ohlcList.findIndex(function (d) { return d.time === hovered.time; });
+            const idx = ohlcList.findIndex(d => d.time === hovered.time);
             const prev = idx > 0 ? ohlcList[idx - 1] : hovered;
-
             window.chrome.webview.postMessage(JSON.stringify({
-                type: 'crosshair',
-                hasData: true,
+                type: 'crosshair', hasData: true,
                 open: hovered.open, high: hovered.high, low: hovered.low, close: hovered.close,
                 prevOpen: prev.open, prevHigh: prev.high, prevLow: prev.low, prevClose: prev.close
             }));

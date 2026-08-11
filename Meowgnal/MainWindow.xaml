@@ -366,6 +366,45 @@
                             </Border>
                         </Popup>
 
+                        <!-- Channel tools group -->
+                        <Button x:Name="ChannelGroupButton" Style="{StaticResource RailButton}"
+                                Click="ChannelGroup_Click" ToolTip="Channel and pitchfork tools">
+                            <ContentControl Content="{StaticResource Icon_hline}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="ChannelPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=ChannelGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="parallelchannel" Click="ToolButton_Click">
+                                        <TextBlock Text="Parallel Channel (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="regressiontrend" Click="ToolButton_Click">
+                                        <TextBlock Text="Regression Trend" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="flattopbottom" Click="ToolButton_Click">
+                                        <TextBlock Text="Flat Top/Bottom (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="disjointchannel" Click="ToolButton_Click">
+                                        <TextBlock Text="Disjoint Channel (4 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="pitchfork" Click="ToolButton_Click">
+                                        <TextBlock Text="Pitchfork (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="schiffpitchfork" Click="ToolButton_Click">
+                                        <TextBlock Text="Schiff Pitchfork" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="modifiedschiffpitchfork" Click="ToolButton_Click">
+                                        <TextBlock Text="Modified Schiff" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="insidepitchfork" Click="ToolButton_Click">
+                                        <TextBlock Text="Inside Pitchfork" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
                         <Button x:Name="ToolFibButton" Style="{StaticResource RailButton}" Tag="fib"
                                 Click="ToolButton_Click" ToolTip="Fibonacci Retracement — click two points">
                             <ContentControl Content="{StaticResource Icon_fib}" Width="18" Height="18"/>
