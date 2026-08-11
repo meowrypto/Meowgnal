@@ -1491,6 +1491,18 @@ public partial class MainWindow : Window
         if (!root.TryGetProperty("type", out var typeProp)) return;
         var msgType = typeProp.GetString();
 
+        if (msgType == "deleteDrawing")
+        {
+            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+            if (!string.IsNullOrEmpty(id))
+            {
+                _drawingsFile.Drawings.RemoveAll(d => d.Id == id);
+                DrawingStorageService.Save(_drawingsFile);
+                _ = SendDrawingsToChartAsync();
+            }
+            return;
+        }
+
         if (msgType == "copyPrice")
         {
             var price = root.GetProperty("price").GetDecimal();
@@ -1530,12 +1542,10 @@ public partial class MainWindow : Window
                 if (root.TryGetProperty("drawing", out var drawingEl))
                 {
                     var kindStr = drawingEl.TryGetProperty("kind", out var k) ? k.GetString() : "horizontal";
-                    var kind = kindStr switch
-                    {
-                        "trend" => DrawingKind.TrendLine,
-                        "fib" => DrawingKind.Fibonacci,
-                        _ => DrawingKind.HorizontalLine,
-                    };
+                    var normalizedKind = kindStr == "fib" ? "fibonacci" : kindStr;
+                    var kind = Enum.TryParse<DrawingKind>(normalizedKind, true, out var parsedKind)
+                        ? parsedKind
+                        : DrawingKind.HorizontalLine;
 
                     var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", "") };
 
@@ -1921,6 +1931,18 @@ public partial class MainWindow : Window
         BuildTimeframeMenu();
     }
 
+    private void CursorGroup_Click(object sender, RoutedEventArgs e)
+    {
+        LinePopup.IsOpen = false;
+        CursorPopup.IsOpen = !CursorPopup.IsOpen;
+    }
+
+    private void LineGroup_Click(object sender, RoutedEventArgs e)
+    {
+        CursorPopup.IsOpen = false;
+        LinePopup.IsOpen = !LinePopup.IsOpen;
+    }
+
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
@@ -1951,18 +1973,29 @@ public partial class MainWindow : Window
             return;
         }
 
+        CursorPopup.IsOpen = false;
+        LinePopup.IsOpen = false;
+
+        // Highlight the group button that owns this tool
+        var group = tag switch
+        {
+            "fib" => ToolFibButton,
+            "cursor" or "dot" or "arrow" or "eraser" => CursorGroupButton,
+            _ => LineGroupButton,
+        };
+
         var mode = tag == "cursor" ? "none" : tag;
-        SetActiveTool(tag == "cursor" ? null : btn);
+        SetActiveTool(tag == "cursor" ? null : group);
         await SendDrawingModeToChartAsync(mode);
     }
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { ToolCursorButton, ToolHLineButton, ToolTrendButton, ToolFibButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, ToolFibButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
 
-        (active ?? ToolCursorButton).Background = (Brush)FindResource("Accent");
+        (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");
     }
 
     private async Task SendDrawingModeToChartAsync(string mode)

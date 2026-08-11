@@ -8,7 +8,14 @@ public enum DrawingKind
 {
     HorizontalLine,
     TrendLine,
-    Fibonacci
+    Fibonacci,
+    Ray,
+    ExtendedLine,
+    HorizontalRay,
+    VerticalLine,
+    Crossline,
+    InfoLine,
+    TrendAngle
 }
 
 /// <summary>Standard Fibonacci retracement levels.</summary>

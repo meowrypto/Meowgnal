@@ -297,20 +297,75 @@
 
                 <!-- Left tool rail -->
                 <Border Grid.Column="0" Background="{DynamicResource BgPanel}"
-                        BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,1,0">
+                        BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
                     <StackPanel VerticalAlignment="Top" Margin="0,8,0,0">
-                        <Button x:Name="ToolCursorButton" Style="{StaticResource RailButton}" Tag="cursor"
-                                Click="ToolButton_Click" ToolTip="Cursor — normal mode">
+                        <!-- Cursor group -->
+                        <Button x:Name="CursorGroupButton" Style="{StaticResource RailButton}"
+                                Click="CursorGroup_Click" ToolTip="Cursor tools">
                             <ContentControl Content="{StaticResource Icon_cursor}" Width="18" Height="18"/>
                         </Button>
-                        <Button x:Name="ToolHLineButton" Style="{StaticResource RailButton}" Tag="horizontal"
-                                Click="ToolButton_Click" ToolTip="Horizontal Line — one click on chart">
-                            <ContentControl Content="{StaticResource Icon_hline}" Width="18" Height="18"/>
-                        </Button>
-                        <Button x:Name="ToolTrendButton" Style="{StaticResource RailButton}" Tag="trend"
-                                Click="ToolButton_Click" ToolTip="Trend Line — click two points">
+                        <Popup x:Name="CursorPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=CursorGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="cursor" Click="ToolButton_Click">
+                                        <TextBlock Text="Cross" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="dot" Click="ToolButton_Click">
+                                        <TextBlock Text="Dot" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrow" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="eraser" Click="ToolButton_Click">
+                                        <TextBlock Text="Eraser (click a drawing)" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
+                        <!-- Line tools group -->
+                        <Button x:Name="LineGroupButton" Style="{StaticResource RailButton}"
+                                Click="LineGroup_Click" ToolTip="Line tools">
                             <ContentControl Content="{StaticResource Icon_trend}" Width="18" Height="18"/>
                         </Button>
+                        <Popup x:Name="LinePopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=LineGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="trendline" Click="ToolButton_Click">
+                                        <TextBlock Text="Trend Line (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="ray" Click="ToolButton_Click">
+                                        <TextBlock Text="Ray" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="extendedline" Click="ToolButton_Click">
+                                        <TextBlock Text="Extended Line" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="horizontal" Click="ToolButton_Click">
+                                        <TextBlock Text="Horizontal Line" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="horizontalray" Click="ToolButton_Click">
+                                        <TextBlock Text="Horizontal Ray" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="verticalline" Click="ToolButton_Click">
+                                        <TextBlock Text="Vertical Line" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="crossline" Click="ToolButton_Click">
+                                        <TextBlock Text="Cross Line" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="infoline" Click="ToolButton_Click">
+                                        <TextBlock Text="Info Line (% change)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="trendangle" Click="ToolButton_Click">
+                                        <TextBlock Text="Trend Angle" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
                         <Button x:Name="ToolFibButton" Style="{StaticResource RailButton}" Tag="fib"
                                 Click="ToolButton_Click" ToolTip="Fibonacci Retracement — click two points">
                             <ContentControl Content="{StaticResource Icon_fib}" Width="18" Height="18"/>
