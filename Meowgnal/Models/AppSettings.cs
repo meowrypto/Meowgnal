@@ -27,9 +27,16 @@ public sealed class AppSettings
     public decimal PaperTakerFeePercent { get; set; } = 0.04m;
     public bool PaperAutoTradeEnabled { get; set; } = true;
 
-    // Status-bar clock display mode: "utc" | "system" | "custom".
+    // Status-bar clock
     public string ClockMode { get; set; } = "utc";
-
-    // Windows time-zone id used when ClockMode == "custom".
     public string ClockTimeZoneId { get; set; } = "";
+
+    // Profile & onboarding
+    public bool FirstRunCompleted { get; set; } = false;
+    public string ProfileName { get; set; } = "";
+    public string ProfileAvatar { get; set; } = "🐱";
+    public bool IsGuest { get; set; } = true;
+    public DateTime DemoStartDate { get; set; } = DateTime.MinValue;
+    public int DemoTrialDays { get; set; } = 14;
+    public string LicenseKey { get; set; } = "";
 }

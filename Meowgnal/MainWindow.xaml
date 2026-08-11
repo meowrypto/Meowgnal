@@ -4,7 +4,7 @@
         xmlns:views="clr-namespace:Meowgnal.Views"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="Meowgnal" Height="600" Width="980"
-        Background="#131722"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         FontFamily="Trebuchet MS"
         FontSize="12"
         PreviewKeyDown="Window_PreviewKeyDown">
@@ -18,6 +18,58 @@
         <SolidColorBrush x:Key="Accent" Color="#2962FF"/>
         <SolidColorBrush x:Key="Up" Color="#089981"/>
         <SolidColorBrush x:Key="Down" Color="#F23645"/>
+
+        <!-- Window Control Buttons -->
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="ProfileMenuButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 
         <!-- Mini chart-type icons -->
         <Canvas x:Key="Icon_candles" x:Shared="False" Width="18" Height="14">
@@ -153,493 +205,547 @@
             </Setter>
         </Style>
     </Window.Resources>
-    <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="48"/>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="250"/>
-        </Grid.ColumnDefinitions>
 
-        <!-- Left tool rail (TradingView style drawing toolbar) -->
-        <Border Grid.Column="0" Background="{StaticResource BgPanel}"
-                BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,1,0">
-            <StackPanel VerticalAlignment="Top" Margin="0,8,0,0">
-                <TextBlock Text="🐱" FontSize="18" HorizontalAlignment="Center" Margin="0,0,0,12" Foreground="{StaticResource TextPrimary}"/>
-
-                <Button x:Name="ToolCursorButton" Style="{StaticResource RailButton}" Tag="cursor"
-                        Click="ToolButton_Click" ToolTip="Cursor — normal mode">
-                    <ContentControl Content="{StaticResource Icon_cursor}" Width="18" Height="18"/>
-                </Button>
-                <Button x:Name="ToolHLineButton" Style="{StaticResource RailButton}" Tag="horizontal"
-                        Click="ToolButton_Click" ToolTip="Horizontal Line — one click on chart">
-                    <ContentControl Content="{StaticResource Icon_hline}" Width="18" Height="18"/>
-                </Button>
-                <Button x:Name="ToolTrendButton" Style="{StaticResource RailButton}" Tag="trend"
-                        Click="ToolButton_Click" ToolTip="Trend Line — click two points">
-                    <ContentControl Content="{StaticResource Icon_trend}" Width="18" Height="18"/>
-                </Button>
-                <Button x:Name="ToolFibButton" Style="{StaticResource RailButton}" Tag="fib"
-                        Click="ToolButton_Click" ToolTip="Fibonacci Retracement — click two points">
-                    <ContentControl Content="{StaticResource Icon_fib}" Width="18" Height="18"/>
-                </Button>
-
-                <Rectangle Width="24" Height="1" Fill="{StaticResource BorderLine}" Margin="0,6,0,6"/>
-
-                <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
-                        Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
-                    <ContentControl Content="{StaticResource Icon_autosr}" Width="18" Height="18"/>
-                </Button>
-                <Button x:Name="ToolClearButton" Style="{StaticResource RailButton}" Tag="clear"
-                        Click="ToolButton_Click" ToolTip="Clear All Drawings">
-                    <ContentControl Content="{StaticResource Icon_trash}" Width="18" Height="18"/>
-                </Button>
-            </StackPanel>
-        </Border>
-
-        <!-- Main content -->
-        <Grid Grid.Column="1">
+    <Border Background="#131722" CornerRadius="0">
+        <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="32"/>
+                <!-- Custom Title Bar -->
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Symbol tabs -->
-            <Border Grid.Row="0" BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
-                <StackPanel Orientation="Horizontal">
-                    <StackPanel x:Name="TabsPanel" Orientation="Horizontal"/>
-                    <Button x:Name="AddTabButton" Content="＋" Style="{StaticResource TvButton}"
-                            ToolTip="Open a new chart tab" Click="AddTabButton_Click"/>
-                    <Popup x:Name="NewTabPopup" StaysOpen="False" AllowsTransparency="True"
-                           Placement="Bottom" PlacementTarget="{Binding ElementName=AddTabButton}">
-                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
-                            <StackPanel>
-                                <TextBlock Text="Symbol (e.g. ETH/USDT)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                <TextBox x:Name="NewTabSymbolBox" Text="ETH/USDT" Width="170" Margin="0,4,0,8"
-                                         Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                         BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-                                <Button Content="Open chart" Style="{StaticResource TvButton}" Click="NewTabOpen_Click"/>
+            <!-- Custom Title Bar -->
+            <Border Grid.Row="0" Background="{StaticResource BgPanel}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+                    BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1">
+                <DockPanel>
+                    <!-- Window Controls (Right) -->
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"/>
+                    </StackPanel>
+
+                    <!-- Left Side: Profile + Title -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <!-- Profile Button -->
+                        <Button x:Name="ProfileButton" Style="{StaticResource ProfileMenuButton}" Click="ProfileButton_Click" Margin="10,0,0,0">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="ProfileAvatarText" Text="🐱" FontSize="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="▾" FontSize="9" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,1,0,0"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Rectangle Width="1" Height="20" Fill="{StaticResource BorderLine}" Margin="12,0,12,0"/>
+
+                        <TextBlock Text="🐱" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <TextBlock Text="Meowgnal" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" VerticalAlignment="Center" FontSize="13"/>
+                        <TextBlock x:Name="TitleBarVersion" Text="" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="8,1,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- Profile Menu Popup -->
+            <Popup x:Name="ProfilePopup" StaysOpen="False" AllowsTransparency="True"
+                   Placement="Bottom" PlacementTarget="{Binding ElementName=ProfileButton}">
+                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                        BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0" Width="240">
+                    <StackPanel>
+                        <!-- User info card -->
+                        <Border Background="#131722" CornerRadius="4" Padding="12" Margin="4,4,4,8">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock x:Name="MenuAvatarText" Text="🐱" FontSize="24" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock x:Name="MenuNameText" Text="Guest" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" FontSize="14"/>
+                                    <TextBlock x:Name="MenuStatusText" Text="Demo" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
-                    </Popup>
-                </StackPanel>
-            </Border>
 
-            <!-- Top bar -->
-            <Border Grid.Row="1" Background="{StaticResource BgPanel}"
-                    BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="10,6">
-                <Grid>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <TextBlock Text="🐱" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                        <TextBlock Text="Meowgnal" Foreground="{StaticResource TextPrimary}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,14,0"/>
-                        <Rectangle Width="1" Height="18" Fill="{StaticResource BorderLine}" Margin="0,0,14,0"/>
-                        <TextBlock x:Name="SymbolText" Text="BTC/USDT" Foreground="{StaticResource TextPrimary}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="PriceText" Text="—" Foreground="{StaticResource TextMuted}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="⚙  App settings" Click="MenuSettings_Click"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="🔑  Activate license" Click="MenuLicense_Click"/>
+                        <Border Height="1" Background="{StaticResource BorderLine}" Margin="4,4"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="❓  Help Center" Click="MenuHelp_Click"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="✨  What's new" Click="MenuWhatsNew_Click"/>
+                        <Border Height="1" Background="{StaticResource BorderLine}" Margin="4,4"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="🚪  Sign out / Switch profile" Click="MenuSignOut_Click" Foreground="{StaticResource Down}"/>
                     </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="RefreshButton" Content="⟳ Refresh" Style="{StaticResource TvButton}" Click="RefreshButton_Click"/>
-                        <Button x:Name="OpenBuilderButton" Content="＋ New strategy" Style="{StaticResource TvButton}" Click="OpenBuilderButton_Click"/>
-                        <Button x:Name="OpenBacktestButton" Content="Backtest" Style="{StaticResource TvButton}" Click="OpenBacktestButton_Click"/>
-                        <Button x:Name="OpenSettingsButton" Content="⚙ Settings" Style="{StaticResource TvButton}" Click="OpenSettingsButton_Click"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
+                </Border>
+            </Popup>
 
-            <!-- Chart toolbar -->
-            <Border Grid.Row="2" BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
-                <Grid>
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <StackPanel x:Name="TimeframePanel" Orientation="Horizontal"/>
-                        <Button x:Name="TimeframeMenuButton" Content="▾" Style="{StaticResource TvButton}"
-                                ToolTip="All timeframes" Click="TimeframeMenuButton_Click"/>
-                        <Popup x:Name="TimeframePopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Bottom" PlacementTarget="{Binding ElementName=TimeframeMenuButton}">
-                            <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
-                                <ScrollViewer x:Name="TimeframeMenuScroll" VerticalScrollBarVisibility="Auto" MaxHeight="640">
-                                    <StackPanel x:Name="TimeframeMenuPanel"/>
-                                </ScrollViewer>
-                            </Border>
-                        </Popup>
-                        <Rectangle Width="1" Height="18" Fill="{StaticResource BorderLine}" Margin="8,0"/>
-                        <Button x:Name="ChartTypeButton" Style="{StaticResource TvButton}" Click="ChartTypeButton_Click" ToolTip="Chart type">
-                            <StackPanel Orientation="Horizontal">
-                                <ContentControl x:Name="ChartTypeIcon" Width="18" Height="14" Margin="0,0,6,0"/>
-                                <TextBlock x:Name="ChartTypeLabel" Text="Candles" VerticalAlignment="Center"/>
-                                <TextBlock Text="▾" FontSize="9" VerticalAlignment="Center" Margin="6,0,0,0"/>
-                            </StackPanel>
+            <!-- Original Main Content -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="48"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="250"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left tool rail (TradingView style drawing toolbar) -->
+                <Border Grid.Column="0" Background="{StaticResource BgPanel}"
+                        BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,1,0">
+                    <StackPanel VerticalAlignment="Top" Margin="0,8,0,0">
+                        <Button x:Name="ToolCursorButton" Style="{StaticResource RailButton}" Tag="cursor"
+                                Click="ToolButton_Click" ToolTip="Cursor — normal mode">
+                            <ContentControl Content="{StaticResource Icon_cursor}" Width="18" Height="18"/>
                         </Button>
-                        <Popup x:Name="ChartTypePopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Bottom" PlacementTarget="{Binding ElementName=ChartTypeButton}">
-                            <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
-                                <StackPanel>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="candles" Click="ChartTypeItem_Click">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ContentControl Content="{StaticResource Icon_candles}" Width="18" Height="14" Margin="0,0,8,0"/>
-                                            <TextBlock Text="Candles" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="bars" Click="ChartTypeItem_Click">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ContentControl Content="{StaticResource Icon_bars}" Width="18" Height="14" Margin="0,0,8,0"/>
-                                            <TextBlock Text="Bars (OHLC)" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="line" Click="ChartTypeItem_Click">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ContentControl Content="{StaticResource Icon_line}" Width="18" Height="14" Margin="0,0,8,0"/>
-                                            <TextBlock Text="Line" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="area" Click="ChartTypeItem_Click">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ContentControl Content="{StaticResource Icon_area}" Width="18" Height="14" Margin="0,0,8,0"/>
-                                            <TextBlock Text="Area" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="heikinashi" Click="ChartTypeItem_Click">
-                                        <StackPanel Orientation="Horizontal">
-                                            <ContentControl Content="{StaticResource Icon_heikinashi}" Width="18" Height="14" Margin="0,0,8,0"/>
-                                            <TextBlock Text="Heikin Ashi" VerticalAlignment="Center"/>
-                                        </StackPanel>
-                                    </Button>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <Button x:Name="ScreenshotButton" Content="📷" ToolTip="Save chart screenshot" Style="{StaticResource TvButton}" Click="ScreenshotButton_Click"/>
-                        <Button x:Name="FullscreenButton" Content="⛶" ToolTip="Fullscreen (Esc to exit)" Style="{StaticResource TvButton}" Click="FullscreenButton_Click"/>
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- Chart + OHLC legend -->
-            <Grid Grid.Row="3" Background="#131722">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
-
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,6,0,0">
-                    <TextBlock Text="O" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="OhlcOpenText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="H" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="OhlcHighText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="L" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="OhlcLowText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="C" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
-                    <TextBlock x:Name="OhlcCloseText" Text="—" FontSize="11" Margin="3,0,0,0" VerticalAlignment="Center"/>
-                </StackPanel>
-
-                <wv2:WebView2 Grid.Row="1" x:Name="ChartWebView"/>
-            </Grid>
-
-            <!-- Stat cards -->
-            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,8">
-                <Border Background="{StaticResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
-                    <StackPanel>
-                        <TextBlock Text="Active strategies" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                        <TextBlock x:Name="ActiveStrategiesText" Text="0" Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
-                    </StackPanel>
-                </Border>
-                <Border Background="{StaticResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
-                    <StackPanel>
-                        <TextBlock Text="Win rate (backtest)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                        <TextBlock x:Name="WinRateText" Text="—" Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
-                    </StackPanel>
-                </Border>
-                <Border Background="{StaticResource BgPanel}" CornerRadius="4" Padding="12,8">
-                    <StackPanel>
-                        <TextBlock Text="Signals found" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                        <TextBlock x:Name="SignalCountText" Text="—" Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-
-            <!-- Bottom status bar -->
-            <Border Grid.Row="5" Background="{StaticResource BgPanel}"
-                    BorderBrush="{StaticResource BorderLine}" BorderThickness="0,1,0,0" Padding="10,4">
-                <Grid>
-                    <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="11"
-                               Foreground="{StaticResource TextMuted}">
-                        <Hyperlink NavigateUri="https://www.tradingview.com"
-                                   RequestNavigate="TradingViewLink_RequestNavigate"
-                                   Foreground="{StaticResource TextMuted}"
-                                   TextDecorations="None">Chart powered by TradingView Lightweight Charts</Hyperlink>
-                    </TextBlock>
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                        <TextBlock x:Name="PaperStatusText" Text="" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,12,0"/>
-                        <Button x:Name="ClockButton" Style="{StaticResource TvButton}" Click="ClockButton_Click"
-                                ToolTip="Clock time zone — click to change">
-                            <StackPanel Orientation="Horizontal">
-                                <TextBlock x:Name="ClockText" Text="--:--:--" FontSize="11"
-                                           Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="ClockZoneText" Text="UTC" FontSize="11"
-                                           Foreground="{StaticResource TextMuted}" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="▾" FontSize="8" Foreground="{StaticResource TextMuted}"
-                                           Margin="4,1,0,0" VerticalAlignment="Center"/>
-                            </StackPanel>
+                        <Button x:Name="ToolHLineButton" Style="{StaticResource RailButton}" Tag="horizontal"
+                                Click="ToolButton_Click" ToolTip="Horizontal Line — one click on chart">
+                            <ContentControl Content="{StaticResource Icon_hline}" Width="18" Height="18"/>
                         </Button>
-                        <Popup x:Name="ClockPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Top" PlacementTarget="{Binding ElementName=ClockButton}">
-                            <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,0,0,4" Width="270">
-                                <StackPanel>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="utc" Click="ClockMode_Click">
-                                        <TextBlock Text="UTC — exchange standard" FontSize="11"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="system" Click="ClockMode_Click">
-                                        <TextBlock Text="System local time" FontSize="11"/>
-                                    </Button>
-                                    <Border Height="1" Background="{StaticResource BorderLine}" Margin="4,4"/>
-                                    <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="TimeZoneListPanel"/>
-                                    </ScrollViewer>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                    </StackPanel>
-                </Grid>
-            </Border>
-        </Grid>
+                        <Button x:Name="ToolTrendButton" Style="{StaticResource RailButton}" Tag="trend"
+                                Click="ToolButton_Click" ToolTip="Trend Line — click two points">
+                            <ContentControl Content="{StaticResource Icon_trend}" Width="18" Height="18"/>
+                        </Button>
+                        <Button x:Name="ToolFibButton" Style="{StaticResource RailButton}" Tag="fib"
+                                Click="ToolButton_Click" ToolTip="Fibonacci Retracement — click two points">
+                            <ContentControl Content="{StaticResource Icon_fib}" Width="18" Height="18"/>
+                        </Button>
 
-        <!-- Right panel: Watchlist / Signals / Paper tabs -->
-        <Border Grid.Column="2" Background="#131722"
-                BorderBrush="{StaticResource BorderLine}" BorderThickness="1,0,0,0">
-            <DockPanel>
-                <!-- Tab header -->
-                <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
-                        BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1">
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Button x:Name="TabWatchlistButton" Content="Watchlist" Style="{StaticResource TvButton}"
-                                Background="{StaticResource Accent}" Foreground="White" Click="RightTabWatchlist_Click"/>
-                        <Button x:Name="TabSignalsButton" Grid.Column="1" Content="Signals" Style="{StaticResource TvButton}"
-                                Click="RightTabSignals_Click"/>
-                        <Button x:Name="TabPaperButton" Grid.Column="2" Content="Paper" Style="{StaticResource TvButton}"
-                                Click="RightTabPaper_Click"/>
-                    </Grid>
+                        <Rectangle Width="24" Height="1" Fill="{StaticResource BorderLine}" Margin="0,6,0,6"/>
+
+                        <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
+                                Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
+                            <ContentControl Content="{StaticResource Icon_autosr}" Width="18" Height="18"/>
+                        </Button>
+                        <Button x:Name="ToolClearButton" Style="{StaticResource RailButton}" Tag="clear"
+                                Click="ToolButton_Click" ToolTip="Clear All Drawings">
+                            <ContentControl Content="{StaticResource Icon_trash}" Width="18" Height="18"/>
+                        </Button>
+                    </StackPanel>
                 </Border>
 
-                <!-- Watchlist pane -->
-                <DockPanel x:Name="WatchlistPane">
-                    <Border DockPanel.Dock="Top" Padding="6,5"
-                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1">
+                <!-- Main content -->
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Symbol tabs -->
+                    <Border Grid.Row="0" BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
+                        <StackPanel Orientation="Horizontal">
+                            <StackPanel x:Name="TabsPanel" Orientation="Horizontal"/>
+                            <Button x:Name="AddTabButton" Content="＋" Style="{StaticResource TvButton}"
+                                    ToolTip="Open a new chart tab" Click="AddTabButton_Click"/>
+                            <Popup x:Name="NewTabPopup" StaysOpen="False" AllowsTransparency="True"
+                                   Placement="Bottom" PlacementTarget="{Binding ElementName=AddTabButton}">
+                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                        BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Symbol (e.g. ETH/USDT)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                        <TextBox x:Name="NewTabSymbolBox" Text="ETH/USDT" Width="170" Margin="0,4,0,8"
+                                                 Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                 BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                        <Button Content="Open chart" Style="{StaticResource TvButton}" Click="NewTabOpen_Click"/>
+                                    </StackPanel>
+                                </Border>
+                            </Popup>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Top bar (Removed duplicate Cat & Meowgnal text, kept Symbol & Price) -->
+                    <Border Grid.Row="1" Background="{StaticResource BgPanel}"
+                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="10,6">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Button x:Name="WatchlistNameButton" Style="{StaticResource TvButtonLeft}"
-                                    Click="WatchlistNameButton_Click" ToolTip="Switch watchlist">
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock x:Name="WatchlistNameText" Text="Main" Foreground="{StaticResource TextPrimary}"
-                                               FontWeight="Bold" VerticalAlignment="Center"/>
-                                    <TextBlock Text="▾" FontSize="9" Foreground="{StaticResource TextMuted}"
-                                               VerticalAlignment="Center" Margin="6,1,0,0"/>
-                                </StackPanel>
-                            </Button>
-                            <Button x:Name="NewWatchlistButton" Grid.Column="1" Content="＋ List" Style="{StaticResource TvButton}"
-                                    ToolTip="Create a new watchlist" Click="NewWatchlistButton_Click"/>
-                            <Button x:Name="AddSymbolButton" Grid.Column="2" Content="＋ Symbol" Style="{StaticResource TvButton}"
-                                    ToolTip="Add a symbol to this watchlist" Click="AddSymbolButton_Click"/>
-
-                            <Popup x:Name="WatchlistSwitchPopup" StaysOpen="False" AllowsTransparency="True"
-                                   Placement="Bottom" PlacementTarget="{Binding ElementName=WatchlistNameButton}">
-                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                        BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
-                                    <StackPanel x:Name="SwitchListPanel"/>
-                                </Border>
-                            </Popup>
-
-                            <Popup x:Name="NewWatchlistPopup" StaysOpen="False" AllowsTransparency="True"
-                                   Placement="Bottom" PlacementTarget="{Binding ElementName=NewWatchlistButton}">
-                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                        BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Watchlist name" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                        <TextBox x:Name="NewWatchlistNameBox" Width="160" Margin="0,4,0,8"
-                                                 Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                 BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-                                        <Button Content="Create" Style="{StaticResource TvButton}" Click="NewWatchlistConfirm_Click"/>
-                                    </StackPanel>
-                                </Border>
-                            </Popup>
-
-                            <Popup x:Name="AddSymbolPopup" StaysOpen="False" AllowsTransparency="True"
-                                   Placement="Bottom" PlacementTarget="{Binding ElementName=AddSymbolButton}">
-                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                        BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
-                                    <StackPanel>
-                                        <TextBlock Text="Symbol (e.g. BTC/USDT)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                        <TextBox x:Name="AddSymbolBox" Text="BTC/USDT" Width="200" Margin="0,4,0,8"
-                                                 TextChanged="AddSymbolBox_TextChanged"
-                                                 Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                 BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-                                        <TextBlock Text="Pick the price source:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
-                                        <RadioButton x:Name="SourceBinanceRadio" Content="Binance — …" GroupName="AddSrc"
-                                                     Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
-                                        <RadioButton x:Name="SourceHyperRadio" Content="Hyperliquid — …" GroupName="AddSrc"
-                                                     Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
-                                        <Button Content="Add to watchlist" Style="{StaticResource TvButton}" Click="AddSymbolConfirm_Click"/>
-                                    </StackPanel>
-                                </Border>
-                            </Popup>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock x:Name="SymbolText" Text="BTC/USDT" Foreground="{StaticResource TextPrimary}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="PriceText" Text="—" Foreground="{StaticResource TextMuted}" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button x:Name="RefreshButton" Content="⟳ Refresh" Style="{StaticResource TvButton}" Click="RefreshButton_Click"/>
+                                <Button x:Name="OpenBuilderButton" Content="＋ New strategy" Style="{StaticResource TvButton}" Click="OpenBuilderButton_Click"/>
+                                <Button x:Name="OpenBacktestButton" Content="Backtest" Style="{StaticResource TvButton}" Click="OpenBacktestButton_Click"/>
+                                <Button x:Name="OpenSettingsButton" Content="⚙ Settings" Style="{StaticResource TvButton}" Click="OpenSettingsButton_Click"/>
+                            </StackPanel>
                         </Grid>
                     </Border>
 
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel x:Name="WatchlistRowsPanel" Margin="10,8,10,8"/>
-                    </ScrollViewer>
-                </DockPanel>
-
-                <!-- Signals pane -->
-                <DockPanel x:Name="SignalsPane" Visibility="Collapsed">
-                    <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
-                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
-                        <TextBlock Text="Active signals" Foreground="{StaticResource TextSecondary}" FontSize="12" FontWeight="Bold"/>
-                    </Border>
-                    <ItemsControl x:Name="SignalsList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
-                                    <StackPanel>
-                                        <Grid>
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-                                            <TextBlock Text="{Binding Symbol}" Foreground="{StaticResource TextPrimary}" FontSize="12" FontWeight="Bold"/>
-                                            <Border Grid.Column="1" CornerRadius="3" Padding="6,1"
-                                                    Background="{Binding Type, Converter={StaticResource TypeToBrushConverter}}">
-                                                <TextBlock Text="{Binding Type}" FontSize="10" Foreground="White"/>
-                                            </Border>
-                                        </Grid>
-                                        <TextBlock Text="{Binding Description}" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding Time}" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,1,0,0"/>
+                    <!-- Chart toolbar -->
+                    <Border Grid.Row="2" BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <StackPanel x:Name="TimeframePanel" Orientation="Horizontal"/>
+                                <Button x:Name="TimeframeMenuButton" Content="▾" Style="{StaticResource TvButton}"
+                                        ToolTip="All timeframes" Click="TimeframeMenuButton_Click"/>
+                                <Popup x:Name="TimeframePopup" StaysOpen="False" AllowsTransparency="True"
+                                       Placement="Bottom" PlacementTarget="{Binding ElementName=TimeframeMenuButton}">
+                                    <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                            BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+                                        <ScrollViewer x:Name="TimeframeMenuScroll" VerticalScrollBarVisibility="Auto" MaxHeight="640">
+                                            <StackPanel x:Name="TimeframeMenuPanel"/>
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                                <Rectangle Width="1" Height="18" Fill="{StaticResource BorderLine}" Margin="8,0"/>
+                                <Button x:Name="ChartTypeButton" Style="{StaticResource TvButton}" Click="ChartTypeButton_Click" ToolTip="Chart type">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ContentControl x:Name="ChartTypeIcon" Width="18" Height="14" Margin="0,0,6,0"/>
+                                        <TextBlock x:Name="ChartTypeLabel" Text="Candles" VerticalAlignment="Center"/>
+                                        <TextBlock Text="▾" FontSize="9" VerticalAlignment="Center" Margin="6,0,0,0"/>
                                     </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </DockPanel>
+                                </Button>
+                                <Popup x:Name="ChartTypePopup" StaysOpen="False" AllowsTransparency="True"
+                                       Placement="Bottom" PlacementTarget="{Binding ElementName=ChartTypeButton}">
+                                    <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                            BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+                                        <StackPanel>
+                                            <Button Style="{StaticResource TvButtonLeft}" Tag="candles" Click="ChartTypeItem_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ContentControl Content="{StaticResource Icon_candles}" Width="18" Height="14" Margin="0,0,8,0"/>
+                                                    <TextBlock Text="Candles" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource TvButtonLeft}" Tag="bars" Click="ChartTypeItem_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ContentControl Content="{StaticResource Icon_bars}" Width="18" Height="14" Margin="0,0,8,0"/>
+                                                    <TextBlock Text="Bars (OHLC)" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource TvButtonLeft}" Tag="line" Click="ChartTypeItem_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ContentControl Content="{StaticResource Icon_line}" Width="18" Height="14" Margin="0,0,8,0"/>
+                                                    <TextBlock Text="Line" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource TvButtonLeft}" Tag="area" Click="ChartTypeItem_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ContentControl Content="{StaticResource Icon_area}" Width="18" Height="14" Margin="0,0,8,0"/>
+                                                    <TextBlock Text="Area" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource TvButtonLeft}" Tag="heikinashi" Click="ChartTypeItem_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <ContentControl Content="{StaticResource Icon_heikinashi}" Width="18" Height="14" Margin="0,0,8,0"/>
+                                                    <TextBlock Text="Heikin Ashi" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <Button x:Name="ScreenshotButton" Content="📷" ToolTip="Save chart screenshot" Style="{StaticResource TvButton}" Click="ScreenshotButton_Click"/>
+                                <Button x:Name="FullscreenButton" Content="⛶" ToolTip="Fullscreen (Esc to exit)" Style="{StaticResource TvButton}" Click="FullscreenButton_Click"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
 
-                <!-- Paper trading pane -->
-                <DockPanel x:Name="PaperPane" Visibility="Collapsed">
-                    <!-- Account card + auto-trade toggle + open position button -->
-                    <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
-                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,10">
-                        <StackPanel>
+                    <!-- Chart + OHLC legend -->
+                    <Grid Grid.Row="3" Background="#131722">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,6,0,0">
+                            <TextBlock Text="O" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="OhlcOpenText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="H" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="OhlcHighText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="L" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="OhlcLowText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="C" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="OhlcCloseText" Text="—" FontSize="11" Margin="3,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <wv2:WebView2 Grid.Row="1" x:Name="ChartWebView"/>
+                    </Grid>
+
+                    <!-- Stat cards -->
+                    <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,8">
+                        <Border Background="{StaticResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="Active strategies" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBlock x:Name="ActiveStrategiesText" Text="0" Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="{StaticResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
+                            <StackPanel>
+                                <TextBlock Text="Win rate (backtest)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBlock x:Name="WinRateText" Text="—" Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="{StaticResource BgPanel}" CornerRadius="4" Padding="12,8">
+                            <StackPanel>
+                                <TextBlock Text="Signals found" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                <TextBlock x:Name="SignalCountText" Text="—" Foreground="{StaticResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Bottom status bar -->
+                    <Border Grid.Row="5" Background="{StaticResource BgPanel}"
+                            BorderBrush="{StaticResource BorderLine}" BorderThickness="0,1,0,0" Padding="10,4">
+                        <Grid>
+                            <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="11"
+                                       Foreground="{StaticResource TextMuted}">
+                                <Hyperlink NavigateUri="https://www.tradingview.com"
+                                           RequestNavigate="TradingViewLink_RequestNavigate"
+                                           Foreground="{StaticResource TextMuted}"
+                                           TextDecorations="None">Chart powered by TradingView Lightweight Charts</Hyperlink>
+                            </TextBlock>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                <TextBlock x:Name="PaperStatusText" Text="" FontSize="11" Foreground="{StaticResource TextMuted}" Margin="0,0,12,0"/>
+                                <Button x:Name="ClockButton" Style="{StaticResource TvButton}" Click="ClockButton_Click"
+                                        ToolTip="Clock time zone — click to change">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock x:Name="ClockText" Text="--:--:--" FontSize="11"
+                                                   Foreground="{StaticResource TextSecondary}" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="ClockZoneText" Text="UTC" FontSize="11"
+                                                   Foreground="{StaticResource TextMuted}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="▾" FontSize="8" Foreground="{StaticResource TextMuted}"
+                                                   Margin="4,1,0,0" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Popup x:Name="ClockPopup" StaysOpen="False" AllowsTransparency="True"
+                                       Placement="Top" PlacementTarget="{Binding ElementName=ClockButton}">
+                                    <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                            BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,0,0,4" Width="270">
+                                        <StackPanel>
+                                            <Button Style="{StaticResource TvButtonLeft}" Tag="utc" Click="ClockMode_Click">
+                                                <TextBlock Text="UTC — exchange standard" FontSize="11"/>
+                                            </Button>
+                                            <Button Style="{StaticResource TvButtonLeft}" Tag="system" Click="ClockMode_Click">
+                                                <TextBlock Text="System local time" FontSize="11"/>
+                                            </Button>
+                                            <Border Height="1" Background="{StaticResource BorderLine}" Margin="4,4"/>
+                                            <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                                                <StackPanel x:Name="TimeZoneListPanel"/>
+                                            </ScrollViewer>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <!-- Right panel: Watchlist / Signals / Paper tabs -->
+                <Border Grid.Column="2" Background="#131722"
+                        BorderBrush="{StaticResource BorderLine}" BorderThickness="1,0,0,0">
+                    <DockPanel>
+                        <!-- Tab header -->
+                        <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
+                                BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
-                                <StackPanel>
-                                    <TextBlock Text="PAPER BALANCE" Foreground="{StaticResource TextMuted}" FontSize="10"/>
-                                    <TextBlock x:Name="PaperBalanceText" Text="—" Foreground="{StaticResource TextPrimary}"
-                                               FontSize="16" FontWeight="Bold" Margin="0,2,0,0"/>
-                                </StackPanel>
-                                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
-                                    <TextBlock Text="UNREALIZED PNL" Foreground="{StaticResource TextMuted}" FontSize="10"/>
-                                    <TextBlock x:Name="PaperUnrealizedText" Text="—" FontSize="14" FontWeight="Bold" Margin="0,2,0,0"/>
-                                </StackPanel>
+                                <Button x:Name="TabWatchlistButton" Content="Watchlist" Style="{StaticResource TvButton}"
+                                        Background="{StaticResource Accent}" Foreground="White" Click="RightTabWatchlist_Click"/>
+                                <Button x:Name="TabSignalsButton" Grid.Column="1" Content="Signals" Style="{StaticResource TvButton}"
+                                        Click="RightTabSignals_Click"/>
+                                <Button x:Name="TabPaperButton" Grid.Column="2" Content="Paper" Style="{StaticResource TvButton}"
+                                        Click="RightTabPaper_Click"/>
                             </Grid>
-                            <TextBlock x:Name="PaperEquityText" Text="Equity: —" Foreground="{StaticResource TextMuted}"
-                                       FontSize="10" Margin="0,6,0,0"/>
-                            <CheckBox x:Name="AutoTradeCheck" Content="Auto-trade signals"
-                                      Foreground="{StaticResource TextSecondary}"
-                                      Margin="0,10,0,0" Click="AutoTradeCheck_Click"/>
-                            <Button x:Name="OpenPositionButton" Content="＋ Open position" Style="{StaticResource TvButton}"
-                                    HorizontalAlignment="Stretch" Margin="0,6,0,0" Click="OpenPositionButton_Click"/>
+                        </Border>
 
-                            <!-- Open-position popup -->
-                            <Popup x:Name="OpenPositionPopup" StaysOpen="False" AllowsTransparency="True"
-                                   Placement="Left" PlacementTarget="{Binding ElementName=OpenPositionButton}">
-                                <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
-                                        BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,4,0" Width="240">
-                                    <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel>
-                                            <TextBlock Text="Symbol" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                            <TextBox x:Name="PopSymbolBox" Text="BTC/USDT" Margin="0,4,0,8"
-                                                     Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                     BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-
-                                            <TextBlock Text="Side" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                            <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
-                                                <RadioButton x:Name="PopSideLong" Content="Long" GroupName="PopSide"
-                                                             Foreground="{StaticResource Up}" IsChecked="True" Margin="0,0,14,0"/>
-                                                <RadioButton x:Name="PopSideShort" Content="Short" GroupName="PopSide"
-                                                             Foreground="{StaticResource Down}"/>
-                                            </StackPanel>
-
-                                            <TextBlock Text="Leverage (x)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                            <TextBox x:Name="PopLeverageBox" Text="10" Margin="0,4,0,8"
-                                                     Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                     BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-
-                                            <TextBlock Text="Margin (USDT) — your capital in this trade" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                            <TextBox x:Name="PopMarginBox" Text="1000" Margin="0,4,0,8"
-                                                     Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                     BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-
-                                            <TextBlock Text="Stop-loss % (0 = none)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                            <TextBox x:Name="PopSLBox" Text="2" Margin="0,4,0,8"
-                                                     Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                     BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-
-                                            <TextBlock Text="Take-profit % (0 = none)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                                            <TextBox x:Name="PopTPBox" Text="4" Margin="0,4,0,8"
-                                                     Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                     BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-
-                                            <CheckBox x:Name="PopTrailingCheck" Content="Trailing stop" Foreground="{StaticResource TextPrimary}"
-                                                      Margin="0,0,0,6"/>
-                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                                                <StackPanel Margin="0,0,10,0">
-                                                    <TextBlock Text="Distance %" Foreground="{StaticResource TextMuted}" FontSize="10"/>
-                                                    <TextBox x:Name="PopTrailingDistBox" Text="2" Width="70" Margin="0,2,0,0"
-                                                             Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                             BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-                                                </StackPanel>
-                                                <StackPanel>
-                                                    <TextBlock Text="Activate after %" Foreground="{StaticResource TextMuted}" FontSize="10"/>
-                                                    <TextBox x:Name="PopTrailingActBox" Text="2" Width="70" Margin="0,2,0,0"
-                                                             Background="#1E222D" Foreground="{StaticResource TextPrimary}"
-                                                             BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
-                                                </StackPanel>
-                                            </StackPanel>
-
-                                            <Button Content="Open position" Style="{StaticResource TvButton}" Click="OpenPositionConfirm_Click"/>
+                        <!-- Watchlist pane -->
+                        <DockPanel x:Name="WatchlistPane">
+                            <Border DockPanel.Dock="Top" Padding="6,5"
+                                    BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Button x:Name="WatchlistNameButton" Style="{StaticResource TvButtonLeft}"
+                                            Click="WatchlistNameButton_Click" ToolTip="Switch watchlist">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock x:Name="WatchlistNameText" Text="Main" Foreground="{StaticResource TextPrimary}"
+                                                       FontWeight="Bold" VerticalAlignment="Center"/>
+                                            <TextBlock Text="▾" FontSize="9" Foreground="{StaticResource TextMuted}"
+                                                       VerticalAlignment="Center" Margin="6,1,0,0"/>
                                         </StackPanel>
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </StackPanel>
-                    </Border>
+                                    </Button>
+                                    <Button x:Name="NewWatchlistButton" Grid.Column="1" Content="＋ List" Style="{StaticResource TvButton}"
+                                            ToolTip="Create a new watchlist" Click="NewWatchlistButton_Click"/>
+                                    <Button x:Name="AddSymbolButton" Grid.Column="2" Content="＋ Symbol" Style="{StaticResource TvButton}"
+                                            ToolTip="Add a symbol to this watchlist" Click="AddSymbolButton_Click"/>
 
-                    <!-- Positions + history -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <StackPanel Margin="10,8,10,8">
-                            <TextBlock Text="OPEN POSITIONS" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,6"/>
-                            <StackPanel x:Name="PaperPositionsPanel"/>
-                            <TextBlock Text="HISTORY (last 10)" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,16,0,6"/>
-                            <StackPanel x:Name="PaperHistoryPanel"/>
-                        </StackPanel>
-                    </ScrollViewer>
-                </DockPanel>
-            </DockPanel>
-        </Border>
-    </Grid>
+                                    <Popup x:Name="WatchlistSwitchPopup" StaysOpen="False" AllowsTransparency="True"
+                                           Placement="Bottom" PlacementTarget="{Binding ElementName=WatchlistNameButton}">
+                                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                                BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+                                            <StackPanel x:Name="SwitchListPanel"/>
+                                        </Border>
+                                    </Popup>
+
+                                    <Popup x:Name="NewWatchlistPopup" StaysOpen="False" AllowsTransparency="True"
+                                           Placement="Bottom" PlacementTarget="{Binding ElementName=NewWatchlistButton}">
+                                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+                                            <StackPanel>
+                                                <TextBlock Text="Watchlist name" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                <TextBox x:Name="NewWatchlistNameBox" Width="160" Margin="0,4,0,8"
+                                                         Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                         BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                <Button Content="Create" Style="{StaticResource TvButton}" Click="NewWatchlistConfirm_Click"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+
+                                    <Popup x:Name="AddSymbolPopup" StaysOpen="False" AllowsTransparency="True"
+                                           Placement="Bottom" PlacementTarget="{Binding ElementName=AddSymbolButton}">
+                                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+                                            <StackPanel>
+                                                <TextBlock Text="Symbol (e.g. BTC/USDT)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                <TextBox x:Name="AddSymbolBox" Text="BTC/USDT" Width="200" Margin="0,4,0,8"
+                                                         TextChanged="AddSymbolBox_TextChanged"
+                                                         Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                         BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                <TextBlock Text="Pick the price source:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                                                <RadioButton x:Name="SourceBinanceRadio" Content="Binance — …" GroupName="AddSrc"
+                                                             Foreground="{StaticResource TextPrimary}" Margin="0,0,0,4"/>
+                                                <RadioButton x:Name="SourceHyperRadio" Content="Hyperliquid — …" GroupName="AddSrc"
+                                                             Foreground="{StaticResource TextPrimary}" Margin="0,0,0,8"/>
+                                                <Button Content="Add to watchlist" Style="{StaticResource TvButton}" Click="AddSymbolConfirm_Click"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </Popup>
+                                </Grid>
+                            </Border>
+
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel x:Name="WatchlistRowsPanel" Margin="10,8,10,8"/>
+                            </ScrollViewer>
+                        </DockPanel>
+
+                        <!-- Signals pane -->
+                        <DockPanel x:Name="SignalsPane" Visibility="Collapsed">
+                            <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
+                                    BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
+                                <TextBlock Text="Active signals" Foreground="{StaticResource TextSecondary}" FontSize="12" FontWeight="Bold"/>
+                            </Border>
+                            <ItemsControl x:Name="SignalsList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
+                                            <StackPanel>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Text="{Binding Symbol}" Foreground="{StaticResource TextPrimary}" FontSize="12" FontWeight="Bold"/>
+                                                    <Border Grid.Column="1" CornerRadius="3" Padding="6,1"
+                                                            Background="{Binding Type, Converter={StaticResource TypeToBrushConverter}}">
+                                                        <TextBlock Text="{Binding Type}" FontSize="10" Foreground="White"/>
+                                                    </Border>
+                                                </Grid>
+                                                <TextBlock Text="{Binding Description}" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
+                                                <TextBlock Text="{Binding Time}" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,1,0,0"/>
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DockPanel>
+
+                        <!-- Paper trading pane -->
+                        <DockPanel x:Name="PaperPane" Visibility="Collapsed">
+                            <Border DockPanel.Dock="Top" Background="{StaticResource BgPanel}"
+                                    BorderBrush="{StaticResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,10">
+                                <StackPanel>
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="PAPER BALANCE" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                            <TextBlock x:Name="PaperBalanceText" Text="—" Foreground="{StaticResource TextPrimary}"
+                                                       FontSize="16" FontWeight="Bold" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                                            <TextBlock Text="UNREALIZED PNL" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                            <TextBlock x:Name="PaperUnrealizedText" Text="—" FontSize="14" FontWeight="Bold" Margin="0,2,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                    <TextBlock x:Name="PaperEquityText" Text="Equity: —" Foreground="{StaticResource TextMuted}"
+                                               FontSize="10" Margin="0,6,0,0"/>
+                                    <CheckBox x:Name="AutoTradeCheck" Content="Auto-trade signals"
+                                              Foreground="{StaticResource TextSecondary}"
+                                              Margin="0,10,0,0" Click="AutoTradeCheck_Click"/>
+                                    <Button x:Name="OpenPositionButton" Content="＋ Open position" Style="{StaticResource TvButton}"
+                                            HorizontalAlignment="Stretch" Margin="0,6,0,0" Click="OpenPositionButton_Click"/>
+
+                                    <Popup x:Name="OpenPositionPopup" StaysOpen="False" AllowsTransparency="True"
+                                           Placement="Left" PlacementTarget="{Binding ElementName=OpenPositionButton}">
+                                        <Border Background="{StaticResource BgPanel}" BorderBrush="{StaticResource BorderLine}"
+                                                BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,4,0" Width="240">
+                                            <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto">
+                                                <StackPanel>
+                                                    <TextBlock Text="Symbol" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                    <TextBox x:Name="PopSymbolBox" Text="BTC/USDT" Margin="0,4,0,8"
+                                                             Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                             BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                    <TextBlock Text="Side" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                                                        <RadioButton x:Name="PopSideLong" Content="Long" GroupName="PopSide"
+                                                                     Foreground="{StaticResource Up}" IsChecked="True" Margin="0,0,14,0"/>
+                                                        <RadioButton x:Name="PopSideShort" Content="Short" GroupName="PopSide"
+                                                                     Foreground="{StaticResource Down}"/>
+                                                    </StackPanel>
+                                                    <TextBlock Text="Leverage (x)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                    <TextBox x:Name="PopLeverageBox" Text="10" Margin="0,4,0,8"
+                                                             Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                             BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                    <TextBlock Text="Margin (USDT)" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                    <TextBox x:Name="PopMarginBox" Text="1000" Margin="0,4,0,8"
+                                                             Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                             BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                    <TextBlock Text="Stop-loss %" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                    <TextBox x:Name="PopSLBox" Text="2" Margin="0,4,0,8"
+                                                             Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                             BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                    <TextBlock Text="Take-profit %" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                                    <TextBox x:Name="PopTPBox" Text="4" Margin="0,4,0,8"
+                                                             Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                             BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                    <CheckBox x:Name="PopTrailingCheck" Content="Trailing stop" Foreground="{StaticResource TextPrimary}" Margin="0,0,0,6"/>
+                                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                                        <StackPanel Margin="0,0,10,0">
+                                                            <TextBlock Text="Distance %" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                                            <TextBox x:Name="PopTrailingDistBox" Text="2" Width="70" Margin="0,2,0,0"
+                                                                     Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                                     BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                        </StackPanel>
+                                                        <StackPanel>
+                                                            <TextBlock Text="Activate after %" Foreground="{StaticResource TextMuted}" FontSize="10"/>
+                                                            <TextBox x:Name="PopTrailingActBox" Text="2" Width="70" Margin="0,2,0,0"
+                                                                     Background="#1E222D" Foreground="{StaticResource TextPrimary}"
+                                                                     BorderBrush="{StaticResource BorderLine}" CaretBrush="White"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <Button Content="Open position" Style="{StaticResource TvButton}" Click="OpenPositionConfirm_Click"/>
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </Border>
+                                    </Popup>
+                                </StackPanel>
+                            </Border>
+
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <StackPanel Margin="10,8,10,8">
+                                    <TextBlock Text="OPEN POSITIONS" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,6"/>
+                                    <StackPanel x:Name="PaperPositionsPanel"/>
+                                    <TextBlock Text="HISTORY (last 10)" Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,16,0,6"/>
+                                    <StackPanel x:Name="PaperHistoryPanel"/>
+                                </StackPanel>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </DockPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>

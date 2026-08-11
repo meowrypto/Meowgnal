@@ -5,12 +5,13 @@ using Meowgnal.Services;
 using Meowgnal.Views;
 using Drawing = Meowgnal.Models.Drawing;
 using Microsoft.Web.WebView2.Core;
-using OpenTK.Compute.OpenCL;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
 using System.Windows;
@@ -105,7 +106,25 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        // 1. Show Splash Screen
+        var splash = new SplashWindow();
+        splash.Show();
+
+        // Keep UI responsive while splash is visible
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < 1200)
+        {
+            Dispatcher.Invoke(DispatcherPriority.Background, new Action(delegate { }));
+        }
+
         InitializeComponent();
+
+        // Set version in custom title bar
+        var v = Assembly.GetEntryAssembly()?.GetName().Version;
+        TitleBarVersion.Text = v is null ? "" : $"v{v.Major}.{v.Minor}";
+
+        splash.Close();
+
         SignalsList.ItemsSource = _signals;
 
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
@@ -116,7 +135,6 @@ public partial class MainWindow : Window
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
 
-        // Live clock with selectable time zone (UTC / system / custom).
         ApplyClockSettings();
         UpdateClockText();
         _clockTimer.Tick += (_, _) => UpdateClockText();
@@ -136,6 +154,52 @@ public partial class MainWindow : Window
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        var settings = SettingsStorageService.Load();
+
+        // 2. First Run Onboarding
+        if (!settings.FirstRunCompleted)
+        {
+            var onboard = new OnboardingWindow { Owner = this };
+            if (onboard.ShowDialog() == true)
+            {
+                settings.FirstRunCompleted = true;
+                if (!onboard.ChoseGuest)
+                {
+                    settings.ProfileName = onboard.ChosenName;
+                    settings.ProfileAvatar = onboard.ChosenAvatar;
+                    settings.IsGuest = false;
+                }
+                else
+                {
+                    settings.IsGuest = true;
+                    settings.ProfileName = "Guest";
+                    settings.ProfileAvatar = "🐱";
+                    LicenseService.EnsureDemoStarted(settings);
+                }
+                SettingsStorageService.Save(settings);
+            }
+            else
+            {
+                Application.Current.Shutdown();
+                return;
+            }
+        }
+        else if (settings.IsGuest)
+        {
+            LicenseService.EnsureDemoStarted(settings);
+        }
+
+        // 3. License Check
+        var access = LicenseService.CheckAccess(settings);
+        if (!access.Allowed)
+        {
+            MessageBox.Show(access.Message, "Meowgnal — Demo Expired", MessageBoxButton.OK, MessageBoxImage.Warning);
+            Application.Current.Shutdown();
+            return;
+        }
+
+        UpdateProfileMenu(settings, access.Message);
+
         _ = InitializeChartWebViewAsync();
 
         var first = StrategyStorageService.LoadAll().FirstOrDefault();
@@ -165,6 +229,104 @@ public partial class MainWindow : Window
         await LoadDashboardAsync();
         StartSignalMonitor();
     }
+
+    private void UpdateProfileMenu(AppSettings settings, string statusMsg)
+    {
+        ProfileAvatarText.Text = settings.ProfileAvatar;
+        MenuAvatarText.Text = settings.ProfileAvatar;
+        MenuNameText.Text = settings.ProfileName;
+        MenuStatusText.Text = statusMsg;
+    }
+
+    #region Title Bar Controls
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            ToggleMaximize();
+        }
+        else
+        {
+            if (WindowState == WindowState.Maximized)
+            {
+                var point = PointToScreen(e.GetPosition(this));
+                WindowState = WindowState.Normal;
+                Left = point.X - Width / 2;
+                Top = point.Y - 15;
+            }
+            DragMove();
+        }
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void ToggleMaximize()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            WindowState = WindowState.Normal;
+            MaximizeButton.Content = "⛶";
+        }
+        else
+        {
+            WindowState = WindowState.Maximized;
+            MaximizeButton.Content = "❐";
+        }
+    }
+    #endregion
+
+    #region Profile Menu
+    private void ProfileButton_Click(object sender, RoutedEventArgs e) =>
+        ProfilePopup.IsOpen = !ProfilePopup.IsOpen;
+
+    private void MenuSettings_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        OpenSettingsButton_Click(sender, e);
+    }
+
+    private void MenuLicense_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        // Dedicated license window will be added in a future step.
+        MessageBox.Show("Dedicated License Activation window will be added in the next step.\nFor now, the demo period is automatically tracked.", "Meowgnal", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void MenuHelp_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        try
+        {
+            Process.Start(new ProcessStartInfo("https://github.com/meowrypto/Meowgnal") { UseShellExecute = true });
+        }
+        catch { }
+    }
+
+    private void MenuWhatsNew_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        MessageBox.Show("Welcome to Meowgnal!\n\n- Custom Title Bar\n- Profile & Onboarding\n- Splash Screen\n- License Management", "What's new", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void MenuSignOut_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        var res = MessageBox.Show("Sign out and switch profile? This will restart the app.", "Meowgnal", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (res == MessageBoxResult.Yes)
+        {
+            var settings = SettingsStorageService.Load();
+            settings.FirstRunCompleted = false;
+            settings.LicenseKey = "";
+            SettingsStorageService.Save(settings);
+            Process.Start(Application.ResourceAssembly.Location);
+            Application.Current.Shutdown();
+        }
+    }
+    #endregion
 
     private void RebuildTabsBar()
     {
@@ -1325,21 +1487,17 @@ public partial class MainWindow : Window
 
     private void TradingViewLink_RequestNavigate(object sender, System.Windows.Navigation.RequestNavigateEventArgs e)
     {
-        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+        Process.Start(new ProcessStartInfo
         {
             FileName = e.Uri.AbsoluteUri,
             UseShellExecute = true
         });
         e.Handled = true;
     }
-    // ------------------------------------------------------------------
-    // Status-bar clock with selectable time zone (TradingView style)
-    // ------------------------------------------------------------------
 
     private string _clockMode = "utc";
     private TimeZoneInfo? _clockZone;
 
-    // Reads the saved clock mode and refreshes the zone label.
     private void ApplyClockSettings()
     {
         var s = SettingsStorageService.Load();
@@ -1349,7 +1507,7 @@ public partial class MainWindow : Window
         if (_clockMode == "custom" && !string.IsNullOrEmpty(s.ClockTimeZoneId))
         {
             try { _clockZone = TimeZoneInfo.FindSystemTimeZoneById(s.ClockTimeZoneId); }
-            catch { _clockMode = "utc"; } // saved zone no longer exists on this OS
+            catch { _clockMode = "utc"; }
         }
 
         ClockZoneText.Text = _clockMode switch
@@ -1367,7 +1525,6 @@ public partial class MainWindow : Window
         return $"{sign}{abs.Hours:00}:{abs.Minutes:00}";
     }
 
-    // Called every second by the clock timer.
     private void UpdateClockText()
     {
         var now = DateTime.UtcNow;
@@ -1391,8 +1548,6 @@ public partial class MainWindow : Window
         ClockPopup.IsOpen = true;
     }
 
-    // Fills the scrollable list with ALL Windows time zones, ordered by
-    // UTC offset (exactly like TradingView's time-zone picker).
     private void BuildTimeZoneMenu()
     {
         TimeZoneListPanel.Children.Clear();
@@ -1669,7 +1824,6 @@ public partial class MainWindow : Window
             if (_currentBars.Count == 0) return;
             var autoLevels = SupportResistanceDetector.Detect(_chartSymbol, _currentBars);
 
-            // Remove previous auto-detected levels for this symbol to avoid duplicates
             _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean && d.IsAutoDetected);
             _drawingsFile.Drawings.AddRange(autoLevels);
             DrawingStorageService.Save(_drawingsFile);
@@ -1678,7 +1832,6 @@ public partial class MainWindow : Window
             return;
         }
 
-        // cursor exits drawing mode; other tags enter it
         var mode = tag == "cursor" ? "none" : tag;
         SetActiveTool(tag == "cursor" ? null : btn);
         await SendDrawingModeToChartAsync(mode);
