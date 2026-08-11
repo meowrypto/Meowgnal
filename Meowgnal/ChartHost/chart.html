@@ -18,11 +18,42 @@
             height: 100%;
             position: relative;
         }
+
+        #ctxMenu {
+            position: fixed;
+            display: none;
+            z-index: 10;
+            border: 1px solid #2A2E39;
+            border-radius: 6px;
+            padding: 4px;
+            min-width: 220px;
+            font-family: Trebuchet MS, sans-serif;
+            font-size: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+        }
+
+        .ctx-item {
+            padding: 7px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #D1D4DC;
+        }
+
+            .ctx-item:hover {
+                background: #363A45;
+            }
+
+        .ctx-sep {
+            height: 1px;
+            background: #2A2E39;
+            margin: 4px;
+        }
     </style>
     <script src="lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
     <div id="chart"></div>
+    <div id="ctxMenu"></div>
     <script>
         const COLORS = {
             background: '#131722',
@@ -434,6 +465,80 @@
             } else {
                 renderCustomDrawings();
             }
+        });
+
+        // ---------- Right-click context menu ----------
+        const ctxMenu = document.getElementById('ctxMenu');
+        let ctxPrice = null;
+
+        function post(m) {
+            if (window.chrome && window.chrome.webview)
+                window.chrome.webview.postMessage(JSON.stringify(m));
+        }
+
+        function fmtPrice(p) {
+            if (p >= 1000) return p.toFixed(2);
+            if (p >= 1) return p.toFixed(4);
+            return p.toFixed(8);
+        }
+
+        function menuItem(label, act) {
+            const d = document.createElement('div');
+            d.className = 'ctx-item';
+            d.textContent = label;
+            d.onmousedown = function (e) { e.stopPropagation(); };
+            d.onclick = function () { ctxMenu.style.display = 'none'; act(); };
+            return d;
+        }
+
+        function menuSep() {
+            const d = document.createElement('div');
+            d.className = 'ctx-sep';
+            return d;
+        }
+
+        function openCtxMenu(x, y, price) {
+            ctxPrice = price;
+            ctxMenu.innerHTML = '';
+            ctxMenu.style.background = COLORS.background;
+            ctxMenu.style.borderColor = COLORS.border;
+
+            ctxMenu.appendChild(menuItem('Reset chart view', function () {
+                const total = displayData.length;
+                if (total > 0) chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, total - 120), to: total + 4 });
+            }));
+            if (price != null) {
+                ctxMenu.appendChild(menuItem('Copy price ' + fmtPrice(price), function () {
+                    post({ type: 'copyPrice', price: price });
+                }));
+                ctxMenu.appendChild(menuItem('Add alert at ' + fmtPrice(price), function () {
+                    post({ type: 'addAlert', price: price });
+                }));
+            }
+            ctxMenu.appendChild(menuSep());
+            ctxMenu.appendChild(menuItem('Chart settings…', function () {
+                post({ type: 'openChartSettings' });
+            }));
+
+            ctxMenu.style.display = 'block';
+            const mw = ctxMenu.offsetWidth, mh = ctxMenu.offsetHeight;
+            ctxMenu.style.left = Math.min(x, window.innerWidth - mw - 8) + 'px';
+            ctxMenu.style.top = Math.min(y, window.innerHeight - mh - 8) + 'px';
+        }
+
+        document.getElementById('chart').addEventListener('contextmenu', function (e) {
+            e.preventDefault();
+            const rect = e.currentTarget.getBoundingClientRect();
+            let price = null;
+            if (activeSeries) {
+                const p = activeSeries.coordinateToPrice(e.clientY - rect.top);
+                if (p !== null && p !== undefined && !isNaN(p)) price = p;
+            }
+            openCtxMenu(e.clientX, e.clientY, price);
+        });
+
+        document.addEventListener('mousedown', function (e) {
+            if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
         });
 
         chart.subscribeCrosshairMove(function (param) {

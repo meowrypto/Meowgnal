@@ -4,10 +4,19 @@
         xmlns:views="clr-namespace:Meowgnal.Views"
         xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
         Title="Meowgnal" Height="600" Width="980"
-        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+                WindowStyle="None" Background="{DynamicResource BackgroundBrush}"
         FontFamily="Trebuchet MS"
         FontSize="12"
-        PreviewKeyDown="Window_PreviewKeyDown">
+                PreviewKeyDown="Window_PreviewKeyDown">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32"
+                      ResizeBorderThickness="6"
+                      GlassFrameThickness="0"
+                      CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
     <Window.Resources>
         <views:SignalTypeToBrushConverter x:Key="TypeToBrushConverter"/>
         <!-- Theme brushes: colors come from ThemeService at app level (live switching) -->
@@ -216,17 +225,21 @@
             </Grid.RowDefinitions>
 
             <!-- Custom Title Bar -->
-            <Border Grid.Row="0" Background="{DynamicResource BgPanel}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown"
+            <Border Grid.Row="0" Background="{DynamicResource BgPanel}"
                     BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"/>
-                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"/>
-                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"/>
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button x:Name="ProfileButton" Style="{StaticResource ProfileMenuButton}" Click="ProfileButton_Click" Margin="10,0,0,0">
+                        <Button x:Name="ProfileButton" Style="{StaticResource ProfileMenuButton}" Click="ProfileButton_Click" Margin="10,0,0,0"
+                                WindowChrome.IsHitTestVisibleInChrome="True">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock x:Name="ProfileAvatarText" Text="🐱" FontSize="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="▾" FontSize="9" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,1,0,0"/>

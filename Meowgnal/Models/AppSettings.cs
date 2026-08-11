@@ -39,6 +39,14 @@ public sealed class AppSettings
     public string CustomTextPrimary { get; set; } = "#D1D4DC";
     public string CustomAccent { get; set; } = "#2962FF";
 
+    // Chart appearance overrides (empty = follow the active theme)
+    public string ChartUpColor { get; set; } = "";
+    public string ChartDownColor { get; set; } = "";
+    public string ChartBackgroundColor { get; set; } = "";
+    public string ChartGridColor { get; set; } = "";
+    public string ChartBorderColor { get; set; } = "";
+    public string ChartCrosshairColor { get; set; } = "";
+
 
     // Profile & onboarding
     public bool FirstRunCompleted { get; set; } = false;

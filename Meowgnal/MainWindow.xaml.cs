@@ -75,6 +75,9 @@ public partial class MainWindow : Window
     private DrawingsFile _drawingsFile = new();
     private string? _activeDrawingMode = null;
 
+    // Price alerts state
+    private PriceAlertsFile _alerts = new();
+
     private static readonly SolidColorBrush UpBrush = new(Color.FromRgb(0x08, 0x99, 0x81));
     private static readonly SolidColorBrush DownBrush = new(Color.FromRgb(0xF2, 0x36, 0x45));
 
@@ -217,6 +220,7 @@ public partial class MainWindow : Window
         await ActivateTabAsync(firstTab);
 
         _drawingsFile = DrawingStorageService.Load();
+        _alerts = PriceAlertStorageService.Load();
         _watchlistsFile = WatchlistStorageService.Load();
         _activeWatchlist = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == _watchlistsFile.ActiveListName)
                            ?? _watchlistsFile.Lists[0];
@@ -788,6 +792,7 @@ public partial class MainWindow : Window
         {
             await RefreshWatchlistPricesAsync();
             await UpdatePaperLiveAsync();
+            await CheckPriceAlertsAsync();
         }
         finally
         {
@@ -1295,6 +1300,48 @@ public partial class MainWindow : Window
         UpdatePaperSummary(prices);
     }
 
+    private async Task CheckPriceAlertsAsync()
+    {
+        if (_alerts.Alerts.Count == 0) return;
+
+        foreach (var group in _alerts.Alerts.GroupBy(a => a.DataSource).ToList())
+        {
+            try
+            {
+                IDataProvider provider = group.Key == "hyperliquid"
+                    ? new HyperliquidDataProvider()
+                    : new BinanceDataProvider();
+                var tickers = await provider.GetTickersAsync(group.Select(a => a.Symbol).Distinct());
+
+                foreach (var alert in group.ToList())
+                {
+                    if (!tickers.TryGetValue(alert.Symbol, out var t)) continue;
+                    var above = t.Last >= alert.Price;
+
+                    if (alert.WasAbove is null)
+                    {
+                        alert.WasAbove = above;
+                        continue;
+                    }
+
+                    if (above != alert.WasAbove)
+                    {
+                        _alerts.Alerts.Remove(alert);
+                        NotificationService.ShowToast($"Meowgnal — {alert.Symbol}",
+                            $"🔔 Price crossed {alert.Price:N2} (now {t.Last:N2})");
+                        if (SettingsStorageService.Load().SoundNotificationsEnabled)
+                            NotificationService.PlayAlertSound();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        PriceAlertStorageService.Save(_alerts);
+    }
+
     private async Task AutoTradeSignalsAsync(List<FoundSignal> fresh, AppSettings settings)
     {
         var changed = false;
@@ -1443,6 +1490,32 @@ public partial class MainWindow : Window
 
         if (!root.TryGetProperty("type", out var typeProp)) return;
         var msgType = typeProp.GetString();
+
+        if (msgType == "copyPrice")
+        {
+            var price = root.GetProperty("price").GetDecimal();
+            try { Clipboard.SetText(price.ToString()); } catch { }
+            NotificationService.ShowToast("Meowgnal", $"Price {price:N2} copied to clipboard.");
+            return;
+        }
+
+        if (msgType == "addAlert")
+        {
+            var price = root.GetProperty("price").GetDecimal();
+            _alerts.Alerts.Add(new PriceAlert { Symbol = _chartSymbol, DataSource = _chartDataSource, Price = price });
+            PriceAlertStorageService.Save(_alerts);
+            NotificationService.ShowToast("Meowgnal", $"🔔 Alert added: {_chartSymbol} @ {price:N2}");
+            return;
+        }
+
+        if (msgType == "openChartSettings")
+        {
+            var win = new ChartSettingsWindow { Owner = this };
+            if (win.ShowDialog() == true)
+                _ = SendThemeToChartAsync();
+            _alerts = PriceAlertStorageService.Load();
+            return;
+        }
 
         if (msgType == "requestDrawings")
         {

@@ -40,7 +40,7 @@ public static class ThemeService
                 accent = ParseColor(settings.CustomAccent, "#2962FF");
                 break;
 
-            default: // dark
+            default:
                 background = Color.FromRgb(0x13, 0x17, 0x22);
                 panel = Color.FromRgb(0x1E, 0x22, 0x2D);
                 border = Color.FromRgb(0x2A, 0x2E, 0x39);
@@ -51,7 +51,6 @@ public static class ThemeService
                 break;
         }
 
-        // Color resources consumed by MainWindow brushes (live switching)
         var resources = Application.Current.Resources;
         resources["ColorBackground"] = background;
         resources["ColorPanel"] = panel;
@@ -64,57 +63,65 @@ public static class ThemeService
         resources["ColorDown"] = down;
     }
 
-    /// <summary>Colors sent to chart.html so the chart matches the app theme.</summary>
+    /// <summary>Colors sent to chart.html; per-user chart overrides win over the theme.</summary>
     public static ChartThemeColors GetChartColors(AppSettings settings)
     {
         var theme = (settings.Theme ?? "dark").ToLowerInvariant();
         if (theme == "system")
             theme = IsWindowsDarkMode() ? "dark" : "light";
 
-        if (theme == "light")
-            return new ChartThemeColors
-            {
-                background = "#FFFFFF",
-                grid = "#F0F3FA",
-                border = "#E0E3EB",
-                textMuted = "#787B86",
-                crosshair = "#758696",
-                accent = "#2962FF",
-                up = "#089981",
-                down = "#F23645",
-                volumeUp = "rgba(8, 153, 129, 0.35)",
-                volumeDown = "rgba(242, 54, 69, 0.35)"
-            };
+        var c = theme == "light" ? LightColors() : theme == "custom" ? CustomColors(settings) : DarkColors();
 
-        if (theme == "custom")
-            return new ChartThemeColors
-            {
-                background = settings.CustomBackground,
-                grid = settings.CustomPanel,
-                border = settings.CustomBorder,
-                textMuted = settings.CustomTextPrimary,
-                crosshair = "#758696",
-                accent = settings.CustomAccent,
-                up = "#089981",
-                down = "#F23645",
-                volumeUp = "rgba(8, 153, 129, 0.35)",
-                volumeDown = "rgba(242, 54, 69, 0.35)"
-            };
-
-        return new ChartThemeColors
-        {
-            background = "#131722",
-            grid = "#1E222D",
-            border = "#2A2E39",
-            textMuted = "#787B86",
-            crosshair = "#758696",
-            accent = "#2962FF",
-            up = "#089981",
-            down = "#F23645",
-            volumeUp = "rgba(8, 153, 129, 0.35)",
-            volumeDown = "rgba(242, 54, 69, 0.35)"
-        };
+        if (!string.IsNullOrWhiteSpace(settings.ChartUpColor)) c.up = settings.ChartUpColor;
+        if (!string.IsNullOrWhiteSpace(settings.ChartDownColor)) c.down = settings.ChartDownColor;
+        if (!string.IsNullOrWhiteSpace(settings.ChartBackgroundColor)) c.background = settings.ChartBackgroundColor;
+        if (!string.IsNullOrWhiteSpace(settings.ChartGridColor)) c.grid = settings.ChartGridColor;
+        if (!string.IsNullOrWhiteSpace(settings.ChartBorderColor)) c.border = settings.ChartBorderColor;
+        if (!string.IsNullOrWhiteSpace(settings.ChartCrosshairColor)) c.crosshair = settings.ChartCrosshairColor;
+        return c;
     }
+
+    private static ChartThemeColors DarkColors() => new()
+    {
+        background = "#131722",
+        grid = "#1E222D",
+        border = "#2A2E39",
+        textMuted = "#787B86",
+        crosshair = "#758696",
+        accent = "#2962FF",
+        up = "#089981",
+        down = "#F23645",
+        volumeUp = "rgba(8, 153, 129, 0.35)",
+        volumeDown = "rgba(242, 54, 69, 0.35)"
+    };
+
+    private static ChartThemeColors LightColors() => new()
+    {
+        background = "#FFFFFF",
+        grid = "#F0F3FA",
+        border = "#E0E3EB",
+        textMuted = "#787B86",
+        crosshair = "#758696",
+        accent = "#2962FF",
+        up = "#089981",
+        down = "#F23645",
+        volumeUp = "rgba(8, 153, 129, 0.35)",
+        volumeDown = "rgba(242, 54, 69, 0.35)"
+    };
+
+    private static ChartThemeColors CustomColors(AppSettings s) => new()
+    {
+        background = s.CustomBackground,
+        grid = s.CustomPanel,
+        border = s.CustomBorder,
+        textMuted = s.CustomTextPrimary,
+        crosshair = "#758696",
+        accent = s.CustomAccent,
+        up = "#089981",
+        down = "#F23645",
+        volumeUp = "rgba(8, 153, 129, 0.35)",
+        volumeDown = "rgba(242, 54, 69, 0.35)"
+    };
 
     private static Color ParseColor(string hex, string fallback)
     {

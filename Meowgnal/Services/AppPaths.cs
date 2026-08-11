@@ -17,4 +17,5 @@ public static class AppPaths
 
     public static string PaperAccountFile => Path.Combine(AppDataFolder, "paper_account.dat");
     public static string DrawingsFile => Path.Combine(AppDataFolder, "drawings.dat");
+    public static string AlertsFile => Path.Combine(AppDataFolder, "alerts.dat");
 }
