@@ -356,6 +356,14 @@ public partial class MainWindow : Window
         ApplyAndSaveTheme("system");
     }
 
+    private void ThemeCustom_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        var win = new ThemeCustomizerWindow { Owner = this };
+        if (win.ShowDialog() == true)
+            ApplyAndSaveTheme("custom");
+    }
+
     private async Task SendThemeToChartAsync()
     {
         try { await _chartPageReady.Task; } catch { return; }

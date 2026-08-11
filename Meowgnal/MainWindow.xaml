@@ -267,6 +267,7 @@
                         <Button Style="{StaticResource TvButtonLeft}" Content="🌙  Dark theme" Click="ThemeDark_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="☀️  Light theme" Click="ThemeLight_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="🖥️  Match Windows" Click="ThemeSystem_Click"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="🎨  Custom colors…" Click="ThemeCustom_Click"/>
                         <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="🚪  Sign out / Switch profile" Click="MenuSignOut_Click" Foreground="{DynamicResource Down}"/>
                     </StackPanel>
