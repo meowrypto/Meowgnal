@@ -140,6 +140,16 @@ public partial class TemplateStoreWindow : Window
         builder.ShowDialog();
     }
 
+    private void OpenWizard_Click(object sender, RoutedEventArgs e)
+    {
+        var wizard = new StrategyWizardWindow(_symbol) { Owner = this };
+        if (wizard.ShowDialog() == true)
+        {
+            DialogResult = true;
+            Close();
+        }
+    }
+
     private void BuildFromScratch_Click(object sender, RoutedEventArgs e)
     {
         var builder = new StrategyBuilderWindow { Owner = this };

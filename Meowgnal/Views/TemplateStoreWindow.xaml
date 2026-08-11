@@ -79,6 +79,16 @@
                        FontSize="22" FontWeight="Bold"/>
             <TextBlock x:Name="SubtitleText" Text="Pick a template or build from scratch"
                        Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,4,0,0"/>
+
+            <!-- Wizard banner -->
+            <Border Background="{StaticResource PanelBg}" CornerRadius="4" Padding="12,8" Margin="0,10,0,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Not sure where to start? Answer 3 questions and let the wizard build one for you."
+                               Foreground="{StaticResource TextSecondary}" FontSize="12" VerticalAlignment="Center"/>
+                    <Button Content="✨ Help me choose" Padding="12,5" Margin="16,0,0,0"
+                            Style="{StaticResource SecondaryButton}" Click="OpenWizard_Click"/>
+                </StackPanel>
+            </Border>
         </StackPanel>
 
         <!-- Current symbol indicator -->
