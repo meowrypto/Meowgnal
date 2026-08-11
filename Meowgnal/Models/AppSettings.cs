@@ -31,6 +31,15 @@ public sealed class AppSettings
     public string ClockMode { get; set; } = "utc";
     public string ClockTimeZoneId { get; set; } = "";
 
+    // Theme settings
+    public string Theme { get; set; } = "dark"; // dark, light, system, custom
+    public string CustomBackground { get; set; } = "#131722";
+    public string CustomPanel { get; set; } = "#1E222D";
+    public string CustomBorder { get; set; } = "#2A2E39";
+    public string CustomTextPrimary { get; set; } = "#D1D4DC";
+    public string CustomAccent { get; set; } = "#2962FF";
+
+
     // Profile & onboarding
     public bool FirstRunCompleted { get; set; } = false;
     public string ProfileName { get; set; } = "";

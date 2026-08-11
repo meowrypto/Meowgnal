@@ -318,6 +318,26 @@
             }
         }
 
+        function applyTheme(c) {
+            if (!c) return;
+            COLORS.background = c.background; COLORS.grid = c.grid; COLORS.border = c.border;
+            COLORS.textMuted = c.textMuted; COLORS.crosshair = c.crosshair; COLORS.accent = c.accent;
+            COLORS.up = c.up; COLORS.down = c.down;
+            COLORS.volumeUp = c.volumeUp; COLORS.volumeDown = c.volumeDown;
+            document.body.style.background = c.background;
+            chart.applyOptions({
+                layout: { background: { type: LightweightCharts.ColorType.Solid, color: c.background }, textColor: c.textMuted },
+                grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
+                rightPriceScale: { borderColor: c.border },
+                timeScale: { borderColor: c.border },
+                crosshair: {
+                    vertLine: { color: c.crosshair, labelBackgroundColor: c.border },
+                    horzLine: { color: c.crosshair, labelBackgroundColor: c.border }
+                }
+            });
+            renderWithCurrentType();
+        }
+
         function renderWithCurrentType() {
             if (activeSeries !== null) {
                 chart.removeSeries(activeSeries);
@@ -377,6 +397,8 @@
                 } else if (msg.type === 'setDrawings') {
                     customDrawings = msg.drawings || [];
                     renderCustomDrawings();
+                } else if (msg.type === 'setTheme') {
+                    applyTheme(msg.colors);
                 }
             });
         }

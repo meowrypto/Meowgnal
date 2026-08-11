@@ -106,6 +106,9 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        // Apply saved theme before UI is built
+        ThemeService.ApplyTheme(SettingsStorageService.Load());
+
         // 1. Show Splash Screen
         var splash = new SplashWindow();
         splash.Show();
@@ -292,7 +295,6 @@ public partial class MainWindow : Window
     private void MenuLicense_Click(object sender, RoutedEventArgs e)
     {
         ProfilePopup.IsOpen = false;
-        // Dedicated license window will be added in a future step.
         MessageBox.Show("Dedicated License Activation window will be added in the next step.\nFor now, the demo period is automatically tracked.", "Meowgnal", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
@@ -325,6 +327,42 @@ public partial class MainWindow : Window
             Process.Start(Application.ResourceAssembly.Location);
             Application.Current.Shutdown();
         }
+    }
+
+    private void ApplyAndSaveTheme(string theme)
+    {
+        var settings = SettingsStorageService.Load();
+        settings.Theme = theme;
+        SettingsStorageService.Save(settings);
+        ThemeService.ApplyTheme(settings);
+        _ = SendThemeToChartAsync();
+    }
+
+    private void ThemeDark_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        ApplyAndSaveTheme("dark");
+    }
+
+    private void ThemeLight_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        ApplyAndSaveTheme("light");
+    }
+
+    private void ThemeSystem_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        ApplyAndSaveTheme("system");
+    }
+
+    private async Task SendThemeToChartAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setTheme", colors = ThemeService.GetChartColors(SettingsStorageService.Load()) }));
     }
     #endregion
 
@@ -2043,6 +2081,7 @@ public partial class MainWindow : Window
         await SendCandlesToChartAsync(bars);
         _ = SendPositionsToChartAsync();
         _ = SendDrawingsToChartAsync();
+        _ = SendThemeToChartAsync();
     }
 
     private async Task SendCandlesToChartAsync(List<Bar> bars)
