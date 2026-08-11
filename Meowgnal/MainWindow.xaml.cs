@@ -1448,7 +1448,12 @@ public partial class MainWindow : Window
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await LoadDashboardAsync();
 
-    private void OpenBuilderButton_Click(object sender, RoutedEventArgs e) => new StrategyBuilderWindow().ShowDialog();
+    private async void OpenBuilderButton_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new TemplateStoreWindow(_chartSymbol) { Owner = this };
+        win.ShowDialog();
+        await LoadDashboardAsync();
+    }
 
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
 
@@ -1687,7 +1692,6 @@ public partial class MainWindow : Window
 
         (active ?? ToolCursorButton).Background = (Brush)FindResource("Accent");
     }
-    
 
     private async Task SendDrawingModeToChartAsync(string mode)
     {
