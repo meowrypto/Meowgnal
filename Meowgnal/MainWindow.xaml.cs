@@ -73,6 +73,7 @@ public partial class MainWindow : Window
 
     // Drawing tools state
     private DrawingsFile _drawingsFile = new();
+    private readonly DrawingUndoManager _undoManager = new();
     private string? _activeDrawingMode = null;
 
     // Price alerts state
@@ -156,6 +157,7 @@ public partial class MainWindow : Window
         };
 
         Loaded += MainWindow_Loaded;
+        PreviewKeyDown += UndoRedo_KeyDown;
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -1517,6 +1519,7 @@ public partial class MainWindow : Window
             var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
             if (!string.IsNullOrEmpty(id))
             {
+                CaptureSnapshot();
                 _drawingsFile.Drawings.RemoveAll(d => d.Id == id);
                 DrawingStorageService.Save(_drawingsFile);
                 _ = SendDrawingsToChartAsync();
@@ -1585,6 +1588,7 @@ public partial class MainWindow : Window
 
                     if (newDrawing.Points.Count > 0)
                     {
+                        CaptureSnapshot();
                         _drawingsFile.Drawings.Add(newDrawing);
                         DrawingStorageService.Save(_drawingsFile);
                     }
@@ -2015,6 +2019,7 @@ public partial class MainWindow : Window
             var res = MessageBox.Show($"Delete all drawings for {_chartSymbol}?", "Meowgnal", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (res != MessageBoxResult.Yes) return;
 
+            CaptureSnapshot();
             _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
             DrawingStorageService.Save(_drawingsFile);
             await SendDrawingsToChartAsync();
@@ -2435,6 +2440,33 @@ public partial class MainWindow : Window
         if (e.Key == Key.Escape && _isFullscreen) ToggleFullscreen();
     }
 
+    private async void UndoRedo_KeyDown(object sender, KeyEventArgs e)
+    {
+        var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
+        if (!ctrl) return;
+        // Do not hijack Ctrl+Z/Ctrl+Y while typing in text boxes
+        if (Keyboard.FocusedElement is TextBox or PasswordBox) return;
+
+        if (e.Key == Key.Z)
+        {
+            var restored = _undoManager.Undo(_drawingsFile.Drawings);
+            if (restored is not null)
+            {
+                await RestoreSnapshotAsync(restored);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Y)
+        {
+            var restored = _undoManager.Redo(_drawingsFile.Drawings);
+            if (restored is not null)
+            {
+                await RestoreSnapshotAsync(restored);
+                e.Handled = true;
+            }
+        }
+    }
+
     private void ToggleFullscreen()
     {
         if (!_isFullscreen)
@@ -2599,6 +2631,26 @@ public partial class MainWindow : Window
     }
 
     private sealed record FoundSignal(StrategyDefinition Strategy, SignalEvent Signal);
+
+    /// <summary>
+    /// Captures a snapshot of current drawings before any modification.
+    /// Call this BEFORE every change to _drawingsFile.Drawings.
+    /// </summary>
+    private void CaptureSnapshot()
+    {
+        _undoManager.PushSnapshot(_drawingsFile.Drawings);
+    }
+
+    /// <summary>
+    /// Restores drawings list from a snapshot and refreshes the chart display.
+    /// </summary>
+    private async Task RestoreSnapshotAsync(List<Drawing> restoredDrawings)
+    {
+        _drawingsFile.Drawings = restoredDrawings;
+        DrawingStorageService.Save(_drawingsFile);
+        await SendDrawingsToChartAsync();
+        RebuildObjectList();
+    }
 
     private static string MakeSignalKey(string strategyId, SignalEvent signal) =>
         $"{strategyId}|{signal.Timestamp:O}|{(int)signal.Type}";
