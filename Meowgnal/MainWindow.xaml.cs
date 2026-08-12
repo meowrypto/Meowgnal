@@ -2493,6 +2493,8 @@ public partial class MainWindow : Window
             IDataProvider provider = strategy.DataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
             var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 500);
             var signals = RuleEngine.ScanForSignals(strategy, bars);
+            if (SettingsStorageService.Load().AccuracyClosedCandleOnly && bars.Count > 0)
+                signals = signals.Where(s => s.Timestamp != bars[^1].Timestamp).ToList();
             var backtest = BacktestEngine.Run(strategy, bars, startingBalance: 10000m, feePercent: 0.1m, slippagePercent: 0.05m);
 
             totalWinRate += backtest.WinRatePercent;
@@ -2587,6 +2589,47 @@ public partial class MainWindow : Window
             _monitorTimer.Interval = interval;
         }
     }
+    private async Task<bool> AccuracyPassAsync(FoundSignal f, AppSettings settings)
+    {
+        try
+        {
+            IDataProvider provider = f.Strategy.DataSource == "hyperliquid"
+                ? new HyperliquidDataProvider()
+                : new BinanceDataProvider();
+
+            if (settings.AccuracyClosedCandleOnly)
+            {
+                var bars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, f.Strategy.Timeframe, limit: 5);
+                if (AccuracyService.IsFormingCandleSignal(f.Signal, bars)) return false;
+            }
+
+            if (f.Signal.Type == SignalType.Entry)
+            {
+                if (settings.AccuracyMtfFilter)
+                {
+                    var htf = AccuracyService.NextHtf(f.Strategy.Timeframe);
+                    if (htf is not null)
+                    {
+                        var htfBars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, htf, limit: 120);
+                        if (!AccuracyService.HtfTrendOk(htfBars, f.Signal.Type)) return false;
+                    }
+                }
+
+                if (settings.AccuracyVolumeFilter || settings.AccuracyRegimeFilter)
+                {
+                    var bars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, f.Strategy.Timeframe, limit: 150);
+                    if (settings.AccuracyVolumeFilter && !AccuracyService.VolumeOk(bars, settings.AccuracyVolumeMultiplier)) return false;
+                    if (settings.AccuracyRegimeFilter && !AccuracyService.RegimeOk(bars)) return false;
+                }
+            }
+
+            return true;
+        }
+        catch
+        {
+            return true; // on data failure, do not block the signal
+        }
+    }
 
     private async Task MonitorTickAsync()
     {
@@ -2605,8 +2648,15 @@ public partial class MainWindow : Window
             }
 
             var fresh = found
-                .Where(f => !_knownSignalKeys.Contains(MakeSignalKey(f.Strategy.StrategyId, f.Signal)))
-                .ToList();
+    .Where(f => !_knownSignalKeys.Contains(MakeSignalKey(f.Strategy.StrategyId, f.Signal)))
+    .ToList();
+
+            // Phase 34 — Accuracy Engine filters
+            var passed = new List<FoundSignal>();
+            foreach (var f in fresh)
+                if (await AccuracyPassAsync(f, settings)) passed.Add(f);
+            fresh = passed;
+
             if (fresh.Count == 0) return;
 
             foreach (var f in fresh)

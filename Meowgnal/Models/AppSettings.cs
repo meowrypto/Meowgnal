@@ -47,6 +47,13 @@ public sealed class AppSettings
     public string ChartBorderColor { get; set; } = "";
     public string ChartCrosshairColor { get; set; } = "";
 
+    // Phase 34 — Accuracy Engine
+    public bool AccuracyClosedCandleOnly { get; set; } = true;
+    public bool AccuracyMtfFilter { get; set; } = true;
+    public bool AccuracyVolumeFilter { get; set; } = false;
+    public double AccuracyVolumeMultiplier { get; set; } = 1.5;
+    public bool AccuracyRegimeFilter { get; set; } = false;
+
 
     // Profile & onboarding
     public bool FirstRunCompleted { get; set; } = false;

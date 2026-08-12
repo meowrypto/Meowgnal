@@ -159,6 +159,7 @@
             <StackPanel Margin="0,15,0,0">
                 <RadioButton x:Name="NavDataSources" Content="Data sources" GroupName="Nav" Style="{StaticResource NavItem}" IsChecked="True" Checked="Nav_Checked"/>
                 <RadioButton x:Name="NavApiKeys" Content="Exchange API keys" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
+                <RadioButton x:Name="NavAccuracy" Content="Accuracy filters" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                 <RadioButton x:Name="NavPaperTrading" Content="Paper trading" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                 <RadioButton x:Name="NavNotifications" Content="Notifications" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                 <RadioButton x:Name="NavLicense" Content="License" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
@@ -184,6 +185,54 @@
                     <TextBox x:Name="ApiKeyBox" Margin="0,0,0,15"/>
                     <TextBlock Text="Binance API secret" Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
                     <PasswordBox x:Name="ApiSecretBox" Margin="0,0,0,15"/>
+                </StackPanel>
+
+                <StackPanel x:Name="PanelAccuracy" Visibility="Collapsed">
+                    <TextBlock Text="Accuracy Engine" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                    <TextBlock Text="These filters run on every live signal before it reaches the dashboard. They reduce noise but may filter out valid trades."
+                               Foreground="{StaticResource TextMuted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                    <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <CheckBox x:Name="AccuracyClosedCandleCheck" Content="Closed candle only" Margin="0,0,0,10"/>
+                            <TextBlock Text="Ignore signals that appear on the currently forming (unconfirmed) candle."
+                                       Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <CheckBox x:Name="AccuracyMtfCheck" Content="Multi-timeframe trend filter" Margin="0,0,0,10"/>
+                            <TextBlock Text="Only show long entries when higher-timeframe trend is bullish, and shorts when bearish."
+                                       Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <CheckBox x:Name="AccuracyVolumeCheck" Content="Volume spike filter" Margin="0,0,0,10"
+                                      Checked="AccuracyVolumeCheck_Changed" Unchecked="AccuracyVolumeCheck_Changed"/>
+                            <TextBlock Text="Require the signal candle's volume to be at least N× the 20-period average."
+                                       Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                            <StackPanel Orientation="Horizontal" x:Name="VolumeMultiplierPanel" Visibility="Collapsed">
+                                <TextBlock Text="Volume multiplier ×" Width="140" VerticalAlignment="Center"/>
+                                <TextBox x:Name="AccuracyVolumeMultiplierBox" Width="80"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#1E222D" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <CheckBox x:Name="AccuracyRegimeCheck" Content="Market regime filter" Margin="0,0,0,10"/>
+                            <TextBlock Text="Suppress signals during extremely low-volatility regimes (bottom 20% ATR)."
+                                       Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="#152230" CornerRadius="4" Padding="12">
+                        <TextBlock Text="💡 Tip: Start with only 'Closed candle only' enabled. Add more filters one at a time and compare backtest results."
+                                   Foreground="#64B5F6" FontSize="11" TextWrapping="Wrap"/>
+                    </Border>
                 </StackPanel>
 
                 <StackPanel x:Name="PanelPaperTrading" Visibility="Collapsed">

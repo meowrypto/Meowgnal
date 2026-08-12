@@ -20,6 +20,14 @@ public partial class SettingsWindow : Window
         ApiKeyBox.Text = _settings.BinanceApiKey;
         ApiSecretBox.Password = _settings.BinanceApiSecret;
 
+        // Accuracy filters
+        AccuracyClosedCandleCheck.IsChecked = _settings.AccuracyClosedCandleOnly;
+        AccuracyMtfCheck.IsChecked = _settings.AccuracyMtfFilter;
+        AccuracyVolumeCheck.IsChecked = _settings.AccuracyVolumeFilter;
+        AccuracyVolumeMultiplierBox.Text = _settings.AccuracyVolumeMultiplier.ToString("0.0");
+        AccuracyRegimeCheck.IsChecked = _settings.AccuracyRegimeFilter;
+        UpdateVolumeMultiplierVisibility();
+
         ToastCheck.IsChecked = _settings.ToastNotificationsEnabled;
         SoundCheck.IsChecked = _settings.SoundNotificationsEnabled;
         IntervalCombo.SelectedIndex = _settings.SignalCheckIntervalSeconds switch
@@ -55,11 +63,25 @@ public partial class SettingsWindow : Window
         FixedSizePanel.Visibility = useRisk ? Visibility.Collapsed : Visibility.Visible;
     }
 
+    private void AccuracyVolumeCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        UpdateVolumeMultiplierVisibility();
+    }
+
+    private void UpdateVolumeMultiplierVisibility()
+    {
+        if (VolumeMultiplierPanel is null) return;
+        VolumeMultiplierPanel.Visibility = AccuracyVolumeCheck.IsChecked == true
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
     private void Nav_Checked(object sender, RoutedEventArgs e)
     {
         if (PanelDataSources is null) return;
         PanelDataSources.Visibility = NavDataSources.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelApiKeys.Visibility = NavApiKeys.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        PanelAccuracy.Visibility = NavAccuracy.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelPaperTrading.Visibility = NavPaperTrading.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelNotifications.Visibility = NavNotifications.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelLicense.Visibility = NavLicense.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
@@ -97,6 +119,15 @@ public partial class SettingsWindow : Window
         _settings.DefaultDataSource = SourceHyperliquid.IsChecked == true ? "hyperliquid" : "binance";
         _settings.BinanceApiKey = ApiKeyBox.Text;
         _settings.BinanceApiSecret = ApiSecretBox.Password;
+
+        // Accuracy filters
+        _settings.AccuracyClosedCandleOnly = AccuracyClosedCandleCheck.IsChecked == true;
+        _settings.AccuracyMtfFilter = AccuracyMtfCheck.IsChecked == true;
+        _settings.AccuracyVolumeFilter = AccuracyVolumeCheck.IsChecked == true;
+        if (double.TryParse(AccuracyVolumeMultiplierBox.Text, out var multiplier))
+            _settings.AccuracyVolumeMultiplier = multiplier;
+        _settings.AccuracyRegimeFilter = AccuracyRegimeCheck.IsChecked == true;
+
         _settings.ToastNotificationsEnabled = ToastCheck.IsChecked == true;
         _settings.SoundNotificationsEnabled = SoundCheck.IsChecked == true;
         _settings.SignalCheckIntervalSeconds = IntervalCombo.SelectedItem is ComboBoxItem item
