@@ -641,6 +641,7 @@
                                 <Button x:Name="RefreshButton" Content="⟳ Refresh" Style="{StaticResource TvButton}" Click="RefreshButton_Click"/>
                                 <Button x:Name="OpenBuilderButton" Content="＋ New strategy" Style="{StaticResource TvButton}" Click="OpenBuilderButton_Click"/>
                                 <Button x:Name="OpenBacktestButton" Content="Backtest" Style="{StaticResource TvButton}" Click="OpenBacktestButton_Click"/>
+                                <Button x:Name="OpenJournalButton" Content="📓 Journal" Style="{StaticResource TvButton}" Click="OpenJournalButton_Click"/>
                                 <Button x:Name="OpenSettingsButton" Content="⚙ Settings" Style="{StaticResource TvButton}" Click="OpenSettingsButton_Click"/>
                             </StackPanel>
                         </Grid>

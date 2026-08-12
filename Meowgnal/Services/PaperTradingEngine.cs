@@ -231,6 +231,11 @@ public static class PaperTradingEngine
         if (account.TradeHistory.Count > 200)
             account.TradeHistory.RemoveRange(200, account.TradeHistory.Count - 200);
         account.DailyRealizedPnL += netPnL;
+
+        // Auto-create journal entry for every closed trade
+        var journalEntry = JournalEntry.FromPaperTrade(trade);
+        JournalStorageService.AddEntry(journalEntry);
+
         return trade;
     }
 

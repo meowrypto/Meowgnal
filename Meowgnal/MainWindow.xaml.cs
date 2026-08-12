@@ -1744,6 +1744,7 @@ public partial class MainWindow : Window
     }
 
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
+    private void OpenJournalButton_Click(object sender, RoutedEventArgs e) => new JournalWindow().ShowDialog();
 
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
     {
