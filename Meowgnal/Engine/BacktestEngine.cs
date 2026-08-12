@@ -121,4 +121,110 @@ public static class BacktestEngine
             MaxDrawdownPercent = maxDrawdown
         };
     }
+
+    public static WalkForwardResult RunWalkForward(
+        StrategyDefinition strategy,
+        IReadOnlyList<Bar> bars,
+        decimal startingBalance,
+        decimal feePercent,
+        decimal slippagePercent,
+        int windows,
+        double oosPercent)
+    {
+        var result = new WalkForwardResult();
+        if (bars.Count < windows * 20) return result;
+
+        var chunkSize = bars.Count / windows;
+        var allIsTrades = new List<BacktestTrade>();
+        var allOosTrades = new List<BacktestTrade>();
+
+        for (var w = 0; w < windows; w++)
+        {
+            var startIdx = w * chunkSize;
+            var endIdx = (w == windows - 1) ? bars.Count : (w + 1) * chunkSize;
+
+            var chunkBars = bars.Skip(startIdx).Take(endIdx - startIdx).ToList();
+            var oosSize = (int)(chunkBars.Count * (oosPercent / 100.0));
+            var isSize = chunkBars.Count - oosSize;
+
+            if (isSize < 20 || oosSize < 10) continue;
+
+            var isBars = chunkBars.Take(isSize).ToList();
+            var oosBars = chunkBars.Skip(isSize).ToList();
+
+            var isResult = Run(strategy, isBars, startingBalance, feePercent, slippagePercent);
+            var oosResult = Run(strategy, oosBars, startingBalance, feePercent, slippagePercent);
+
+            result.InSampleResults.Add(isResult);
+            result.OutOfSampleResults.Add(oosResult);
+
+            allIsTrades.AddRange(isResult.Trades);
+            allOosTrades.AddRange(oosResult.Trades);
+        }
+
+        result.AggregateInSample = AggregateTrades(allIsTrades, startingBalance);
+        result.AggregateOutOfSample = AggregateTrades(allOosTrades, startingBalance);
+
+        // Overfit detection heuristic
+        if (result.AggregateInSample.Trades.Count > 0 && result.AggregateOutOfSample.Trades.Count > 0)
+        {
+            var isWinRate = result.AggregateInSample.WinRatePercent;
+            var oosWinRate = result.AggregateOutOfSample.WinRatePercent;
+            var isPf = CalculateProfitFactor(allIsTrades);
+            var oosPf = CalculateProfitFactor(allOosTrades);
+
+            // Flag as overfit if OOS win rate drops >20% compared to IS, or IS is profitable but OOS is not
+            if (isWinRate > 0 && (oosWinRate < isWinRate * 0.8 || (isPf > 1.0 && oosPf < 1.0)))
+            {
+                result.IsOverfit = true;
+                result.OverfitReason = $"OOS Win Rate ({oosWinRate:F1}%) dropped significantly compared to IS ({isWinRate:F1}%).";
+            }
+        }
+
+        return result;
+    }
+
+    private static BacktestResult AggregateTrades(List<BacktestTrade> trades, decimal startingBalance)
+    {
+        if (trades.Count == 0)
+            return new BacktestResult { StartingBalance = startingBalance, FinalBalance = startingBalance };
+
+        var wins = trades.Count(t => t.PnL > 0);
+        var winRate = (double)wins / trades.Count * 100;
+        var avgRR = trades.Average(t => Math.Abs(t.EntryPrice - t.StopLossPrice) != 0
+            ? (double)(Math.Abs(t.ExitPrice - t.EntryPrice) / Math.Abs(t.EntryPrice - t.StopLossPrice))
+            : 0);
+
+        var currentBal = startingBalance;
+        var peak = startingBalance;
+        var maxDd = 0.0;
+        var equityCurve = new List<(DateTime, decimal)>();
+
+        foreach (var t in trades.OrderBy(x => x.ExitTime))
+        {
+            currentBal += t.PnL;
+            peak = Math.Max(peak, currentBal);
+            var dd = peak > 0 ? (double)((peak - currentBal) / peak * 100m) : 0;
+            maxDd = Math.Max(maxDd, dd);
+            equityCurve.Add((t.ExitTime, currentBal));
+        }
+
+        return new BacktestResult
+        {
+            Trades = trades,
+            EquityCurve = equityCurve,
+            StartingBalance = startingBalance,
+            FinalBalance = currentBal,
+            WinRatePercent = winRate,
+            AverageRiskReward = avgRR,
+            MaxDrawdownPercent = maxDd
+        };
+    }
+
+    private static double CalculateProfitFactor(List<BacktestTrade> trades)
+    {
+        var grossProfit = trades.Where(t => t.PnL > 0).Sum(t => t.PnL);
+        var grossLoss = Math.Abs(trades.Where(t => t.PnL < 0).Sum(t => t.PnL));
+        return grossLoss > 0 ? (double)(grossProfit / grossLoss) : (grossProfit > 0 ? 999 : 0);
+    }
 }

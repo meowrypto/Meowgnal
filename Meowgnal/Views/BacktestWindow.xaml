@@ -12,6 +12,7 @@
         <SolidColorBrush x:Key="TextColor" Color="#D1D4DC"/>
         <SolidColorBrush x:Key="TextMuted" Color="#787B86"/>
         <SolidColorBrush x:Key="AccentColor" Color="#2962FF"/>
+        <SolidColorBrush x:Key="DangerColor" Color="#F23645"/>
 
         <!-- Base Text Style -->
         <Style TargetType="TextBlock">
@@ -119,6 +120,31 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
+
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <StackPanel Orientation="Horizontal">
+                            <Border x:Name="Border" Width="14" Height="14" BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Background="Transparent" CornerRadius="2" VerticalAlignment="Center">
+                                <Path x:Name="CheckMark" Stroke="White" StrokeThickness="2" Data="M 2 7 L 5 10 L 11 3" Visibility="Collapsed"/>
+                            </Border>
+                            <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="{StaticResource AccentColor}"/>
+                                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentColor}"/>
+                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
     <DockPanel Margin="14">
@@ -126,14 +152,21 @@
         <Border DockPanel.Dock="Top" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="12" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Strategy" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <ComboBox x:Name="StrategyCombo" Width="190" DisplayMemberPath="Name"/>
-                <TextBlock Text="Starting balance" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                <TextBox x:Name="BalanceBox" Text="10000" Width="80"/>
-                <TextBlock Text="Fee %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                <TextBox x:Name="FeeBox" Text="0.1" Width="60"/>
-                <TextBlock Text="Slippage %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="16,0,8,0"/>
-                <TextBox x:Name="SlippageBox" Text="0.05" Width="60"/>
-                <Button Content="▶ Run Backtest" Padding="16,6" Margin="16,0,0,0" Click="Run_Click"/>
+                <ComboBox x:Name="StrategyCombo" Width="160" DisplayMemberPath="Name"/>
+                <TextBlock Text="Balance" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
+                <TextBox x:Name="BalanceBox" Text="10000" Width="70"/>
+                <TextBlock Text="Fee %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
+                <TextBox x:Name="FeeBox" Text="0.1" Width="45"/>
+                <TextBlock Text="Slip %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
+                <TextBox x:Name="SlippageBox" Text="0.05" Width="45"/>
+
+                <CheckBox x:Name="WalkForwardCheck" Content="Walk-Forward" Margin="16,0,8,0" Checked="WalkForwardCheck_Changed" Unchecked="WalkForwardCheck_Changed"/>
+                <TextBlock x:Name="WindowsLabel" Text="Win:" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" Visibility="Collapsed"/>
+                <TextBox x:Name="WindowsBox" Text="5" Width="30" Visibility="Collapsed"/>
+                <TextBlock x:Name="OosLabel" Text="OOS %:" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="8,0,4,0" Visibility="Collapsed"/>
+                <TextBox x:Name="OosPercentBox" Text="20" Width="30" Visibility="Collapsed"/>
+
+                <Button Content="▶ Run" Padding="16,6" Margin="16,0,0,0" Click="Run_Click"/>
             </StackPanel>
         </Border>
 
@@ -144,46 +177,90 @@
         <!-- Stats + chart + trade log -->
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,0,14">
-                    <lvc:CartesianChart x:Name="EquityChart" Height="240"/>
+                <!-- Overfit Warning -->
+                <Border x:Name="OverfitWarning" Background="#3D1A1A" CornerRadius="6" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="⚠️ OVERFIT DETECTED" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource DangerColor}" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="OverfitText" Foreground="{StaticResource TextColor}" FontSize="12" TextWrapping="Wrap"/>
+                    </StackPanel>
                 </Border>
 
-                <!-- Stats cards -->
+                <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,0,14">
+                    <lvc:CartesianChart x:Name="EquityChart" Height="220"/>
+                </Border>
+
+                <!-- In-Sample Stats -->
+                <TextBlock Text="In-Sample Results (Training Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                 <UniformGrid Columns="5" Margin="0,0,0,18">
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
                         <StackPanel>
                             <TextBlock Text="Win rate" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="WinRateText" Text="—" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="WinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
                         <StackPanel>
                             <TextBlock Text="Avg R:R" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="AvgRRText" Text="—" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="AvgRRText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
                         <StackPanel>
                             <TextBlock Text="Max drawdown" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="DrawdownText" Text="—" FontSize="18" FontWeight="SemiBold" Foreground="#F23645" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="DrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#F23645" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
                         <StackPanel>
                             <TextBlock Text="Total trades" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="TradesText" Text="—" FontSize="18" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="TradesText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10">
                         <StackPanel>
                             <TextBlock Text="Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="BalanceResultText" Text="—" FontSize="18" FontWeight="SemiBold" Foreground="#089981" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="BalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#089981" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+
+                <!-- Out-of-Sample Stats -->
+                <TextBlock x:Name="OosHeader" Text="Out-of-Sample Results (Unseen Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" Visibility="Collapsed"/>
+                <UniformGrid x:Name="OosCards" Columns="5" Margin="0,0,0,18" Visibility="Collapsed">
+                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="OOS Win rate" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="OosWinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="OOS Avg R:R" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="OosAvgRRText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="OOS Max DD" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="OosDrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#F23645" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="OOS Trades" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="OosTradesText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" BorderBrush="#2A3545" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="OOS Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="OosBalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#089981" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
                 </UniformGrid>
 
                 <TextBlock Text="Trade log" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
-                <DataGrid x:Name="TradesGrid" AutoGenerateColumns="False" Height="220">
+                <DataGrid x:Name="TradesGrid" AutoGenerateColumns="False" Height="200">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Entry time" Binding="{Binding EntryTime}" Width="130"/>
                         <DataGridTextColumn Header="Entry" Binding="{Binding EntryPrice, StringFormat=N2}" Width="90"/>
