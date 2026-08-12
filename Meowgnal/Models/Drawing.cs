@@ -41,7 +41,18 @@ public enum DrawingKind
     Ellipse,
     Triangle,
     Polyline,
-    Arc
+    Arc,
+    Arrow,
+    ArrowMarkUp,
+    ArrowMarkDown,
+    Brush,
+    Highlighter,
+    Text,
+    Note,
+    PriceLabel,
+    Pin,
+    Flag,
+    Sticker
 }
 
 /// <summary>Standard Fibonacci retracement levels.</summary>

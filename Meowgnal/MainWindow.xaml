@@ -98,6 +98,14 @@
             <Rectangle Canvas.Left="1" Canvas.Top="1" Width="8" Height="8" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
             <Ellipse Canvas.Left="9" Canvas.Top="9" Width="8" Height="8" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
         </Canvas>
+        <Canvas x:Key="Icon_brush" x:Shared="False" Width="18" Height="18">
+            <Path Data="M3,15 L8,10 L10,12 L5,17 Z" Fill="#B2B5BE"/>
+            <Line X1="8" Y1="10" X2="15" Y2="3" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+        </Canvas>
+        <Canvas x:Key="Icon_annot" x:Shared="False" Width="18" Height="18">
+            <Path Data="M3,14 L4,10 L11,3 L14,6 L7,13 Z" Fill="#B2B5BE"/>
+            <Line X1="3" Y1="16" X2="15" Y2="16" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+        </Canvas>
         <!-- Window Control Buttons -->
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -507,6 +515,69 @@
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="arc" Click="ToolButton_Click">
                                         <TextBlock Text="Arc (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
+                        <!-- Arrows & Brush group -->
+                        <Button x:Name="BrushGroupButton" Style="{StaticResource RailButton}"
+                                Click="BrushGroup_Click" ToolTip="Arrows and brush">
+                            <ContentControl Content="{StaticResource Icon_brush}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="BrushPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=BrushGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrow" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrowmarkup" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow Mark Up" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrowmarkdown" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow Mark Down" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="brush" Click="ToolButton_Click">
+                                        <TextBlock Text="Brush (multi-click)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="highlighter" Click="ToolButton_Click">
+                                        <TextBlock Text="Highlighter" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
+                        <!-- Annotations group -->
+                        <Button x:Name="AnnotGroupButton" Style="{StaticResource RailButton}"
+                                Click="AnnotGroup_Click" ToolTip="Text and annotations">
+                            <ContentControl Content="{StaticResource Icon_annot}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="AnnotPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=AnnotGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="text" Click="ToolButton_Click">
+                                        <TextBlock Text="Text (type on chart)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="note" Click="ToolButton_Click">
+                                        <TextBlock Text="Note (boxed text)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="pricelabel" Click="ToolButton_Click">
+                                        <TextBlock Text="Price Label" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="pin" Click="ToolButton_Click">
+                                        <TextBlock Text="Pin" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="flag" Click="ToolButton_Click">
+                                        <TextBlock Text="Flag" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="sticker" Click="ToolButton_Click">
+                                        <TextBlock Text="Sticker / Emoji" VerticalAlignment="Center"/>
                                     </Button>
                                 </StackPanel>
                             </Border>

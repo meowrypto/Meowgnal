@@ -48,12 +48,28 @@
             background: #2A2E39;
             margin: 4px;
         }
+
+        #textInput {
+            position: fixed;
+            display: none;
+            z-index: 20;
+            background: #1E222D;
+            color: #D1D4DC;
+            border: 1px solid #2962FF;
+            border-radius: 4px;
+            padding: 4px 8px;
+            width: 160px;
+            font-family: Trebuchet MS, sans-serif;
+            font-size: 12px;
+            outline: none;
+        }
     </style>
     <script src="lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
     <div id="chart"></div>
     <div id="ctxMenu"></div>
+    <input id="textInput" />
     <script>
         const COLORS = {
             background: '#131722', grid: '#1E222D', border: '#2A2E39',
@@ -121,6 +137,12 @@
         function post(m) {
             if (window.chrome && window.chrome.webview)
                 window.chrome.webview.postMessage(JSON.stringify(m));
+        }
+
+        function fmtPrice(p) {
+            if (p >= 1000) return p.toFixed(2);
+            if (p >= 1) return p.toFixed(4);
+            return p.toFixed(8);
         }
 
         function createSeriesForType() {
@@ -231,7 +253,7 @@
 
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
-            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [] };
+            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [] };
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return g;
             const X = i => px(pts[i].time), Y = i => py(pts[i].price);
@@ -408,15 +430,14 @@
                     break;
                 }
                 case 'rotatedrectangle': {
-                    // Use three points: two define one side, third defines perpendicular distance
                     if (x3 === null || m === null) break;
                     const pm = -1 / m;
                     const dist = Math.abs((pm * (x3 - x2) - (y3 - y2)) / Math.hypot(pm, 1));
                     const ux = (x2 - x1) / Math.hypot(x2 - x1, y2 - y1);
                     const uy = (y2 - y1) / Math.hypot(x2 - x1, y2 - y1);
-                    const px = -uy, py = ux;
-                    const x2p = x2 + px * dist, y2p = y2 + py * dist;
-                    const x1p = x1 + px * dist, y1p = y1 + py * dist;
+                    const pxr = -uy, pyr = ux;
+                    const x2p = x2 + pxr * dist, y2p = y2 + pyr * dist;
+                    const x1p = x1 + pxr * dist, y1p = y1 + pyr * dist;
                     g.lines.push([x1, y1, x2, y2], [x2, y2, x2p, y2p], [x2p, y2p, x1p, y1p], [x1p, y1p, x1, y1]);
                     break;
                 }
@@ -426,18 +447,17 @@
                     break;
                 }
                 case 'ellipse': {
-                    // Approximate ellipse as stretched circle (axis-aligned bounding box)
                     const rx = Math.abs(x2 - x1);
                     const ry = Math.abs(y2 - y1);
                     const segs = 48;
                     const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
-                    let px = cx + rx, py = cy;
+                    let pxp = cx + rx, pyp = cy;
                     for (let i = 1; i <= segs; i++) {
                         const a = (i / segs) * Math.PI * 2;
                         const nx = cx + rx * Math.cos(a);
                         const ny = cy + ry * Math.sin(a);
-                        g.lines.push([px, py, nx, ny]);
-                        px = nx; py = ny;
+                        g.lines.push([pxp, pyp, nx, ny]);
+                        pxp = nx; pyp = ny;
                     }
                     break;
                 }
@@ -465,6 +485,55 @@
                     g.arcs.push([x1, y1, r, a1, a2]);
                     break;
                 }
+                case 'arrow': {
+                    g.lines.push([x1, y1, x2, y2]);
+                    const ang = Math.atan2(y2 - y1, x2 - x1);
+                    g.glyphs.push({ t: 'arrowhead', x: x2, y: y2, a: ang, l: 10 });
+                    break;
+                }
+                case 'arrowmarkup':
+                    g.glyphs.push({ t: 'markup', x: x1, y: y1 });
+                    g.anchors.push([x1, y1, 14]);
+                    break;
+                case 'arrowmarkdown':
+                    g.glyphs.push({ t: 'markdown', x: x1, y: y1 });
+                    g.anchors.push([x1, y1, 14]);
+                    break;
+                case 'brush':
+                case 'highlighter': {
+                    for (let i = 0; i < pts.length - 1; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        if (xa !== null && ya !== null && xb !== null && yb !== null)
+                            g.lines.push([xa, ya, xb, yb]);
+                    }
+                    break;
+                }
+                case 'text':
+                    g.texts.push({ x: x1, y: y1, s: d.label || '', size: 13 });
+                    g.anchors.push([x1, y1, 24]);
+                    break;
+                case 'note':
+                    g.boxes.push({ x: x1, y: y1, s: d.label || '' });
+                    g.anchors.push([x1, y1, 28]);
+                    break;
+                case 'pricelabel':
+                    g.boxes.push({ x: W - 4, y: y1, s: fmtPrice(pts[0].price), right: true });
+                    g.dashed.push([x1, y1, W, y1]);
+                    g.anchors.push([W - 40, y1, 28]);
+                    break;
+                case 'pin':
+                    g.glyphs.push({ t: 'pin', x: x1, y: y1 });
+                    g.anchors.push([x1, y1, 14]);
+                    break;
+                case 'flag':
+                    g.glyphs.push({ t: 'flag', x: x1, y: y1 });
+                    g.anchors.push([x1, y1, 16]);
+                    break;
+                case 'sticker':
+                    g.texts.push({ x: x1, y: y1, s: d.label || '🐱', size: 22 });
+                    g.anchors.push([x1, y1, 16]);
+                    break;
             }
             return g;
         }
@@ -478,6 +547,8 @@
                 if (Math.abs(Math.hypot(x - c[0], y - c[1]) - c[2]) <= tol) return true;
             for (const a of g.arcs)
                 if (Math.abs(Math.hypot(x - a[0], y - a[1]) - a[2]) <= tol) return true;
+            for (const a of g.anchors)
+                if (Math.hypot(x - a[0], y - a[1]) <= a[2]) return true;
             return false;
         }
 
@@ -496,7 +567,9 @@
             for (const d of customDrawings) {
                 const g = geometry(d);
                 ctx.strokeStyle = d.color; ctx.fillStyle = d.color;
-                ctx.lineWidth = 2; ctx.font = '11px Trebuchet MS';
+                ctx.lineWidth = d.kind === 'highlighter' ? 10 : 2;
+                ctx.globalAlpha = d.kind === 'highlighter' ? 0.35 : 1;
+                ctx.font = '11px Trebuchet MS';
                 ctx.setLineDash([]);
                 for (const L of g.lines) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
                 ctx.setLineDash([5, 5]);
@@ -505,6 +578,36 @@
                 for (const c of g.circles) { ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2); ctx.stroke(); }
                 for (const a of g.arcs) { ctx.beginPath(); ctx.arc(a[0], a[1], a[2], a[3], a[4]); ctx.stroke(); }
                 for (const t of g.labels) ctx.fillText(t[0], t[1], t[2]);
+                for (const t of g.texts) { ctx.font = t.size + 'px Trebuchet MS'; ctx.fillText(t.s, t.x, t.y); }
+                for (const b of g.boxes) {
+                    ctx.font = '11px Trebuchet MS';
+                    const w = ctx.measureText(b.s).width + 10;
+                    const bx = b.right ? b.x - w : b.x;
+                    ctx.strokeRect(bx, b.y - 12, w, 18);
+                    ctx.fillText(b.s, bx + 5, b.y + 1);
+                }
+                for (const gl of g.glyphs) {
+                    if (gl.t === 'arrowhead') {
+                        ctx.beginPath();
+                        ctx.moveTo(gl.x, gl.y);
+                        ctx.lineTo(gl.x - gl.l * Math.cos(gl.a - 0.4), gl.y - gl.l * Math.sin(gl.a - 0.4));
+                        ctx.moveTo(gl.x, gl.y);
+                        ctx.lineTo(gl.x - gl.l * Math.cos(gl.a + 0.4), gl.y - gl.l * Math.sin(gl.a + 0.4));
+                        ctx.stroke();
+                    } else if (gl.t === 'markup') {
+                        ctx.beginPath(); ctx.moveTo(gl.x, gl.y - 8); ctx.lineTo(gl.x - 6, gl.y + 4); ctx.lineTo(gl.x + 6, gl.y + 4); ctx.closePath(); ctx.fill();
+                        ctx.beginPath(); ctx.moveTo(gl.x, gl.y - 2); ctx.lineTo(gl.x, gl.y + 10); ctx.stroke();
+                    } else if (gl.t === 'markdown') {
+                        ctx.beginPath(); ctx.moveTo(gl.x, gl.y + 8); ctx.lineTo(gl.x - 6, gl.y - 4); ctx.lineTo(gl.x + 6, gl.y - 4); ctx.closePath(); ctx.fill();
+                        ctx.beginPath(); ctx.moveTo(gl.x, gl.y + 2); ctx.lineTo(gl.x, gl.y - 10); ctx.stroke();
+                    } else if (gl.t === 'pin') {
+                        ctx.beginPath(); ctx.arc(gl.x, gl.y - 8, 5, Math.PI, 0); ctx.lineTo(gl.x, gl.y); ctx.closePath(); ctx.fill();
+                    } else if (gl.t === 'flag') {
+                        ctx.beginPath(); ctx.moveTo(gl.x, gl.y); ctx.lineTo(gl.x, gl.y - 14); ctx.stroke();
+                        ctx.beginPath(); ctx.moveTo(gl.x, gl.y - 14); ctx.lineTo(gl.x + 10, gl.y - 11); ctx.lineTo(gl.x, gl.y - 8); ctx.closePath(); ctx.fill();
+                    }
+                }
+                ctx.globalAlpha = 1; ctx.lineWidth = 2;
             }
         }
 
@@ -566,11 +669,11 @@
                     applyTheme(msg.colors);
                 } else if (msg.type === 'setDrawingMode') {
                     const m = msg.mode;
-                    // Finish polyline when switching modes
-                    if (drawingMode === 'polyline' && m !== 'polyline' && pendingPoints.length >= 2) {
+                    const multiKinds = ['polyline', 'brush', 'highlighter'];
+                    if (multiKinds.includes(drawingMode) && !multiKinds.includes(m) && pendingPoints.length >= 2) {
                         const drawing = {
                             id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                            kind: 'polyline',
+                            kind: drawingMode,
                             color: '#2962FF', label: '', alert: false,
                             points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
                         };
@@ -598,11 +701,6 @@
         const ctxMenu = document.getElementById('ctxMenu');
         let ctxPrice = null;
 
-        function fmtPrice(p) {
-            if (p >= 1000) return p.toFixed(2);
-            if (p >= 1) return p.toFixed(4);
-            return p.toFixed(8);
-        }
         function menuItem(label, act) {
             const d = document.createElement('div');
             d.className = 'ctx-item'; d.textContent = label;
@@ -647,6 +745,35 @@
             if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
         });
 
+        // ---------- text input overlay ----------
+        const TEXT_TOOLS = ['text', 'note', 'sticker'];
+        const textInput = document.getElementById('textInput');
+        let pendingTextDraw = null;
+
+        function openTextInput(x, y, draw) {
+            pendingTextDraw = draw;
+            textInput.style.display = 'block';
+            textInput.style.left = Math.min(x, window.innerWidth - 180) + 'px';
+            textInput.style.top = Math.min(y, window.innerHeight - 40) + 'px';
+            textInput.value = '';
+            textInput.focus();
+        }
+        function finishTextInput(cancel) {
+            if (!pendingTextDraw) { textInput.style.display = 'none'; return; }
+            const draw = pendingTextDraw;
+            pendingTextDraw = null;
+            textInput.style.display = 'none';
+            if (!cancel) {
+                draw.label = textInput.value;
+                post({ type: 'drawingCompleted', drawing: draw });
+            }
+        }
+        textInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') finishTextInput(false);
+            if (e.key === 'Escape') finishTextInput(true);
+        });
+        textInput.addEventListener('blur', function () { finishTextInput(false); });
+
         // ---------- drawing clicks + eraser ----------
         const NEED = {
             horizontal: 1, verticalline: 1, crossline: 1,
@@ -654,7 +781,9 @@
             pitchfork: 3, schiffpitchfork: 3, modifiedschiffpitchfork: 3, insidepitchfork: 3,
             disjointchannel: 4,
             rectangle: 2, circle: 2, ellipse: 2, arc: 3, triangle: 3,
-            polyline: 20, rotatedrectangle: 3
+            polyline: 20, rotatedrectangle: 3,
+            arrow: 2, arrowmarkup: 1, arrowmarkdown: 1, brush: 20, highlighter: 20,
+            text: 1, note: 1, pricelabel: 1, pin: 1, flag: 1, sticker: 1
         };
 
         chart.subscribeClick(function (param) {
@@ -678,9 +807,9 @@
             pendingPoints.push({ time: param.time, price: price });
 
             const need = NEED[drawingMode] || 2;
-            const isPolyline = drawingMode === 'polyline';
+            const isMulti = drawingMode === 'polyline' || drawingMode === 'brush' || drawingMode === 'highlighter';
 
-            if (!isPolyline && pendingPoints.length >= need) {
+            if (!isMulti && pendingPoints.length >= need) {
                 const drawing = {
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     kind: drawingMode,
@@ -689,7 +818,11 @@
                     alert: false,
                     points: pendingPoints.slice(0, need).map(p => ({ time: p.time, price: p.price }))
                 };
-                post({ type: 'drawingCompleted', drawing: drawing });
+                if (TEXT_TOOLS.includes(drawingMode)) {
+                    openTextInput(x, y, drawing);
+                } else {
+                    post({ type: 'drawingCompleted', drawing: drawing });
+                }
                 pendingPoints = [];
                 renderCustomDrawings();
             } else {
