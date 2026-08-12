@@ -2513,6 +2513,11 @@ public partial class MainWindow : Window
         {
             IDataProvider provider = strategy.DataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
             var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 500);
+            var settings = SettingsStorageService.Load();
+            List<Bar>? htfBars = null;
+            var htf = AccuracyService.NextHtf(strategy.Timeframe);
+            if (htf is not null)
+                htfBars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, htf, limit: 120);
             var signals = RuleEngine.ScanForSignals(strategy, bars);
             if (SettingsStorageService.Load().AccuracyClosedCandleOnly && bars.Count > 0)
                 signals = signals.Where(s => s.Timestamp != bars[^1].Timestamp).ToList();
@@ -2525,12 +2530,16 @@ public partial class MainWindow : Window
             {
                 _knownSignalKeys.Add(MakeSignalKey(strategy.StrategyId, s));
 
+                var quality = AccuracyService.CalculateQuality(s, bars, htfBars, settings);
                 allSignals.Add((new SignalDisplayItem
                 {
                     Symbol = strategy.Symbol,
                     Description = strategy.Name,
                     Type = s.Type == SignalType.Entry ? "buy" : "sell",
-                    Time = s.Timestamp.ToString("g")
+                    Time = s.Timestamp.ToString("g"),
+                    QualityScore = quality.Score,
+                    QualityLabel = quality.Label,
+                    QualityReason = quality.Reason
                 }, s.Timestamp));
             }
         }
@@ -2683,12 +2692,25 @@ public partial class MainWindow : Window
             foreach (var f in fresh)
             {
                 _knownSignalKeys.Add(MakeSignalKey(f.Strategy.StrategyId, f.Signal));
+                // Phase 26 — calculate quality score for live signals
+                IDataProvider provider = f.Strategy.DataSource == "hyperliquid"
+                    ? new HyperliquidDataProvider()
+                    : new BinanceDataProvider();
+                var bars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, f.Strategy.Timeframe, limit: 500);
+                var htf = AccuracyService.NextHtf(f.Strategy.Timeframe);
+                List<Bar>? htfBars = null;
+                if (htf is not null)
+                    htfBars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, htf, limit: 120);
+                var quality = AccuracyService.CalculateQuality(f.Signal, bars, htfBars, settings);
                 _signals.Insert(0, new SignalDisplayItem
                 {
                     Symbol = f.Strategy.Symbol,
                     Description = f.Strategy.Name,
                     Type = f.Signal.Type == SignalType.Entry ? "buy" : "sell",
-                    Time = f.Signal.Timestamp.ToString("g")
+                    Time = f.Signal.Timestamp.ToString("g"),
+                    QualityScore = quality.Score,
+                    QualityLabel = quality.Label,
+                    QualityReason = quality.Reason
                 });
             }
 
