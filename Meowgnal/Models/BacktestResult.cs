@@ -16,6 +16,14 @@ public sealed class BacktestTrade
     public double PnLPercent { get; set; }
 }
 
+public sealed class MonthlyPerformance
+{
+    public string MonthLabel { get; set; } = ""; // e.g. "2025-08"
+    public int TradeCount { get; set; }
+    public decimal NetPnL { get; set; }
+    public double WinRatePercent { get; set; }
+}
+
 public sealed class BacktestResult
 {
     public List<BacktestTrade> Trades { get; set; } = new();
@@ -25,4 +33,9 @@ public sealed class BacktestResult
     public double WinRatePercent { get; set; }
     public double AverageRiskReward { get; set; }
     public double MaxDrawdownPercent { get; set; }
+
+    // Phase 24 — Performance Analytics
+    public double SharpeRatio { get; set; }
+    public double SortinoRatio { get; set; }
+    public List<MonthlyPerformance> MonthlyBreakdown { get; set; } = new();
 }

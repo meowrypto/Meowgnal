@@ -222,6 +222,18 @@
                             <TextBlock x:Name="BalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#089981" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
+                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,10,10,0">
+                        <StackPanel>
+                            <TextBlock Text="Sharpe ratio" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="SharpeText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,10,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Sortino ratio" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="SortinoText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
                 </UniformGrid>
 
                 <!-- Out-of-Sample Stats -->
@@ -257,6 +269,18 @@
                             <TextBlock x:Name="OosBalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#089981" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
+                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,10,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="OOS Sharpe" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="OosSharpeText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,10,0,0" BorderBrush="#2A3545" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="OOS Sortino" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                            <TextBlock x:Name="OosSortinoText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </Border>
                 </UniformGrid>
 
                 <TextBlock Text="Trade log" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
@@ -268,6 +292,17 @@
                         <DataGridTextColumn Header="Exit" Binding="{Binding ExitPrice, StringFormat=N2}" Width="90"/>
                         <DataGridTextColumn Header="Reason" Binding="{Binding ExitReason}" Width="80"/>
                         <DataGridTextColumn Header="PnL %" Binding="{Binding PnLPercent, StringFormat=N2}" Width="70"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Monthly performance -->
+                <TextBlock Text="Monthly performance" FontWeight="SemiBold" FontSize="14" Margin="0,16,0,8"/>
+                <DataGrid x:Name="MonthlyGrid" AutoGenerateColumns="False" Height="170">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Month" Binding="{Binding MonthLabel}" Width="120"/>
+                        <DataGridTextColumn Header="Trades" Binding="{Binding TradeCount}" Width="90"/>
+                        <DataGridTextColumn Header="Net PnL" Binding="{Binding NetPnL, StringFormat=N2}" Width="120"/>
+                        <DataGridTextColumn Header="Win rate %" Binding="{Binding WinRatePercent, StringFormat=N1}" Width="100"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </StackPanel>

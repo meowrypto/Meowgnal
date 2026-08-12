@@ -118,7 +118,10 @@ public static class BacktestEngine
             FinalBalance = balance,
             WinRatePercent = winRate,
             AverageRiskReward = avgRR,
-            MaxDrawdownPercent = maxDrawdown
+            MaxDrawdownPercent = maxDrawdown,
+            SharpeRatio = CalculateSharpeRatio(trades),
+            SortinoRatio = CalculateSortinoRatio(trades),
+            MonthlyBreakdown = BuildMonthlyBreakdown(trades)
         };
     }
 
@@ -217,7 +220,10 @@ public static class BacktestEngine
             FinalBalance = currentBal,
             WinRatePercent = winRate,
             AverageRiskReward = avgRR,
-            MaxDrawdownPercent = maxDd
+            MaxDrawdownPercent = maxDd,
+            SharpeRatio = CalculateSharpeRatio(trades),
+            SortinoRatio = CalculateSortinoRatio(trades),
+            MonthlyBreakdown = BuildMonthlyBreakdown(trades)
         };
     }
 
@@ -226,5 +232,44 @@ public static class BacktestEngine
         var grossProfit = trades.Where(t => t.PnL > 0).Sum(t => t.PnL);
         var grossLoss = Math.Abs(trades.Where(t => t.PnL < 0).Sum(t => t.PnL));
         return grossLoss > 0 ? (double)(grossProfit / grossLoss) : (grossProfit > 0 ? 999 : 0);
+    }
+
+    // Sharpe ratio: reward per unit of total risk (higher is better)
+    private static double CalculateSharpeRatio(List<BacktestTrade> trades)
+    {
+        if (trades.Count < 2) return 0;
+        var returns = trades.Select(t => t.PnLPercent).ToArray();
+        var mean = returns.Average();
+        var variance = returns.Sum(r => (r - mean) * (r - mean)) / (returns.Length - 1);
+        var stdDev = Math.Sqrt(variance);
+        if (stdDev <= 0) return 0;
+        return mean / stdDev * Math.Sqrt(returns.Length);
+    }
+
+    // Sortino ratio: like Sharpe but only counts downside (losing) risk
+    private static double CalculateSortinoRatio(List<BacktestTrade> trades)
+    {
+        if (trades.Count < 2) return 0;
+        var returns = trades.Select(t => t.PnLPercent).ToArray();
+        var mean = returns.Average();
+        var downsideDeviation = Math.Sqrt(returns.Select(r => r < 0 ? r * r : 0).Average());
+        if (downsideDeviation <= 0) return mean > 0 ? 99 : 0; // capped: no losing trades
+        return mean / downsideDeviation * Math.Sqrt(returns.Length);
+    }
+
+    // Group trades by calendar month for the monthly performance table
+    private static List<MonthlyPerformance> BuildMonthlyBreakdown(List<BacktestTrade> trades)
+    {
+        return trades
+            .GroupBy(t => new DateTime(t.ExitTime.Year, t.ExitTime.Month, 1))
+            .OrderBy(g => g.Key)
+            .Select(g => new MonthlyPerformance
+            {
+                MonthLabel = g.Key.ToString("yyyy-MM"),
+                TradeCount = g.Count(),
+                NetPnL = g.Sum(t => t.PnL),
+                WinRatePercent = (double)g.Count(t => t.PnL > 0) / g.Count() * 100
+            })
+            .ToList();
     }
 }

@@ -1,18 +1,17 @@
-﻿using LiveChartsCore;
-using LiveChartsCore.Defaults;
-using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
-using Meowgnal.DataProviders;
-using Meowgnal.Engine;
-using Meowgnal.Models;
-using Meowgnal.Services;
-using SkiaSharp;
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows;
-using System.Windows.Controls;
+using LiveChartsCore;
+using LiveChartsCore.Defaults;
+using LiveChartsCore.SkiaSharpView;
+using LiveChartsCore.SkiaSharpView.Painting;
+using SkiaSharp;
+using Meowgnal.DataProviders;
+using Meowgnal.Engine;
+using Meowgnal.Models;
+using Meowgnal.Services;
 
 namespace Meowgnal.Views;
 
@@ -63,15 +62,12 @@ public partial class BacktestWindow : Window
 
             var wfResult = BacktestEngine.RunWalkForward(strategy, bars, balance, fee, slippage, windows, oosPercent);
 
-            // Update In-Sample Cards
-            UpdateCards(wfResult.AggregateInSample, WinRateText, AvgRRText, DrawdownText, TradesText, BalanceResultText);
+            UpdateInSampleCards(wfResult.AggregateInSample);
 
-            // Update Out-of-Sample Cards
             OosHeader.Visibility = Visibility.Visible;
             OosCards.Visibility = Visibility.Visible;
-            UpdateCards(wfResult.AggregateOutOfSample, OosWinRateText, OosAvgRRText, OosDrawdownText, OosTradesText, OosBalanceResultText);
+            UpdateOutOfSampleCards(wfResult.AggregateOutOfSample);
 
-            // Show warning if overfit
             if (wfResult.IsOverfit)
             {
                 OverfitWarning.Visibility = Visibility.Visible;
@@ -82,32 +78,45 @@ public partial class BacktestWindow : Window
                 OverfitWarning.Visibility = Visibility.Collapsed;
             }
 
-            // Show OOS equity curve as it represents the "real" performance
             RenderChart(wfResult.AggregateOutOfSample);
             TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(wfResult.AggregateOutOfSample.Trades);
+            MonthlyGrid.ItemsSource = new ObservableCollection<MonthlyPerformance>(wfResult.AggregateOutOfSample.MonthlyBreakdown);
         }
         else
         {
             var result = BacktestEngine.Run(strategy, bars, balance, fee, slippage);
 
-            // Hide OOS UI in normal mode
             OosHeader.Visibility = Visibility.Collapsed;
             OosCards.Visibility = Visibility.Collapsed;
             OverfitWarning.Visibility = Visibility.Collapsed;
 
-            UpdateCards(result, WinRateText, AvgRRText, DrawdownText, TradesText, BalanceResultText);
+            UpdateInSampleCards(result);
             RenderChart(result);
             TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(result.Trades);
+            MonthlyGrid.ItemsSource = new ObservableCollection<MonthlyPerformance>(result.MonthlyBreakdown);
         }
     }
 
-    private void UpdateCards(BacktestResult result, TextBlock winRate, TextBlock avgRr, TextBlock drawdown, TextBlock trades, TextBlock balance)
+    private void UpdateInSampleCards(BacktestResult result)
     {
-        winRate.Text = $"{result.WinRatePercent:N1}%";
-        avgRr.Text = result.AverageRiskReward.ToString("N2");
-        drawdown.Text = $"{result.MaxDrawdownPercent:N1}%";
-        trades.Text = result.Trades.Count.ToString();
-        balance.Text = $"{result.StartingBalance:N0} → {result.FinalBalance:N0}";
+        WinRateText.Text = $"{result.WinRatePercent:N1}%";
+        AvgRRText.Text = result.AverageRiskReward.ToString("N2");
+        DrawdownText.Text = $"{result.MaxDrawdownPercent:N1}%";
+        TradesText.Text = result.Trades.Count.ToString();
+        BalanceResultText.Text = $"{result.StartingBalance:N0} → {result.FinalBalance:N0}";
+        SharpeText.Text = result.SharpeRatio.ToString("N2");
+        SortinoText.Text = result.SortinoRatio.ToString("N2");
+    }
+
+    private void UpdateOutOfSampleCards(BacktestResult result)
+    {
+        OosWinRateText.Text = $"{result.WinRatePercent:N1}%";
+        OosAvgRRText.Text = result.AverageRiskReward.ToString("N2");
+        OosDrawdownText.Text = $"{result.MaxDrawdownPercent:N1}%";
+        OosTradesText.Text = result.Trades.Count.ToString();
+        OosBalanceResultText.Text = $"{result.StartingBalance:N0} → {result.FinalBalance:N0}";
+        OosSharpeText.Text = result.SharpeRatio.ToString("N2");
+        OosSortinoText.Text = result.SortinoRatio.ToString("N2");
     }
 
     private void RenderChart(BacktestResult result)
