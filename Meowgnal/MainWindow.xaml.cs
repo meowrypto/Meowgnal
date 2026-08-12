@@ -1344,6 +1344,13 @@ public partial class MainWindow : Window
         PriceAlertStorageService.Save(_alerts);
     }
 
+    // Empty portfolio list means all strategies are allowed (default behavior)
+    private static bool IsStrategyInPortfolio(StrategyDefinition strategy, AppSettings settings)
+    {
+        if (settings.PortfolioEnabledStrategyIds.Count == 0) return true;
+        return settings.PortfolioEnabledStrategyIds.Contains(strategy.StrategyId);
+    }
+
     private async Task AutoTradeSignalsAsync(List<FoundSignal> fresh, AppSettings settings)
     {
         var changed = false;
@@ -1363,6 +1370,18 @@ public partial class MainWindow : Window
             if (f.Signal.Type == SignalType.Entry)
             {
                 if (_paperAccount.OpenPositions.Any(p => p.Symbol == symbol)) continue;
+                // Portfolio gate: only auto-trade strategies approved in the Portfolio window
+                if (!IsStrategyInPortfolio(f.Strategy, settings)) continue;
+
+                // Portfolio limit: max total open positions across all strategies
+                if (settings.PortfolioMaxTotalPositions > 0 &&
+                    _paperAccount.OpenPositions.Count >= settings.PortfolioMaxTotalPositions)
+                    continue;
+
+                // Portfolio limit: max open positions per strategy
+                if (settings.PortfolioMaxPositionsPerStrategy > 0 &&
+                    _paperAccount.OpenPositions.Count(p => p.StrategyId == f.Strategy.StrategyId) >= settings.PortfolioMaxPositionsPerStrategy)
+                    continue;
 
                 var slPrice = settings.PaperDefaultStopLossPercent > 0
                     ? price * (1m - settings.PaperDefaultStopLossPercent / 100m)
@@ -1745,6 +1764,7 @@ public partial class MainWindow : Window
 
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
     private void OpenJournalButton_Click(object sender, RoutedEventArgs e) => new JournalWindow().ShowDialog();
+    private void OpenPortfolioButton_Click(object sender, RoutedEventArgs e) => new PortfolioWindow().ShowDialog();
 
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
     {

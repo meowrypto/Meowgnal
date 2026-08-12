@@ -1,4 +1,5 @@
-﻿namespace Meowgnal.Models;
+﻿using System.Collections.Generic;
+namespace Meowgnal.Models;
 
 public sealed class AppSettings
 {
@@ -53,7 +54,10 @@ public sealed class AppSettings
     public bool AccuracyVolumeFilter { get; set; } = false;
     public double AccuracyVolumeMultiplier { get; set; } = 1.5;
     public bool AccuracyRegimeFilter { get; set; } = false;
-
+    // Phase 25 — Multi-strategy Portfolio
+    public List<string> PortfolioEnabledStrategyIds { get; set; } = [];
+    public int PortfolioMaxTotalPositions { get; set; } = 3;
+    public int PortfolioMaxPositionsPerStrategy { get; set; } = 1;
 
     // Profile & onboarding
     public bool FirstRunCompleted { get; set; } = false;
