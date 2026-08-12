@@ -509,6 +509,8 @@ public partial class MainWindow : Window
         _ = SendChartTypeAsync(_chartType);
 
         await LoadChartAsync();
+        RebuildObjectList();
+        ObjectsSymbolText.Text = _chartSymbol;
     }
 
     private void SetRightTab(string which)
@@ -1499,6 +1501,7 @@ public partial class MainWindow : Window
                 _drawingsFile.Drawings.RemoveAll(d => d.Id == id);
                 DrawingStorageService.Save(_drawingsFile);
                 _ = SendDrawingsToChartAsync();
+                RebuildObjectList();
             }
             return;
         }
@@ -1571,6 +1574,7 @@ public partial class MainWindow : Window
                     SetActiveTool(null);
                     _ = SendDrawingModeToChartAsync("none");
                     _ = SendDrawingsToChartAsync();
+                    RebuildObjectList();
                 }
             }
             catch { }
@@ -1993,6 +1997,7 @@ public partial class MainWindow : Window
             _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
             DrawingStorageService.Save(_drawingsFile);
             await SendDrawingsToChartAsync();
+            RebuildObjectList();
             return;
         }
 
@@ -2001,10 +2006,10 @@ public partial class MainWindow : Window
             if (_currentBars.Count == 0) return;
             var autoLevels = SupportResistanceDetector.Detect(_chartSymbol, _currentBars);
 
-            _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean && d.IsAutoDetected);
             _drawingsFile.Drawings.AddRange(autoLevels);
             DrawingStorageService.Save(_drawingsFile);
             await SendDrawingsToChartAsync();
+            RebuildObjectList();
             NotificationService.ShowToast("Meowgnal", $"Detected {autoLevels.Count} important S/R levels.");
             return;
         }
@@ -2063,7 +2068,7 @@ public partial class MainWindow : Window
 
         var symbolClean = _chartSymbol.Replace("/", "");
         var drawings = _drawingsFile.Drawings
-            .Where(d => d.Symbol == symbolClean)
+            .Where(d => d.Symbol == symbolClean && d.IsVisible)
             .Select(d => new
             {
                 id = d.Id,
@@ -2071,12 +2076,272 @@ public partial class MainWindow : Window
                 color = d.Color,
                 label = d.Label,
                 alert = d.AlertOnCross,
+                locked = d.IsLocked,
                 points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
             }).ToArray();
 
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
             JsonSerializer.Serialize(new { type = "setDrawings", drawings }));
     }
+    #region Object Tree
+    private void ObjectsButton_Click(object sender, RoutedEventArgs e)
+    {
+        RebuildObjectList();
+        ObjectsSymbolText.Text = _chartSymbol;
+        ObjectsPopup.IsOpen = !ObjectsPopup.IsOpen;
+    }
+
+    private string KindLabel(DrawingKind k) => k switch
+    {
+        DrawingKind.HorizontalLine => "Horizontal Line",
+        DrawingKind.TrendLine => "Trend Line",
+        DrawingKind.Fibonacci => "Fibonacci",
+        DrawingKind.Ray => "Ray",
+        DrawingKind.ExtendedLine => "Extended Line",
+        DrawingKind.HorizontalRay => "Horizontal Ray",
+        DrawingKind.VerticalLine => "Vertical Line",
+        DrawingKind.Crossline => "Cross Line",
+        DrawingKind.InfoLine => "Info Line",
+        DrawingKind.TrendAngle => "Trend Angle",
+        DrawingKind.ParallelChannel => "Parallel Channel",
+        DrawingKind.RegressionTrend => "Regression Trend",
+        DrawingKind.FlatTopBottom => "Flat Top/Bottom",
+        DrawingKind.DisjointChannel => "Disjoint Channel",
+        DrawingKind.Pitchfork => "Pitchfork",
+        DrawingKind.SchiffPitchfork => "Schiff Pitchfork",
+        DrawingKind.ModifiedSchiffPitchfork => "Modified Schiff",
+        DrawingKind.InsidePitchfork => "Inside Pitchfork",
+        DrawingKind.FibExtension => "Fib Extension",
+        DrawingKind.FibTimeZone => "Fib Time Zone",
+        DrawingKind.FibCircles => "Fib Circles",
+        DrawingKind.FibSpiral => "Fib Spiral",
+        DrawingKind.FibArcs => "Fib Arcs",
+        DrawingKind.FibWedge => "Fib Wedge",
+        DrawingKind.FibSpeedFan => "Fib Speed Fan",
+        DrawingKind.Pitchfan => "Pitchfan",
+        DrawingKind.GannBox => "Gann Box",
+        DrawingKind.GannSquare => "Gann Square",
+        DrawingKind.GannFan => "Gann Fan",
+        DrawingKind.Rectangle => "Rectangle",
+        DrawingKind.RotatedRectangle => "Rotated Rectangle",
+        DrawingKind.Circle => "Circle",
+        DrawingKind.Ellipse => "Ellipse",
+        DrawingKind.Triangle => "Triangle",
+        DrawingKind.Polyline => "Polyline",
+        DrawingKind.Arc => "Arc",
+        DrawingKind.Arrow => "Arrow",
+        DrawingKind.ArrowMarkUp => "Arrow Mark Up",
+        DrawingKind.ArrowMarkDown => "Arrow Mark Down",
+        DrawingKind.Brush => "Brush",
+        DrawingKind.Highlighter => "Highlighter",
+        DrawingKind.Text => "Text",
+        DrawingKind.Note => "Note",
+        DrawingKind.PriceLabel => "Price Label",
+        DrawingKind.Pin => "Pin",
+        DrawingKind.Flag => "Flag",
+        DrawingKind.Sticker => "Sticker",
+        _ => k.ToString()
+    };
+
+    private void RebuildObjectList()
+    {
+        ObjectsListPanel.Children.Clear();
+        var symbolClean = _chartSymbol.Replace("/", "");
+        var items = _drawingsFile.Drawings.Where(d => d.Symbol == symbolClean).ToList();
+
+        if (items.Count == 0)
+        {
+            ObjectsListPanel.Children.Add(new TextBlock
+            {
+                Text = "No drawings yet. Use the tools on the left rail.",
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 11,
+                Margin = new Thickness(0, 8, 0, 8)
+            });
+            return;
+        }
+
+        foreach (var d in items)
+        {
+            var row = new Grid { Margin = new Thickness(0, 0, 0, 4) };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
+            var label = string.IsNullOrWhiteSpace(d.Label) ? KindLabel(d.Kind) : $"{KindLabel(d.Kind)} — {d.Label}";
+            var leftSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+
+            Border dot;
+            try
+            {
+                dot = new Border
+                {
+                    Width = 12,
+                    Height = 12,
+                    CornerRadius = new CornerRadius(2),
+                    Margin = new Thickness(0, 0, 8, 0),
+                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(d.Color)),
+                    BorderBrush = (Brush)FindResource("BorderLine"),
+                    BorderThickness = new Thickness(1),
+                    VerticalAlignment = VerticalAlignment.Center
+                };
+            }
+            catch
+            {
+                dot = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 0, 8, 0), Background = new SolidColorBrush(Colors.Gray), VerticalAlignment = VerticalAlignment.Center };
+            }
+            leftSp.Children.Add(dot);
+
+            var nameText = new TextBlock
+            {
+                Text = label,
+                Foreground = d.IsVisible ? (Brush)FindResource("TextPrimary") : (Brush)FindResource("TextMuted"),
+                FontSize = 12,
+                FontStyle = d.IsVisible ? FontStyles.Normal : FontStyles.Italic,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            leftSp.Children.Add(nameText);
+
+            var rightSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+
+            var lockBtn = new Button
+            {
+                Content = d.IsLocked ? "🔒" : "🔓",
+                Style = (Style)FindResource("TvButton"),
+                ToolTip = d.IsLocked ? "Unlock (eraser can delete)" : "Lock (eraser cannot delete)",
+                Tag = d,
+                Padding = new Thickness(4, 2, 4, 2),
+                FontSize = 11
+            };
+            lockBtn.Click += ObjectLock_Click;
+
+            var hideBtn = new Button
+            {
+                Content = d.IsVisible ? "👁️" : "🚫",
+                Style = (Style)FindResource("TvButton"),
+                ToolTip = d.IsVisible ? "Hide drawing" : "Show drawing",
+                Tag = d,
+                Padding = new Thickness(4, 2, 4, 2),
+                FontSize = 11
+            };
+            hideBtn.Click += ObjectHide_Click;
+
+            var delBtn = new Button
+            {
+                Content = "🗑️",
+                Style = (Style)FindResource("TvButton"),
+                ToolTip = "Delete drawing",
+                Tag = d,
+                Padding = new Thickness(4, 2, 4, 2),
+                FontSize = 11,
+                Foreground = (Brush)FindResource("Down")
+            };
+            delBtn.Click += ObjectDelete_Click;
+
+            rightSp.Children.Add(lockBtn);
+            rightSp.Children.Add(hideBtn);
+            rightSp.Children.Add(delBtn);
+
+            Grid.SetColumn(leftSp, 0);
+            Grid.SetColumn(rightSp, 1);
+            row.Children.Add(leftSp);
+            row.Children.Add(rightSp);
+            ObjectsListPanel.Children.Add(row);
+        }
+    }
+
+    private void ObjectLock_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not Drawing d) return;
+        d.IsLocked = !d.IsLocked;
+        DrawingStorageService.Save(_drawingsFile);
+        _ = SendDrawingsToChartAsync();
+        RebuildObjectList();
+    }
+
+    private void ObjectHide_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not Drawing d) return;
+        d.IsVisible = !d.IsVisible;
+        DrawingStorageService.Save(_drawingsFile);
+        _ = SendDrawingsToChartAsync();
+        RebuildObjectList();
+    }
+
+    private void ObjectDelete_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not Drawing d) return;
+        if (d.IsLocked)
+        {
+            NotificationService.ShowToast("Meowgnal", "This drawing is locked. Unlock it first.");
+            return;
+        }
+        _drawingsFile.Drawings.RemoveAll(x => x.Id == d.Id);
+        DrawingStorageService.Save(_drawingsFile);
+        _ = SendDrawingsToChartAsync();
+        RebuildObjectList();
+    }
+
+    private void ExportTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        var symbolClean = _chartSymbol.Replace("/", "");
+        var drawings = _drawingsFile.Drawings.Where(d => d.Symbol == symbolClean).ToList();
+        if (drawings.Count == 0)
+        {
+            NotificationService.ShowToast("Meowgnal", "No drawings to export.");
+            return;
+        }
+
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Title = "Export drawing template",
+            Filter = "Drawing template (*.meowtmpl.json)|*.meowtmpl.json",
+            FileName = $"template_{symbolClean}_{DateTime.Now:yyyyMMdd_HHmmss}.meowtmpl.json"
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        var template = new DrawingTemplate
+        {
+            Name = Path.GetFileNameWithoutExtension(dialog.FileName),
+            SourceSymbol = _chartSymbol,
+            Drawings = drawings
+        };
+
+        if (TemplateService.Export(template, dialog.FileName))
+            NotificationService.ShowToast("Meowgnal", $"Exported {drawings.Count} drawings.");
+        else
+            NotificationService.ShowToast("Meowgnal", "Export failed — see app.log.");
+    }
+
+    private void ImportTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import drawing template",
+            Filter = "Drawing template (*.meowtmpl.json)|*.meowtmpl.json"
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        var template = TemplateService.Import(dialog.FileName);
+        if (template is null || template.Drawings.Count == 0)
+        {
+            NotificationService.ShowToast("Meowgnal", "Could not read template.");
+            return;
+        }
+
+        var symbolClean = _chartSymbol.Replace("/", "");
+        foreach (var d in template.Drawings)
+        {
+            d.Symbol = symbolClean;
+            d.Id = Guid.NewGuid().ToString("N");
+            d.IsAutoDetected = false;
+            _drawingsFile.Drawings.Add(d);
+        }
+        DrawingStorageService.Save(_drawingsFile);
+        _ = SendDrawingsToChartAsync();
+        RebuildObjectList();
+        NotificationService.ShowToast("Meowgnal", $"Imported {template.Drawings.Count} drawings from {template.Name}.");
+    }
+    #endregion
 
     private void ChartTypeButton_Click(object sender, RoutedEventArgs e) =>
         ChartTypePopup.IsOpen = !ChartTypePopup.IsOpen;

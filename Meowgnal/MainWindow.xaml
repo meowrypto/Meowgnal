@@ -708,10 +708,32 @@
                                         </StackPanel>
                                     </Border>
                                 </Popup>
+                                <Popup x:Name="ObjectsPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Bottom" PlacementTarget="{Binding ElementName=ObjectsButton}">
+                                    <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,4,0,0" Width="360">
+                                        <StackPanel>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                                <TextBlock Text="📋 Objects — " Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                                                <TextBlock x:Name="ObjectsSymbolText" Text="" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                            <Border Height="1" Background="{DynamicResource BorderLine}" Margin="0,0,0,8"/>
+                                            <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                                                <StackPanel x:Name="ObjectsListPanel"/>
+                                            </ScrollViewer>
+                                            <Border Height="1" Background="{DynamicResource BorderLine}" Margin="0,8,0,8"/>
+                                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                                <Button Content="📤 Export template" Style="{StaticResource TvButton}" Click="ExportTemplate_Click" Margin="0,0,6,0"/>
+                                                <Button Content="📥 Import template" Style="{StaticResource TvButton}" Click="ImportTemplate_Click"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <Button x:Name="ScreenshotButton" Content="📷" ToolTip="Save chart screenshot" Style="{StaticResource TvButton}" Click="ScreenshotButton_Click"/>
                                 <Button x:Name="FullscreenButton" Content="⛶" ToolTip="Fullscreen (Esc to exit)" Style="{StaticResource TvButton}" Click="FullscreenButton_Click"/>
+                                <Button x:Name="ObjectsButton" Content="📋 Objects" ToolTip="Manage drawings for this chart" Style="{StaticResource TvButton}" Click="ObjectsButton_Click"/>
                             </StackPanel>
                         </Grid>
                     </Border>

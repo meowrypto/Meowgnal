@@ -93,6 +93,12 @@ public sealed class Drawing
     /// <summary>If true, the drawing was created by the auto support-resistance detector.</summary>
     public bool IsAutoDetected { get; set; }
 
+    /// <summary>If true, the drawing cannot be moved or deleted by the eraser.</summary>
+    public bool IsLocked { get; set; }
+
+    /// <summary>If false, the drawing is hidden (but still saved).</summary>
+    public bool IsVisible { get; set; } = true;
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
