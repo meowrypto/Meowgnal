@@ -2203,6 +2203,17 @@ public partial class MainWindow : Window
 
             var rightSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
 
+            var editBtn = new Button
+            {
+                Content = "✏️",
+                Style = (Style)FindResource("TvButton"),
+                ToolTip = "Edit properties (label, color, alert)",
+                Tag = d,
+                Padding = new Thickness(4, 2, 4, 2),
+                FontSize = 11
+            };
+            editBtn.Click += ObjectEdit_Click;
+
             var lockBtn = new Button
             {
                 Content = d.IsLocked ? "🔒" : "🔓",
@@ -2237,6 +2248,7 @@ public partial class MainWindow : Window
             };
             delBtn.Click += ObjectDelete_Click;
 
+            rightSp.Children.Add(editBtn);
             rightSp.Children.Add(lockBtn);
             rightSp.Children.Add(hideBtn);
             rightSp.Children.Add(delBtn);
@@ -2281,6 +2293,17 @@ public partial class MainWindow : Window
         RebuildObjectList();
     }
 
+    private void ObjectEdit_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not Drawing d) return;
+        var win = new DrawingPropertiesWindow(d) { Owner = this };
+        if (win.ShowDialog() == true)
+        {
+            DrawingStorageService.Save(_drawingsFile);
+            _ = SendDrawingsToChartAsync();
+            RebuildObjectList();
+        }
+    }
     private void ExportTemplate_Click(object sender, RoutedEventArgs e)
     {
         var symbolClean = _chartSymbol.Replace("/", "");
