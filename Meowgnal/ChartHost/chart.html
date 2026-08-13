@@ -111,16 +111,14 @@
         let cursorMode = 'cross';
         let pendingPoints = [];
         let customDrawings = [];
-        let defaultColor = '#2962FF'; // Phase 27 — User's preferred color for new drawings
+        let defaultColor = '#2962FF';
 
-        // Phase 27 — Draggable points: which drawing is currently in edit mode
-        let editingDrawingId = null;
-        // Phase 27 — Active drag operation state
+        let selectedDrawingIds = new Set();
+        let isCtrlPressed = false;
+
         let dragState = null;
-        let isDragging = false; // Phase 27 — Prevents chart scrolling while dragging handles
-        // Phase 27 — Handle size (pixels)
+        let isDragging = false;
         const HANDLE_SIZE = 10;
-        // Phase 27 — Clipboard for copy/paste
         let clipboardDrawing = null;
 
         const drawCanvas = document.createElement('canvas');
@@ -144,23 +142,27 @@
         }
         window.addEventListener('resize', resizeChart);
 
-        // Phase 27 — Delete key deletes selected drawing; Esc cancels drawing or exits edit mode
+        window.addEventListener('keydown', function (e) {
+            if (e.key === 'Control') isCtrlPressed = true;
+        });
+
         window.addEventListener('keyup', function (e) {
-            if (e.key === 'Delete' && editingDrawingId !== null) {
-                post({ type: 'deleteDrawing', id: editingDrawingId });
-                editingDrawingId = null;
+            if (e.key === 'Control') isCtrlPressed = false;
+
+            if (e.key === 'Delete' && selectedDrawingIds.size > 0) {
+                post({ type: 'deleteDrawings', ids: Array.from(selectedDrawingIds) });
+                selectedDrawingIds.clear();
                 renderCustomDrawings();
                 return;
             }
             if (e.key === 'Escape') {
-                // Esc cancels an in-progress drawing first, otherwise exits edit mode
                 if (pendingPoints.length > 0) {
                     pendingPoints = [];
                     renderCustomDrawings();
                     return;
                 }
-                if (editingDrawingId !== null) {
-                    editingDrawingId = null;
+                if (selectedDrawingIds.size > 0) {
+                    selectedDrawingIds.clear();
                     renderCustomDrawings();
                 }
             }
@@ -173,10 +175,10 @@
                 window.chrome.webview.postMessage(JSON.stringify(m));
         }
 
-        // Phase 27 — Called from C# (Ctrl+C)
         function copySelectedDrawing() {
-            if (editingDrawingId !== null) {
-                const src = customDrawings.find(d => d.id === editingDrawingId);
+            if (selectedDrawingIds.size > 0) {
+                const firstId = Array.from(selectedDrawingIds)[0];
+                const src = customDrawings.find(d => d.id === firstId);
                 if (src) {
                     clipboardDrawing = JSON.parse(JSON.stringify(src));
                     post({ type: 'copyToast' });
@@ -184,7 +186,6 @@
             }
         }
 
-        // Phase 27 — Called from C# (Ctrl+V)
         function pasteCopiedDrawing() {
             if (clipboardDrawing) {
                 const copy = JSON.parse(JSON.stringify(clipboardDrawing));
@@ -273,7 +274,6 @@
             } catch (e) { }
         }
 
-        // ---------- generic drawing engine ----------
         function px(t) { return chart.timeScale().timeToCoordinate(t); }
         function py(p) { return activeSeries ? activeSeries.priceToCoordinate(p) : null; }
 
@@ -597,21 +597,17 @@
             return g;
         }
 
-        // Phase 27 — Draggable points: returns handle positions for a drawing
         function getHandles(d) {
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return [];
             const handles = [];
             if (d.kind === 'horizontalline' || d.kind === 'pricelabel') {
-                // Price-only tools: one handle at screen middle
                 const y = py(pts[0].price);
                 if (y !== null) handles.push({ index: 0, x: drawCanvas.width / 2, y: y, priceOnly: true, timeOnly: false });
             } else if (d.kind === 'verticalline') {
-                // Time-only tool: one handle at screen middle height
                 const x = px(pts[0].time);
                 if (x !== null) handles.push({ index: 0, x: x, y: drawCanvas.height / 2, priceOnly: false, timeOnly: true });
             } else {
-                // Generic: one handle per point (works for all other tools)
                 for (let i = 0; i < pts.length; i++) {
                     const x = px(pts[i].time), y = py(pts[i].price);
                     if (x !== null && y !== null) handles.push({ index: i, x: x, y: y, priceOnly: false, timeOnly: false });
@@ -620,7 +616,6 @@
             return handles;
         }
 
-        // Phase 27 — Draggable points: returns the handle under (x,y), or null
         function hitTestHandle(d, x, y) {
             if (d.locked) return null;
             const handles = getHandles(d);
@@ -704,8 +699,7 @@
                 }
                 ctx.globalAlpha = 1; ctx.lineWidth = 2;
 
-                // Phase 27 — Draw drag handles for the selected drawing
-                if (editingDrawingId === d.id && !d.locked) {
+                if (selectedDrawingIds.has(d.id) && !d.locked) {
                     const handles = getHandles(d);
                     for (const h of handles) {
                         ctx.fillStyle = COLORS.accent;
@@ -772,9 +766,10 @@
                     applyPositions();
                 } else if (msg.type === 'setDrawings') {
                     customDrawings = msg.drawings || [];
-                    // Phase 27 — Exit edit mode if the edited drawing was removed
-                    if (editingDrawingId !== null && !customDrawings.some(d => d.id === editingDrawingId)) {
-                        editingDrawingId = null;
+                    for (const id of Array.from(selectedDrawingIds)) {
+                        if (!customDrawings.some(d => d.id === id)) {
+                            selectedDrawingIds.delete(id);
+                        }
                     }
                     renderCustomDrawings();
                 } else if (msg.type === 'setTheme') {
@@ -810,12 +805,10 @@
             });
         }
 
-        // Phase 27 — Request saved drawings from C# on startup
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.postMessage(JSON.stringify({ type: 'requestDrawings' }));
         }
 
-        // ---------- right-click context menu ----------
         const ctxMenu = document.getElementById('ctxMenu');
         let ctxPrice = null;
 
@@ -863,7 +856,6 @@
             if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
         });
 
-        // ---------- text input overlay ----------
         const TEXT_TOOLS = ['text', 'note', 'sticker'];
         const textInput = document.getElementById('textInput');
         let pendingTextDraw = null;
@@ -892,13 +884,10 @@
         });
         textInput.addEventListener('blur', function () { finishTextInput(false); });
 
-        // ---------- Phase 27 — Draggable points: mouse handlers on the canvas ----------
         const chartEl = document.getElementById('chart');
 
-        // Phase 27 — Double click: finish multi-click tools, or open properties dialog
         chartEl.addEventListener('dblclick', function (e) {
             if (drawingMode) {
-                // Remove the duplicate point added by the second click of the double-click
                 if (pendingPoints.length >= 2) {
                     const a = pendingPoints[pendingPoints.length - 1];
                     const b = pendingPoints[pendingPoints.length - 2];
@@ -926,35 +915,76 @@
             for (let i = customDrawings.length - 1; i >= 0; i--) {
                 const d = customDrawings[i];
                 if (!d.locked && hitTest(d, x, y)) {
-                    editingDrawingId = d.id;
+                    selectedDrawingIds.clear();
+                    selectedDrawingIds.add(d.id);
                     post({ type: 'openDrawingProperties', id: d.id });
+                    renderCustomDrawings();
                     return;
                 }
             }
         });
 
+        // Phase 29 — Body drag: allows moving the entire drawing by dragging its body
         chartEl.addEventListener('mousedown', function (e) {
-            if (editingDrawingId === null || drawingMode) return;
+            if (drawingMode) return;
             if (e.button !== 0) return;
             const rect = chartEl.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            const d = customDrawings.find(d => d.id === editingDrawingId);
-            if (!d || d.locked) return;
-            const handle = hitTestHandle(d, x, y);
-            if (!handle) return;
+            // Find the top-most drawing under the click
+            let clickedDrawing = null;
+            for (let i = customDrawings.length - 1; i >= 0; i--) {
+                const d = customDrawings[i];
+                if (!d.locked && hitTest(d, x, y)) {
+                    clickedDrawing = d;
+                    break;
+                }
+            }
 
-            // Start drag
-            dragState = {
-                drawingId: d.id,
-                handleIndex: handle.index,
-                priceOnly: !!handle.priceOnly,
-                timeOnly: !!handle.timeOnly,
-                committed: false
-            };
+            if (!clickedDrawing) return;
+
+            // If clicked drawing is not selected, select it alone (unless Ctrl is pressed)
+            if (!selectedDrawingIds.has(clickedDrawing.id)) {
+                if (!isCtrlPressed) {
+                    selectedDrawingIds.clear();
+                }
+                selectedDrawingIds.add(clickedDrawing.id);
+                renderCustomDrawings();
+            }
+
+            // Check if clicking on a handle first
+            const handle = hitTestHandle(clickedDrawing, x, y);
+
+            if (handle) {
+                // Handle drag (existing logic - move single point)
+                dragState = {
+                    drawingId: clickedDrawing.id,
+                    handleIndex: handle.index,
+                    priceOnly: !!handle.priceOnly,
+                    timeOnly: !!handle.timeOnly,
+                    committed: false,
+                    isBodyDrag: false
+                };
+            } else {
+                // Body drag — move all points of the drawing together
+                const startPrice = activeSeries ? activeSeries.coordinateToPrice(y) : null;
+                const startTime = chart.timeScale().coordinateToTime(x);
+                if (startPrice === null || startPrice === undefined || startTime === null || startTime === undefined) return;
+
+                dragState = {
+                    drawingId: clickedDrawing.id,
+                    handleIndex: null,
+                    priceOnly: false,
+                    timeOnly: false,
+                    committed: false,
+                    isBodyDrag: true,
+                    lastPrice: startPrice,
+                    lastTime: Math.round(startTime)
+                };
+            }
+
             isDragging = true;
-            // Phase 27 — Freeze chart panning/zooming while dragging handles
             chart.applyOptions({ handleScroll: false, handleScale: false });
             e.preventDefault();
             e.stopPropagation();
@@ -968,22 +998,37 @@
             const d = customDrawings.find(d => d.id === dragState.drawingId);
             if (!d) { dragState = null; return; }
 
-            // Capture snapshot on first real move (so undo can restore original)
             if (!dragState.committed) {
                 post({ type: 'captureSnapshot' });
                 dragState.committed = true;
             }
 
-            // Update the handle point locally for immediate visual feedback
             const newPrice = activeSeries ? activeSeries.coordinateToPrice(y) : null;
             const newTime = chart.timeScale().coordinateToTime(x);
             if (newPrice === null || newPrice === undefined) return;
 
             const pts = d.points || [];
-            if (pts[dragState.handleIndex]) {
-                if (!dragState.timeOnly) pts[dragState.handleIndex].price = newPrice;
-                if (!dragState.priceOnly && newTime !== null && newTime !== undefined) {
-                    pts[dragState.handleIndex].time = Math.round(newTime);
+
+            if (dragState.isBodyDrag) {
+                // Move all points by the delta since last move
+                const deltaPrice = newPrice - dragState.lastPrice;
+                const deltaTime = Math.round(newTime) - dragState.lastTime;
+
+                if (deltaPrice !== 0 || deltaTime !== 0) {
+                    for (const p of pts) {
+                        p.price = p.price + deltaPrice;
+                        p.time = p.time + deltaTime;
+                    }
+                    dragState.lastPrice = newPrice;
+                    dragState.lastTime = Math.round(newTime);
+                }
+            } else {
+                // Handle drag — move only the specific point
+                if (pts[dragState.handleIndex]) {
+                    if (!dragState.timeOnly) pts[dragState.handleIndex].price = newPrice;
+                    if (!dragState.priceOnly && newTime !== null && newTime !== undefined) {
+                        pts[dragState.handleIndex].time = Math.round(newTime);
+                    }
                 }
             }
             renderCustomDrawings();
@@ -993,7 +1038,6 @@
             if (!dragState) return;
             const d = customDrawings.find(d => d.id === dragState.drawingId);
             if (d && dragState.committed) {
-                // Send updated drawing to C# so it persists
                 post({
                     type: 'updateDrawing',
                     drawing: {
@@ -1007,12 +1051,10 @@
                 });
             }
             isDragging = false;
-            // Phase 27 — Restore chart panning/zooming after drag
             chart.applyOptions({ handleScroll: true, handleScale: true });
             dragState = null;
         });
 
-        // ---------- drawing clicks + eraser ----------
         const NEED = {
             horizontal: 1, verticalline: 1, crossline: 1,
             parallelchannel: 3, flattopbottom: 3,
@@ -1026,7 +1068,7 @@
 
         chart.subscribeClick(function (param) {
             if (!param.point) return;
-            if (isDragging) return; // Phase 27 — Disable click handling while dragging
+            if (isDragging) return;
             const x = param.point.x, y = param.point.y;
 
             if (drawingMode === 'eraser') {
@@ -1039,13 +1081,24 @@
                 return;
             }
 
-            // Phase 27 — Single click selects a drawing (or deselects on empty space)
             if (!drawingMode) {
                 let found = null;
                 for (let i = customDrawings.length - 1; i >= 0; i--) {
                     if (!customDrawings[i].locked && hitTest(customDrawings[i], x, y)) { found = customDrawings[i]; break; }
                 }
-                editingDrawingId = found ? found.id : null;
+
+                if (!isCtrlPressed) {
+                    selectedDrawingIds.clear();
+                }
+
+                if (found) {
+                    if (selectedDrawingIds.has(found.id)) {
+                        selectedDrawingIds.delete(found.id);
+                    } else {
+                        selectedDrawingIds.add(found.id);
+                    }
+                }
+
                 renderCustomDrawings();
                 return;
             }
@@ -1082,7 +1135,7 @@
 
         chart.subscribeCrosshairMove(function (param) {
             if (!window.chrome || !window.chrome.webview) return;
-            if (isDragging) return; // Phase 27 — Disable crosshair updates while dragging
+            if (isDragging) return;
             if (!param || !param.time) {
                 window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
                 return;

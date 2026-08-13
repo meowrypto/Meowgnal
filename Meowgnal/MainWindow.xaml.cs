@@ -78,6 +78,7 @@ public partial class MainWindow : Window
 
     // Price alerts state
     private PriceAlertsFile _alerts = new();
+    private readonly Dictionary<string, bool?> _drawingAlertWasAbove = new();
 
     private static readonly SolidColorBrush UpBrush = new(Color.FromRgb(0x08, 0x99, 0x81));
     private static readonly SolidColorBrush DownBrush = new(Color.FromRgb(0xF2, 0x36, 0x45));
@@ -1307,44 +1308,133 @@ public partial class MainWindow : Window
 
     private async Task CheckPriceAlertsAsync()
     {
-        if (_alerts.Alerts.Count == 0) return;
+        if (_alerts.Alerts.Count > 0)
+        {
+            foreach (var group in _alerts.Alerts.GroupBy(a => a.DataSource).ToList())
+            {
+                try
+                {
+                    IDataProvider provider = group.Key == "hyperliquid"
+                        ? new HyperliquidDataProvider()
+                        : new BinanceDataProvider();
+                    var tickers = await provider.GetTickersAsync(group.Select(a => a.Symbol).Distinct());
 
-        foreach (var group in _alerts.Alerts.GroupBy(a => a.DataSource).ToList())
+                    foreach (var alert in group.ToList())
+                    {
+                        if (!tickers.TryGetValue(alert.Symbol, out var t)) continue;
+                        var above = t.Last >= alert.Price;
+
+                        if (alert.WasAbove is null)
+                        {
+                            alert.WasAbove = above;
+                            continue;
+                        }
+
+                        if (above != alert.WasAbove)
+                        {
+                            _alerts.Alerts.Remove(alert);
+                            NotificationService.ShowToast($"Meowgnal — {alert.Symbol}",
+                                $"🔔 Price crossed {alert.Price:N2} (now {t.Last:N2})");
+                            if (SettingsStorageService.Load().SoundNotificationsEnabled)
+                                NotificationService.PlayAlertSound();
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            PriceAlertStorageService.Save(_alerts);
+        }
+
+        await CheckDrawingAlertsAsync();
+    }
+
+    private async Task CheckDrawingAlertsAsync()
+    {
+        // Find all horizontal-style drawings that have alerts enabled.
+        // Supported kinds: HorizontalLine, HorizontalRay, and PriceLabel.
+        var horizontalDrawings = _drawingsFile.Drawings
+            .Where(d => d.AlertOnCross &&
+                        (d.Kind == DrawingKind.HorizontalLine ||
+                         d.Kind == DrawingKind.HorizontalRay ||
+                         d.Kind == DrawingKind.PriceLabel) &&
+                        !string.IsNullOrWhiteSpace(d.Symbol) &&
+                        d.Points.Count > 0)
+            .ToList();
+
+        if (horizontalDrawings.Count == 0) return;
+
+        foreach (var group in horizontalDrawings.GroupBy(d => d.DataSource).ToList())
         {
             try
             {
                 IDataProvider provider = group.Key == "hyperliquid"
                     ? new HyperliquidDataProvider()
                     : new BinanceDataProvider();
-                var tickers = await provider.GetTickersAsync(group.Select(a => a.Symbol).Distinct());
 
-                foreach (var alert in group.ToList())
+                var symbols = group.Select(d => d.Symbol).Distinct();
+                var tickers = await provider.GetTickersAsync(symbols);
+
+                foreach (var drawing in group)
                 {
-                    if (!tickers.TryGetValue(alert.Symbol, out var t)) continue;
-                    var above = t.Last >= alert.Price;
+                    if (!tickers.TryGetValue(drawing.Symbol, out var t)) continue;
 
-                    if (alert.WasAbove is null)
+                    var alertPrice = GetAlertPrice(drawing);
+                    if (alertPrice <= 0) continue;
+
+                    var above = t.Last >= alertPrice;
+
+                    // Seed the baseline on first tick, no alert yet
+                    if (!_drawingAlertWasAbove.TryGetValue(drawing.Id, out var wasAbove) || wasAbove is null)
                     {
-                        alert.WasAbove = above;
+                        _drawingAlertWasAbove[drawing.Id] = above;
                         continue;
                     }
 
-                    if (above != alert.WasAbove)
+                    // Detect crossover
+                    if (above != wasAbove)
                     {
-                        _alerts.Alerts.Remove(alert);
-                        NotificationService.ShowToast($"Meowgnal — {alert.Symbol}",
-                            $"🔔 Price crossed {alert.Price:N2} (now {t.Last:N2})");
+                        _drawingAlertWasAbove[drawing.Id] = above;
+
+                        // Disable alert after first trigger (user can re-enable in properties)
+                        drawing.AlertOnCross = false;
+                        DrawingStorageService.Save(_drawingsFile);
+                        _ = SendDrawingsToChartAsync();
+                        RebuildObjectList();
+
+                        var kindName = KindLabel(drawing.Kind);
+                        NotificationService.ShowToast($"Meowgnal — {drawing.Symbol}",
+                            $"🔔 {kindName} crossed {alertPrice:N2} (now {t.Last:N2})");
+
                         if (SettingsStorageService.Load().SoundNotificationsEnabled)
                             NotificationService.PlayAlertSound();
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                AppLogger.Error($"Error checking drawing alerts for {group.Key}", ex);
             }
         }
+    }
 
-        PriceAlertStorageService.Save(_alerts);
+    /// <summary>
+    /// Extracts the alert price from a horizontal-style drawing.
+    /// Returns 0 if the drawing has no valid points.
+    /// </summary>
+    private static decimal GetAlertPrice(Drawing drawing)
+    {
+        if (drawing.Points.Count == 0) return 0m;
+
+        return drawing.Kind switch
+        {
+            DrawingKind.HorizontalLine => drawing.Points[0].Price,
+            DrawingKind.HorizontalRay => drawing.Points[0].Price,
+            DrawingKind.PriceLabel => drawing.Points[0].Price,
+            _ => drawing.Points[0].Price
+        };
     }
 
     // Empty portfolio list means all strategies are allowed (default behavior)
@@ -1533,6 +1623,28 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (msgType == "deleteDrawings")
+        {
+            if (root.TryGetProperty("ids", out var idsProp) && idsProp.ValueKind == JsonValueKind.Array)
+            {
+                var idsToDelete = new HashSet<string>();
+                foreach (var idEl in idsProp.EnumerateArray())
+                {
+                    var idStr = idEl.GetString();
+                    if (!string.IsNullOrEmpty(idStr)) idsToDelete.Add(idStr);
+                }
+                if (idsToDelete.Count > 0)
+                {
+                    CaptureSnapshot();
+                    _drawingsFile.Drawings.RemoveAll(d => idsToDelete.Contains(d.Id));
+                    DrawingStorageService.Save(_drawingsFile);
+                    _ = SendDrawingsToChartAsync();
+                    RebuildObjectList();
+                }
+            }
+            return;
+        }
+
         if (msgType == "copyPrice")
         {
             var price = root.GetProperty("price").GetDecimal();
@@ -1577,7 +1689,7 @@ public partial class MainWindow : Window
                         ? parsedKind
                         : DrawingKind.HorizontalLine;
 
-                    var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", "") };
+                    var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", ""), DataSource = _chartDataSource };
 
                     if (drawingEl.TryGetProperty("points", out var pts))
                     {
@@ -1663,7 +1775,7 @@ public partial class MainWindow : Window
 
         if (msgType == "copyToast")
         {
-            
+
             return;
         }
 
@@ -1675,7 +1787,7 @@ public partial class MainWindow : Window
                 {
                     var kindStr = drawingEl.TryGetProperty("kind", out var k) ? k.GetString() : "horizontal";
                     var kind = Enum.TryParse<DrawingKind>(kindStr, true, out var parsedKind) ? parsedKind : DrawingKind.HorizontalLine;
-                    var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", "") };
+                    var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", ""), DataSource = _chartDataSource };
 
                     if (drawingEl.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: > 0 } newId)
                         newDrawing.Id = newId;
@@ -1702,7 +1814,7 @@ public partial class MainWindow : Window
                         DrawingStorageService.Save(_drawingsFile);
                         _ = SendDrawingsToChartAsync();
                         RebuildObjectList();
-                        
+
                     }
                 }
             }
@@ -1916,20 +2028,32 @@ public partial class MainWindow : Window
 
     private void OnOpenDrawingProperties(string id)
     {
-        var drawing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
-        if (drawing is null) return;
-
-        // Snapshot first so Ctrl+Z can revert the property changes
-        CaptureSnapshot();
-        var win = new DrawingPropertiesWindow(drawing) { Owner = this };
-        if (win.ShowDialog() == true)
+        try
         {
-            DrawingStorageService.Save(_drawingsFile);
-            _ = SendDrawingsToChartAsync();
-            RebuildObjectList();
+            var drawing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
+            if (drawing is null) return;
+
+            // Snapshot first so Ctrl+Z can revert the property changes
+            CaptureSnapshot();
+            var win = new DrawingPropertiesWindow(drawing) { Owner = this };
+            if (win.ShowDialog() == true)
+            {
+                DrawingStorageService.Save(_drawingsFile);
+                _ = SendDrawingsToChartAsync();
+                RebuildObjectList();
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Fatal("Error opening drawing properties", ex);
+            MessageBox.Show(
+                "Error opening drawing properties:\n\n" + ex.Message,
+                "Meowgnal",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
         }
     }
-    
+
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         new SettingsWindow().ShowDialog();
@@ -2192,6 +2316,7 @@ public partial class MainWindow : Window
             if (_currentBars.Count == 0) return;
             var autoLevels = SupportResistanceDetector.Detect(_chartSymbol, _currentBars);
 
+            foreach (var d in autoLevels) d.DataSource = _chartDataSource;
 
             CaptureSnapshot(); _drawingsFile.Drawings.AddRange(autoLevels);
             DrawingStorageService.Save(_drawingsFile);
@@ -2551,6 +2676,7 @@ public partial class MainWindow : Window
         foreach (var d in template.Drawings)
         {
             d.Symbol = symbolClean;
+            d.DataSource = _chartDataSource;
             d.Id = Guid.NewGuid().ToString("N");
             d.IsAutoDetected = false;
             _drawingsFile.Drawings.Add(d);

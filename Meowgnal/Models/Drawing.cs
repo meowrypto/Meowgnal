@@ -76,6 +76,9 @@ public sealed class Drawing
     /// <summary>Normalized symbol, e.g., BTCUSDT.</summary>
     public string Symbol { get; set; } = "";
 
+    /// <summary>Exchange data source for this drawing: "binance" or "hyperliquid".</summary>
+    public string DataSource { get; set; } = "binance";
+
     public DrawingKind Kind { get; set; } = DrawingKind.HorizontalLine;
 
     /// <summary>One point for horizontal line; two points (start/end) for trendline and fibonacci.</summary>
