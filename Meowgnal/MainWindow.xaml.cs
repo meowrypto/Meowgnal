@@ -1754,6 +1754,8 @@ public partial class MainWindow : Window
                         if (newPoints.Count > 0)
                         {
                             existing.Points = newPoints;
+                            if (drawingEl.TryGetProperty("groupId", out var gidEl))
+                                existing.GroupId = gidEl.ValueKind == JsonValueKind.Null ? null : gidEl.GetString();
                             DrawingStorageService.Save(_drawingsFile);
                             _ = SendDrawingsToChartAsync();
                             RebuildObjectList();
@@ -1764,8 +1766,97 @@ public partial class MainWindow : Window
             catch { }
             return;
         }
+        if (msgType == "updateDrawings")
+        {
+            try
+            {
+                if (root.TryGetProperty("drawings", out var drawingsEl) && drawingsEl.ValueKind == JsonValueKind.Array)
+                {
+                    CaptureSnapshot();
+                    foreach (var drawingEl in drawingsEl.EnumerateArray())
+                    {
+                        if (!drawingEl.TryGetProperty("id", out var idEl)) continue;
+                        var id = idEl.GetString();
+                        var existing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
+                        if (existing is null || existing.IsLocked) continue;
+
+                        if (drawingEl.TryGetProperty("points", out var pts))
+                        {
+                            var newPoints = new List<DrawingPoint>();
+                            foreach (var pt in pts.EnumerateArray())
+                            {
+                                newPoints.Add(new DrawingPoint
+                                {
+                                    TimeUnix = pt.GetProperty("time").GetInt64(),
+                                    Price = pt.GetProperty("price").GetDecimal()
+                                });
+                            }
+                            if (newPoints.Count > 0) existing.Points = newPoints;
+                        }
+                    }
+                    DrawingStorageService.Save(_drawingsFile);
+                    _ = SendDrawingsToChartAsync();
+                }
+            }
+            catch { }
+            return;
+        }
+        if (msgType == "groupDrawings")
+        {
+            try
+            {
+                if (root.TryGetProperty("ids", out var idsEl) && idsEl.ValueKind == JsonValueKind.Array)
+                {
+                    var groupId = root.TryGetProperty("groupId", out var gidEl) ? gidEl.GetString() : Guid.NewGuid().ToString("N");
+                    if (string.IsNullOrEmpty(groupId)) groupId = Guid.NewGuid().ToString("N");
+
+                    CaptureSnapshot();
+                    var idSet = new HashSet<string>();
+                    foreach (var idEl in idsEl.EnumerateArray())
+                    {
+                        var idStr = idEl.GetString();
+                        if (!string.IsNullOrEmpty(idStr)) idSet.Add(idStr);
+                    }
+                    foreach (var d in _drawingsFile.Drawings)
+                    {
+                        if (idSet.Contains(d.Id)) d.GroupId = groupId;
+                    }
+                    DrawingStorageService.Save(_drawingsFile);
+                    _ = SendDrawingsToChartAsync();
+                }
+            }
+            catch { }
+            return;
+        }
+
+        if (msgType == "ungroupDrawings")
+        {
+            try
+            {
+                if (root.TryGetProperty("ids", out var idsEl) && idsEl.ValueKind == JsonValueKind.Array)
+                {
+                    CaptureSnapshot();
+                    var idSet = new HashSet<string>();
+                    foreach (var idEl in idsEl.EnumerateArray())
+                    {
+                        var idStr = idEl.GetString();
+                        if (!string.IsNullOrEmpty(idStr)) idSet.Add(idStr);
+                    }
+                    foreach (var d in _drawingsFile.Drawings)
+                    {
+                        if (idSet.Contains(d.Id)) d.GroupId = null;
+                    }
+                    DrawingStorageService.Save(_drawingsFile);
+                    _ = SendDrawingsToChartAsync();
+                }
+            }
+            catch { }
+            return;
+        }
+
 
         if (msgType == "openDrawingProperties")
+            if (msgType == "openDrawingProperties")
         {
             var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
             if (!string.IsNullOrEmpty(id)) OnOpenDrawingProperties(id);
@@ -2398,6 +2489,7 @@ public partial class MainWindow : Window
                 locked = d.IsLocked,
                 lineWidth = d.LineWidth,
                 lineStyle = d.LineStyle,
+                groupId = d.GroupId,
                 points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
             }).ToArray();
 

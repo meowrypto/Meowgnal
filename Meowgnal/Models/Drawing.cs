@@ -108,6 +108,9 @@ public sealed class Drawing
     /// <summary>If false, the drawing is hidden (but still saved).</summary>
     public bool IsVisible { get; set; } = true;
 
+    /// <summary>If set, this drawing belongs to a group. All drawings with the same GroupId move and delete together.</summary>
+    public string? GroupId { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
