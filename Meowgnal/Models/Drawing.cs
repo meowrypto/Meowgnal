@@ -84,6 +84,12 @@ public sealed class Drawing
     /// <summary>Hex color with #, e.g., #2962FF.</summary>
     public string Color { get; set; } = "#2962FF";
 
+    /// <summary>Line thickness in pixels (1-4).</summary>
+    public int LineWidth { get; set; } = 2;
+
+    /// <summary>Line style: "solid" | "dashed" | "dotted".</summary>
+    public string LineStyle { get; set; } = "solid";
+
     /// <summary>Optional label next to the drawing (e.g., 61.8% or Support).</summary>
     public string Label { get; set; } = "";
 

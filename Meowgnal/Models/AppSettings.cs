@@ -59,6 +59,9 @@ public sealed class AppSettings
     public int PortfolioMaxTotalPositions { get; set; } = 3;
     public int PortfolioMaxPositionsPerStrategy { get; set; } = 1;
 
+    // Phase 27 — Hide all drawings toggle (eye button)
+    public bool DrawingsHidden { get; set; }
+
     // Profile & onboarding
     public bool FirstRunCompleted { get; set; } = false;
     public string ProfileName { get; set; } = "";

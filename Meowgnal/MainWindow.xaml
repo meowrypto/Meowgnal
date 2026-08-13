@@ -83,6 +83,11 @@
             <Path Data="M9,1 L10.5,6.5 L16,8 L10.5,9.5 L9,15 L7.5,9.5 L2,8 L7.5,6.5 Z" Fill="#B2B5BE"/>
             <Ellipse Canvas.Left="13" Canvas.Top="12" Width="3" Height="3" Fill="#B2B5BE"/>
         </Canvas>
+        <Canvas x:Key="Icon_objects" x:Shared="False" Width="18" Height="18">
+            <Line X1="4" Y1="13" X2="14" Y2="5" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Rectangle Canvas.Left="1" Canvas.Top="11" Width="5" Height="5" Fill="#B2B5BE"/>
+            <Rectangle Canvas.Left="12" Canvas.Top="2" Width="5" Height="5" Fill="#B2B5BE"/>
+        </Canvas>
         <Canvas x:Key="Icon_trash" x:Shared="False" Width="18" Height="18">
             <Line X1="3" Y1="4" X2="15" Y2="4" Stroke="#B2B5BE" StrokeThickness="1.5"/>
             <Line X1="7" Y1="2" X2="11" Y2="2" Stroke="#B2B5BE" StrokeThickness="1.5"/>
@@ -590,10 +595,32 @@
                                 Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
                             <ContentControl Content="{StaticResource Icon_autosr}" Width="18" Height="18"/>
                         </Button>
+                        <Button x:Name="ToggleDrawingsButton" Style="{StaticResource RailButton}"
+                                Click="ToggleDrawingsVisibility_Click" ToolTip="Show / hide all drawings">
+                            <TextBlock Text="👁" FontSize="15"/>
+                        </Button>
+                        <Button x:Name="ObjectsRailButton" Style="{StaticResource RailButton}"
+                                Click="ObjectsButton_Click" ToolTip="Objects list — manage drawings">
+                            <TextBlock Text="📋" FontSize="15"/>
+                        </Button>
                         <Button x:Name="ToolClearButton" Style="{StaticResource RailButton}" Tag="clear"
-                                Click="ToolButton_Click" ToolTip="Clear All Drawings">
+                                Click="TrashButton_Click" ToolTip="Delete drawings">
                             <ContentControl Content="{StaticResource Icon_trash}" Width="18" Height="18"/>
                         </Button>
+                        <Popup x:Name="TrashPopup" StaysOpen="False" AllowsTransparency="True"
+                               Placement="Right" PlacementTarget="{Binding ElementName=ToolClearButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Click="ClearAllDrawings_Click">
+                                        <TextBlock Text="🗑 Delete ALL drawings" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Click="ChooseDeleteDrawings_Click">
+                                        <TextBlock Text="✂ Choose drawings to delete" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
                     </StackPanel>
                 </Border>
 
@@ -711,7 +738,7 @@
                                     </Border>
                                 </Popup>
                                 <Popup x:Name="ObjectsPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Bottom" PlacementTarget="{Binding ElementName=ObjectsButton}">
+                               Placement="Right" PlacementTarget="{Binding ElementName=ObjectsRailButton}">
                                     <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
                                     BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,4,0,0" Width="360">
                                         <StackPanel>
@@ -735,7 +762,7 @@
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <Button x:Name="ScreenshotButton" Content="📷" ToolTip="Save chart screenshot" Style="{StaticResource TvButton}" Click="ScreenshotButton_Click"/>
                                 <Button x:Name="FullscreenButton" Content="⛶" ToolTip="Fullscreen (Esc to exit)" Style="{StaticResource TvButton}" Click="FullscreenButton_Click"/>
-                                <Button x:Name="ObjectsButton" Content="📋 Objects" ToolTip="Manage drawings for this chart" Style="{StaticResource TvButton}" Click="ObjectsButton_Click"/>
+                                
                             </StackPanel>
                         </Grid>
                     </Border>

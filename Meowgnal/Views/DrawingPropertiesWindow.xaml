@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Meowgnal.Views.DrawingPropertiesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Drawing Properties" Height="340" Width="380"
+        Title="Drawing Properties" Height="560" Width="420"
         Background="#131722" WindowStartupLocation="CenterOwner"
         FontFamily="Trebuchet MS" FontSize="12" ResizeMode="NoResize">
 
@@ -71,6 +71,22 @@
             <Setter Property="Padding" Value="6,4"/>
             <Setter Property="CaretBrush" Value="#D1D4DC"/>
         </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Foreground" Value="#D1D4DC"/>
+            <Setter Property="BorderBrush" Value="#2A2E39"/>
+            <Setter Property="Padding" Value="6,4"/>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Foreground" Value="#D1D4DC"/>
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="{StaticResource Accent}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
         <Style TargetType="CheckBox">
             <Setter Property="Foreground" Value="#D1D4DC"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
@@ -84,30 +100,47 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="✏️ Drawing Properties" FontSize="15" FontWeight="Bold"
+        <TextBlock Grid.Row="0" Text="🎨 Drawing Properties" FontSize="15" FontWeight="Bold"
                    Foreground="{StaticResource TextPrimary}" Margin="0,0,0,14"/>
 
-        <StackPanel Grid.Row="1">
-            <TextBlock Text="Label" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
-            <TextBox x:Name="LabelBox" Margin="0,0,0,12"/>
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel>
+                <!-- Style section -->
+                <TextBlock Text="STYLE" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
 
-            <TextBlock Text="Color" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="Swatch_Click"/>
-                <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="Swatch_Click"/>
-                <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="Swatch_Click"/>
-                <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="Swatch_Click"/>
-                <Button Style="{StaticResource SwatchButton}" Tag="#9C27B0" Background="#9C27B0" Click="Swatch_Click"/>
-                <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="Swatch_Click"/>
-                <Rectangle x:Name="PreviewRect" Width="26" Height="26" RadiusX="4" RadiusY="4"
-                           Stroke="#2A2E39" StrokeThickness="1" Margin="8,0,0,0"/>
+                <TextBlock Text="Label" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                <TextBox x:Name="LabelBox" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Color" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                    <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="Swatch_Click"/>
+                    <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="Swatch_Click"/>
+                    <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="Swatch_Click"/>
+                    <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="Swatch_Click"/>
+                    <Button Style="{StaticResource SwatchButton}" Tag="#9C27B0" Background="#9C27B0" Click="Swatch_Click"/>
+                    <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="Swatch_Click"/>
+                    <Rectangle x:Name="PreviewRect" Width="26" Height="26" RadiusX="4" RadiusY="4"
+                               Stroke="#2A2E39" StrokeThickness="1" Margin="8,0,0,0"/>
+                </StackPanel>
+                <TextBox x:Name="HexBox" Margin="0,0,0,10" TextChanged="HexBox_TextChanged"/>
+
+                <TextBlock Text="Thickness" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                <ComboBox x:Name="WidthCombo" Margin="0,0,0,10"/>
+
+                <TextBlock Text="Line style" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                <ComboBox x:Name="StyleCombo" Margin="0,0,0,10"/>
+
+                <!-- Coordinates section -->
+                <TextBlock Text="COORDINATES" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                <StackPanel x:Name="PointsPanel"/>
+
+                <!-- Visibility section -->
+                <TextBlock Text="VISIBILITY" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,4"/>
+                <CheckBox x:Name="AlertCheck" Content="🔔 Alert on price cross (Toast + sound)"/>
+                <CheckBox x:Name="LockedCheck" Content="🔒 Locked (eraser cannot delete)"/>
+                <CheckBox x:Name="HiddenCheck" Content="🚫 Hidden (do not show on chart)"/>
             </StackPanel>
-            <TextBox x:Name="HexBox" Margin="0,0,0,12" TextChanged="HexBox_TextChanged"/>
-
-            <CheckBox x:Name="AlertCheck" Content="🔔 Alert on price cross (Toast + sound)"/>
-            <CheckBox x:Name="LockedCheck" Content="🔒 Locked (eraser cannot delete)"/>
-            <CheckBox x:Name="HiddenCheck" Content="🚫 Hidden (do not show on chart)"/>
-        </StackPanel>
+        </ScrollViewer>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
             <Button Content="Cancel" Style="{StaticResource SecondaryButton}" Padding="14,6"

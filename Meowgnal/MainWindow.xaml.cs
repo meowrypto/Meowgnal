@@ -222,6 +222,7 @@ public partial class MainWindow : Window
         await ActivateTabAsync(firstTab);
 
         _drawingsFile = DrawingStorageService.Load();
+        _ = SendDrawingsToChartAsync();
         _alerts = PriceAlertStorageService.Load();
         _watchlistsFile = WatchlistStorageService.Load();
         _activeWatchlist = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == _watchlistsFile.ActiveListName)
@@ -1469,7 +1470,11 @@ public partial class MainWindow : Window
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.IsZoomControlEnabled = false;
 
-            core.NavigationCompleted += (_, _) => _chartPageReady.TrySetResult(true);
+            core.NavigationCompleted += (_, _) =>
+            {
+                _chartPageReady.TrySetResult(true);
+                _ = SendDrawingsToChartAsync();
+            };
 
             core.WebMessageReceived += OnChartWebMessageReceived;
 
@@ -1601,6 +1606,57 @@ public partial class MainWindow : Window
                 }
             }
             catch { }
+            return;
+        }
+
+        // Phase 27 — Draggable points: snapshot before drag modifies the drawing
+        if (msgType == "captureSnapshot")
+        {
+            CaptureSnapshot();
+            return;
+        }
+
+        // Phase 27 — Draggable points: persist the moved handle
+        if (msgType == "updateDrawing")
+        {
+            try
+            {
+                if (root.TryGetProperty("drawing", out var drawingEl) &&
+                    drawingEl.TryGetProperty("id", out var idEl))
+                {
+                    var id = idEl.GetString();
+                    var existing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
+                    if (existing is not null && !existing.IsLocked &&
+                        drawingEl.TryGetProperty("points", out var pts))
+                    {
+                        var newPoints = new List<DrawingPoint>();
+                        foreach (var pt in pts.EnumerateArray())
+                        {
+                            newPoints.Add(new DrawingPoint
+                            {
+                                TimeUnix = pt.GetProperty("time").GetInt64(),
+                                Price = pt.GetProperty("price").GetDecimal()
+                            });
+                        }
+
+                        if (newPoints.Count > 0)
+                        {
+                            existing.Points = newPoints;
+                            DrawingStorageService.Save(_drawingsFile);
+                            _ = SendDrawingsToChartAsync();
+                            RebuildObjectList();
+                        }
+                    }
+                }
+            }
+            catch { }
+            return;
+        }
+
+        if (msgType == "openDrawingProperties")
+        {
+            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+            if (!string.IsNullOrEmpty(id)) OnOpenDrawingProperties(id);
             return;
         }
 
@@ -1770,6 +1826,49 @@ public partial class MainWindow : Window
     private void OpenJournalButton_Click(object sender, RoutedEventArgs e) => new JournalWindow().ShowDialog();
     private void OpenPortfolioButton_Click(object sender, RoutedEventArgs e) => new PortfolioWindow().ShowDialog();
 
+    private void TrashButton_Click(object sender, RoutedEventArgs e) => TrashPopup.IsOpen = true;
+
+    private async void ToggleDrawingsVisibility_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = SettingsStorageService.Load();
+        settings.DrawingsHidden = !settings.DrawingsHidden;
+        SettingsStorageService.Save(settings);
+        await SendDrawingsToChartAsync();
+    }
+
+    private void ClearAllDrawings_Click(object sender, RoutedEventArgs e)
+    {
+        CaptureSnapshot();
+        var symbolClean = _chartSymbol.Replace("/", "");
+        _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
+        DrawingStorageService.Save(_drawingsFile);
+        _ = SendDrawingsToChartAsync();
+        RebuildObjectList();
+    }
+
+    private void ChooseDeleteDrawings_Click(object sender, RoutedEventArgs e)
+    {
+        TrashPopup.IsOpen = false;
+        RebuildObjectList();
+        ObjectsPopup.IsOpen = true;
+    }
+
+    private void OnOpenDrawingProperties(string id)
+    {
+        var drawing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
+        if (drawing is null) return;
+
+        // Snapshot first so Ctrl+Z can revert the property changes
+        CaptureSnapshot();
+        var win = new DrawingPropertiesWindow(drawing) { Owner = this };
+        if (win.ShowDialog() == true)
+        {
+            DrawingStorageService.Save(_drawingsFile);
+            _ = SendDrawingsToChartAsync();
+            RebuildObjectList();
+        }
+    }
+    
     private void OpenSettingsButton_Click(object sender, RoutedEventArgs e)
     {
         new SettingsWindow().ShowDialog();
@@ -2093,6 +2192,13 @@ public partial class MainWindow : Window
         if (ChartWebView.CoreWebView2 is null) return;
 
         var symbolClean = _chartSymbol.Replace("/", "");
+        // Phase 27 — Eye toggle: send empty list when drawings are hidden
+        if (SettingsStorageService.Load().DrawingsHidden)
+        {
+            ChartWebView.CoreWebView2.PostWebMessageAsJson(
+                JsonSerializer.Serialize(new { type = "setDrawings", drawings = Array.Empty<object>() }));
+            return;
+        }
         var drawings = _drawingsFile.Drawings
             .Where(d => d.Symbol == symbolClean && d.IsVisible)
             .Select(d => new
@@ -2103,6 +2209,8 @@ public partial class MainWindow : Window
                 label = d.Label,
                 alert = d.AlertOnCross,
                 locked = d.IsLocked,
+                lineWidth = d.LineWidth,
+                lineStyle = d.LineStyle,
                 points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
             }).ToArray();
 
