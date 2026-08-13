@@ -120,6 +120,8 @@
         let isDragging = false; // Phase 27 — Prevents chart scrolling while dragging handles
         // Phase 27 — Handle size (pixels)
         const HANDLE_SIZE = 10;
+        // Phase 27 — Clipboard for copy/paste
+        let clipboardDrawing = null;
 
         const drawCanvas = document.createElement('canvas');
         drawCanvas.style.position = 'absolute';
@@ -142,46 +144,25 @@
         }
         window.addEventListener('resize', resizeChart);
 
-        // Phase 27 — Exit edit mode on Esc, delete selected drawing on Delete
-
-        // Phase 27 — Copy/paste drawings with Ctrl+C / Ctrl+V
-        let clipboardDrawing = null;
-        window.addEventListener('keydown', function (e) {
-            if (!(e.ctrlKey || e.metaKey)) return;
-            if (e.key === 'c' || e.key === 'C') {
-                if (editingDrawingId !== null) {
-                    const src = customDrawings.find(d => d.id === editingDrawingId);
-                    if (src) {
-                        clipboardDrawing = JSON.parse(JSON.stringify(src));
-                        post({ type: 'copyToast' });
-                    }
-                    e.preventDefault();
-                }
-            } else if (e.key === 'v' || e.key === 'V') {
-                if (clipboardDrawing) {
-                    const copy = JSON.parse(JSON.stringify(clipboardDrawing));
-                    copy.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
-                    const dt = rawData.length > 1 ? (rawData[1].time - rawData[0].time) : 3600;
-                    for (const p of copy.points || []) {
-                        p.time = p.time + dt;
-                        p.price = p.price * 1.002;
-                    }
-                    post({ type: 'pasteDrawing', drawing: copy });
-                    e.preventDefault();
-                }
-            }
-        });
-window.addEventListener('keyup', function (e) {
-            // Phase 27 — Delete the selected drawing with the Delete key
+        // Phase 27 — Delete key deletes selected drawing; Esc cancels drawing or exits edit mode
+        window.addEventListener('keyup', function (e) {
             if (e.key === 'Delete' && editingDrawingId !== null) {
                 post({ type: 'deleteDrawing', id: editingDrawingId });
                 editingDrawingId = null;
                 renderCustomDrawings();
                 return;
             }
-            if (e.key === 'Escape' && editingDrawingId !== null) {
-                editingDrawingId = null;
-                renderCustomDrawings();
+            if (e.key === 'Escape') {
+                // Esc cancels an in-progress drawing first, otherwise exits edit mode
+                if (pendingPoints.length > 0) {
+                    pendingPoints = [];
+                    renderCustomDrawings();
+                    return;
+                }
+                if (editingDrawingId !== null) {
+                    editingDrawingId = null;
+                    renderCustomDrawings();
+                }
             }
         });
 
@@ -191,7 +172,8 @@ window.addEventListener('keyup', function (e) {
             if (window.chrome && window.chrome.webview)
                 window.chrome.webview.postMessage(JSON.stringify(m));
         }
-        // Phase 27 — Functions called from C# for copy/paste
+
+        // Phase 27 — Called from C# (Ctrl+C)
         function copySelectedDrawing() {
             if (editingDrawingId !== null) {
                 const src = customDrawings.find(d => d.id === editingDrawingId);
@@ -202,6 +184,7 @@ window.addEventListener('keyup', function (e) {
             }
         }
 
+        // Phase 27 — Called from C# (Ctrl+V)
         function pasteCopiedDrawing() {
             if (clipboardDrawing) {
                 const copy = JSON.parse(JSON.stringify(clipboardDrawing));
@@ -214,6 +197,7 @@ window.addEventListener('keyup', function (e) {
                 post({ type: 'pasteDrawing', drawing: copy });
             }
         }
+
         function fmtPrice(p) {
             if (p >= 1000) return p.toFixed(2);
             if (p >= 1) return p.toFixed(4);
@@ -554,7 +538,7 @@ window.addEventListener('keyup', function (e) {
                     if (x3 === null) break;
                     const ang1 = Math.atan2(y2 - y1, x2 - x1);
                     const ang2 = Math.atan2(y3 - y1, x3 - x1);
-                    const r = Math.hypot(x2 - x1, y2 - x1);
+                    const r = Math.hypot(x2 - x1, y2 - y1);
                     let a1 = ang1, a2 = ang2;
                     if (a2 < a1) a2 += Math.PI * 2;
                     g.arcs.push([x1, y1, r, a1, a2]);
@@ -911,9 +895,30 @@ window.addEventListener('keyup', function (e) {
         // ---------- Phase 27 — Draggable points: mouse handlers on the canvas ----------
         const chartEl = document.getElementById('chart');
 
-        // Phase 27 — Double click opens the properties dialog for the clicked drawing
+        // Phase 27 — Double click: finish multi-click tools, or open properties dialog
         chartEl.addEventListener('dblclick', function (e) {
-            if (drawingMode) return;
+            if (drawingMode) {
+                // Remove the duplicate point added by the second click of the double-click
+                if (pendingPoints.length >= 2) {
+                    const a = pendingPoints[pendingPoints.length - 1];
+                    const b = pendingPoints[pendingPoints.length - 2];
+                    if (a.time === b.time && a.price === b.price) pendingPoints.pop();
+                }
+                const multiKinds = ['polyline', 'brush', 'highlighter'];
+                if (multiKinds.includes(drawingMode) && pendingPoints.length >= 2) {
+                    const drawing = {
+                        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                        kind: drawingMode,
+                        color: defaultColor, label: '', alert: false,
+                        points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
+                    };
+                    pendingPoints = [];
+                    post({ type: 'drawingCompleted', drawing: drawing });
+                    renderCustomDrawings();
+                }
+                return;
+            }
+
             const rect = chartEl.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
