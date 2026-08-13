@@ -1660,6 +1660,55 @@ public partial class MainWindow : Window
             return;
         }
 
+
+        if (msgType == "copyToast")
+        {
+            
+            return;
+        }
+
+        if (msgType == "pasteDrawing")
+        {
+            try
+            {
+                if (root.TryGetProperty("drawing", out var drawingEl))
+                {
+                    var kindStr = drawingEl.TryGetProperty("kind", out var k) ? k.GetString() : "horizontal";
+                    var kind = Enum.TryParse<DrawingKind>(kindStr, true, out var parsedKind) ? parsedKind : DrawingKind.HorizontalLine;
+                    var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", "") };
+
+                    if (drawingEl.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: > 0 } newId)
+                        newDrawing.Id = newId;
+                    if (drawingEl.TryGetProperty("color", out var cEl))
+                        newDrawing.Color = cEl.GetString() ?? newDrawing.Color;
+                    if (drawingEl.TryGetProperty("label", out var lEl))
+                        newDrawing.Label = lEl.GetString() ?? "";
+                    if (drawingEl.TryGetProperty("points", out var pts))
+                    {
+                        foreach (var pt in pts.EnumerateArray())
+                        {
+                            newDrawing.Points.Add(new DrawingPoint
+                            {
+                                TimeUnix = pt.GetProperty("time").GetInt64(),
+                                Price = pt.GetProperty("price").GetDecimal()
+                            });
+                        }
+                    }
+
+                    if (newDrawing.Points.Count > 0)
+                    {
+                        CaptureSnapshot();
+                        _drawingsFile.Drawings.Add(newDrawing);
+                        DrawingStorageService.Save(_drawingsFile);
+                        _ = SendDrawingsToChartAsync();
+                        RebuildObjectList();
+                        
+                    }
+                }
+            }
+            catch { }
+            return;
+        }
         if (msgType != "crosshair") return;
 
         if (root.TryGetProperty("hasData", out var hasData) && hasData.GetBoolean())
@@ -1825,6 +1874,18 @@ public partial class MainWindow : Window
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
     private void OpenJournalButton_Click(object sender, RoutedEventArgs e) => new JournalWindow().ShowDialog();
     private void OpenPortfolioButton_Click(object sender, RoutedEventArgs e) => new PortfolioWindow().ShowDialog();
+
+    private void ColorPickerButton_Click(object sender, RoutedEventArgs e) => ColorPopup.IsOpen = !ColorPopup.IsOpen;
+
+    private async void DefaultColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _drawingsFile.DefaultColor = hex;
+        DrawingStorageService.Save(_drawingsFile);
+        ColorPopup.IsOpen = false;
+        await SendDrawingModeToChartAsync(_activeDrawingMode ?? "none");
+        NotificationService.ShowToast("Meowgnal", $"New drawings will use color {hex}.");
+    }
 
     private void TrashButton_Click(object sender, RoutedEventArgs e) => TrashPopup.IsOpen = true;
 
@@ -2131,7 +2192,8 @@ public partial class MainWindow : Window
             if (_currentBars.Count == 0) return;
             var autoLevels = SupportResistanceDetector.Detect(_chartSymbol, _currentBars);
 
-            _drawingsFile.Drawings.AddRange(autoLevels);
+
+            CaptureSnapshot(); _drawingsFile.Drawings.AddRange(autoLevels);
             DrawingStorageService.Save(_drawingsFile);
             await SendDrawingsToChartAsync();
             RebuildObjectList();
@@ -2183,7 +2245,7 @@ public partial class MainWindow : Window
         if (ChartWebView.CoreWebView2 is null) return;
 
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
-            JsonSerializer.Serialize(new { type = "setDrawingMode", mode }));
+                        JsonSerializer.Serialize(new { type = "setDrawingMode", mode, color = _drawingsFile.DefaultColor }));
     }
 
     private async Task SendDrawingsToChartAsync()
@@ -2561,6 +2623,31 @@ public partial class MainWindow : Window
             if (restored is not null)
             {
                 await RestoreSnapshotAsync(restored);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Y)
+        {
+            var restored = _undoManager.Redo(_drawingsFile.Drawings);
+            if (restored is not null)
+            {
+                await RestoreSnapshotAsync(restored);
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.C)
+        {
+            if (ChartWebView.CoreWebView2 is not null)
+            {
+                await ChartWebView.CoreWebView2.ExecuteScriptAsync("copySelectedDrawing();");
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.V)
+        {
+            if (ChartWebView.CoreWebView2 is not null)
+            {
+                await ChartWebView.CoreWebView2.ExecuteScriptAsync("pasteCopiedDrawing();");
                 e.Handled = true;
             }
         }

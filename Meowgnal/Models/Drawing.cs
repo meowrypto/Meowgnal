@@ -112,4 +112,6 @@ public sealed class Drawing
 public sealed class DrawingsFile
 {
     public List<Drawing> Drawings { get; set; } = new();
+    /// <summary>User's preferred color for new drawings (saved).</summary>
+    public string DefaultColor { get; set; } = "#2962FF";
 }

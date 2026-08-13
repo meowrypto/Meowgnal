@@ -111,6 +111,7 @@
         let cursorMode = 'cross';
         let pendingPoints = [];
         let customDrawings = [];
+        let defaultColor = '#2962FF'; // Phase 27 — User's preferred color for new drawings
 
         // Phase 27 — Draggable points: which drawing is currently in edit mode
         let editingDrawingId = null;
@@ -142,7 +143,35 @@
         window.addEventListener('resize', resizeChart);
 
         // Phase 27 — Exit edit mode on Esc, delete selected drawing on Delete
-        window.addEventListener('keyup', function (e) {
+
+        // Phase 27 — Copy/paste drawings with Ctrl+C / Ctrl+V
+        let clipboardDrawing = null;
+        window.addEventListener('keydown', function (e) {
+            if (!(e.ctrlKey || e.metaKey)) return;
+            if (e.key === 'c' || e.key === 'C') {
+                if (editingDrawingId !== null) {
+                    const src = customDrawings.find(d => d.id === editingDrawingId);
+                    if (src) {
+                        clipboardDrawing = JSON.parse(JSON.stringify(src));
+                        post({ type: 'copyToast' });
+                    }
+                    e.preventDefault();
+                }
+            } else if (e.key === 'v' || e.key === 'V') {
+                if (clipboardDrawing) {
+                    const copy = JSON.parse(JSON.stringify(clipboardDrawing));
+                    copy.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+                    const dt = rawData.length > 1 ? (rawData[1].time - rawData[0].time) : 3600;
+                    for (const p of copy.points || []) {
+                        p.time = p.time + dt;
+                        p.price = p.price * 1.002;
+                    }
+                    post({ type: 'pasteDrawing', drawing: copy });
+                    e.preventDefault();
+                }
+            }
+        });
+window.addEventListener('keyup', function (e) {
             // Phase 27 — Delete the selected drawing with the Delete key
             if (e.key === 'Delete' && editingDrawingId !== null) {
                 post({ type: 'deleteDrawing', id: editingDrawingId });
@@ -162,7 +191,29 @@
             if (window.chrome && window.chrome.webview)
                 window.chrome.webview.postMessage(JSON.stringify(m));
         }
+        // Phase 27 — Functions called from C# for copy/paste
+        function copySelectedDrawing() {
+            if (editingDrawingId !== null) {
+                const src = customDrawings.find(d => d.id === editingDrawingId);
+                if (src) {
+                    clipboardDrawing = JSON.parse(JSON.stringify(src));
+                    post({ type: 'copyToast' });
+                }
+            }
+        }
 
+        function pasteCopiedDrawing() {
+            if (clipboardDrawing) {
+                const copy = JSON.parse(JSON.stringify(clipboardDrawing));
+                copy.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
+                const dt = rawData.length > 1 ? (rawData[1].time - rawData[0].time) : 3600;
+                for (const p of copy.points || []) {
+                    p.time = p.time + dt;
+                    p.price = p.price * 1.002;
+                }
+                post({ type: 'pasteDrawing', drawing: copy });
+            }
+        }
         function fmtPrice(p) {
             if (p >= 1000) return p.toFixed(2);
             if (p >= 1) return p.toFixed(4);
@@ -746,12 +797,13 @@
                     applyTheme(msg.colors);
                 } else if (msg.type === 'setDrawingMode') {
                     const m = msg.mode;
+                    if (msg.color) defaultColor = msg.color;
                     const multiKinds = ['polyline', 'brush', 'highlighter'];
                     if (multiKinds.includes(drawingMode) && !multiKinds.includes(m) && pendingPoints.length >= 2) {
                         const drawing = {
                             id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                             kind: drawingMode,
-                            color: '#2962FF', label: '', alert: false,
+                            color: defaultColor, label: '', alert: false,
                             points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
                         };
                         post({ type: 'drawingCompleted', drawing: drawing });
@@ -1006,7 +1058,7 @@
                 const drawing = {
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     kind: drawingMode,
-                    color: '#2962FF',
+                    color: defaultColor,
                     label: '',
                     alert: false,
                     points: pendingPoints.slice(0, need).map(p => ({ time: p.time, price: p.price }))
