@@ -697,7 +697,20 @@
                         ctx.beginPath(); ctx.moveTo(gl.x, gl.y - 14); ctx.lineTo(gl.x + 10, gl.y - 11); ctx.lineTo(gl.x, gl.y - 8); ctx.closePath(); ctx.fill();
                     }
                 }
+                
                 ctx.globalAlpha = 1; ctx.lineWidth = 2;
+
+                // Phase 30 — Show bell icon on drawings with active alerts
+                if (d.alert) {
+                    const pts = d.points || [];
+                    if (pts.length > 0) {
+                        const alertY = py(pts[0].price);
+                        if (alertY !== null) {
+                            ctx.font = '14px Trebuchet MS';
+                            ctx.fillText('🔔', 10, alertY + 5);
+                        }
+                    }
+                }
 
                 if (selectedDrawingIds.has(d.id) && !d.locked) {
                     const handles = getHandles(d);
