@@ -144,6 +144,13 @@
 
         window.addEventListener('keydown', function (e) {
             if (e.key === 'Control') isCtrlPressed = true;
+            if (e.key === 'g' && isCtrlPressed && !e.shiftKey && selectedDrawingIds.size >= 2) {
+                const groupId = Date.now().toString(36);
+                post({ type: 'groupDrawings', ids: Array.from(selectedDrawingIds), groupId: groupId });
+            }
+            if (e.key === 'G' && isCtrlPressed && e.shiftKey && selectedDrawingIds.size > 0) {
+                post({ type: 'ungroupDrawings', ids: Array.from(selectedDrawingIds) });
+            }
         });
 
         window.addEventListener('keyup', function (e) {
@@ -779,6 +786,10 @@
                     applyPositions();
                 } else if (msg.type === 'setDrawings') {
                     customDrawings = msg.drawings || [];
+                    // Store groupId on each drawing for group operations
+                    for (const d of customDrawings) {
+                        if (!d.groupId) d.groupId = null;
+                    }
                     for (const id of Array.from(selectedDrawingIds)) {
                         if (!customDrawings.some(d => d.id === id)) {
                             selectedDrawingIds.delete(id);
@@ -977,7 +988,11 @@
                     priceOnly: !!handle.priceOnly,
                     timeOnly: !!handle.timeOnly,
                     committed: false,
-                    isBodyDrag: false
+                    isBodyDrag: fals,
+                    groupId: clickedDrawing.groupId,
+                    originalPoints: clickedDrawing.groupId ? customDrawings.filter(d => d.groupId === clickedDrawing.groupId && d.id !== clickedDrawing.id).map(d => ({ id: d.id, points: JSON.parse(JSON.stringify(d.points)) })) : []
+
+
                 };
             } else {
                 // Body drag — move all points of the drawing together
@@ -1022,6 +1037,32 @@
 
             const pts = d.points || [];
 
+            // If this drawing belongs to a group, move all group members together
+            if (dragState.groupId && !dragState.isBodyDrag) {
+                // Group members move together when any member is dragged
+            }
+
+            if (dragState.groupId && dragState.originalPoints && dragState.originalPoints.length > 0) {
+                // Group drag: move all group members by the same delta
+                const deltaPrice = newPrice - (dragState.startPrice || newPrice);
+                const deltaTime = Math.round(newTime) - (dragState.startTime || Math.round(newTime));
+
+                for (const member of dragState.originalPoints) {
+                    const memberDrawing = customDrawings.find(d => d.id === member.id);
+                    if (memberDrawing) {
+                        for (let i = 0; i < memberDrawing.points.length && i < member.points.length; i++) {
+                            memberDrawing.points[i].price = member.points[i].price + deltaPrice;
+                            memberDrawing.points[i].time = member.points[i].time + deltaTime;
+                        }
+                    }
+                }
+
+                if (!dragState.startPrice) {
+                    dragState.startPrice = newPrice;
+                    dragState.startTime = Math.round(newTime);
+                }
+            }
+
             if (dragState.isBodyDrag) {
                 // Move all points by the delta since last move
                 const deltaPrice = newPrice - dragState.lastPrice;
@@ -1064,6 +1105,16 @@
                 });
             }
             isDragging = false;
+            if (dragState.groupId) {
+                const groupDrawings = customDrawings.filter(dd => dd.groupId === dragState.groupId);
+                post({
+                    type: 'updateDrawings',
+                    drawings: groupDrawings.map(dd => ({
+                        id: dd.id,
+                        points: (dd.points || []).map(p => ({ time: p.time, price: p.price }))
+                    }))
+                });
+            }
             chart.applyOptions({ handleScroll: true, handleScale: true });
             dragState = null;
         });
