@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Meowgnal.Views.DrawingPropertiesWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Drawing Properties" Height="560" Width="420"
+        Title="Drawing Properties" Height="600" Width="420"
         Background="#131722" WindowStartupLocation="CenterOwner"
         FontFamily="Trebuchet MS" FontSize="12" ResizeMode="NoResize">
 
@@ -129,6 +129,25 @@
 
                 <TextBlock Text="Line style" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                 <ComboBox x:Name="StyleCombo" Margin="0,0,0,10"/>
+
+                <!-- Text section (visible only for Text/Note/Sticker) -->
+                <StackPanel x:Name="TextSection" Visibility="Collapsed">
+                    <TextBlock Text="TEXT" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                    <TextBlock Text="Font" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="FontCombo" Margin="0,0,0,10"/>
+                    <TextBlock Text="Size" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="FontSizeCombo" Margin="0,0,0,10"/>
+                </StackPanel>
+
+                <!-- Gann section (visible only for Gann Fan) -->
+                <StackPanel x:Name="GannSection" Visibility="Collapsed">
+                    <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                    <TextBlock Text="Enter ratios separated by commas"
+                               Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4"/>
+                    <TextBlock Text="Example: 0.25, 0.5, 1, 2, 4"
+                               Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4" FontStyle="Italic"/>
+                    <TextBox x:Name="GannRatiosBox" Margin="0,0,0,10"/>
+                </StackPanel>
 
                 <!-- Coordinates section -->
                 <TextBlock Text="COORDINATES" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>

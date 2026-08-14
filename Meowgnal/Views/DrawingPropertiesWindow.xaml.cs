@@ -35,6 +35,31 @@ public partial class DrawingPropertiesWindow : Window
         StyleCombo.Items.Add("dotted");
         StyleCombo.SelectedItem = drawing.LineStyle;
 
+        // Font family options for text drawings
+        var fonts = new[] { "Trebuchet MS", "Arial", "Courier New", "Georgia", "Verdana", "Times New Roman", "Segoe UI" };
+        foreach (var f in fonts) FontCombo.Items.Add(f);
+        FontCombo.SelectedItem = string.IsNullOrEmpty(drawing.FontFamily) ? "Trebuchet MS" : drawing.FontFamily;
+
+        // Font size options
+        foreach (var s in new[] { 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 32, 36, 48, 64 })
+            FontSizeCombo.Items.Add(s);
+        FontSizeCombo.SelectedItem = drawing.FontSize is >= 8 and <= 100 ? drawing.FontSize : 13;
+
+        // Gann ratios: default to "0.25, 0.5, 1, 2, 4" if null
+        GannRatiosBox.Text = drawing.GannRatios is not null
+            ? string.Join(", ", drawing.GannRatios)
+            : "0.25, 0.5, 1, 2, 4";
+
+        // Show the right section based on drawing kind
+        if (drawing.Kind is DrawingKind.Text or DrawingKind.Note or DrawingKind.Sticker)
+        {
+            TextSection.Visibility = Visibility.Visible;
+        }
+        else if (drawing.Kind == DrawingKind.GannFan)
+        {
+            GannSection.Visibility = Visibility.Visible;
+        }
+
         // Build coordinate rows: time is read-only, price is editable
         for (var i = 0; i < drawing.Points.Count; i++)
         {
@@ -104,6 +129,25 @@ public partial class DrawingPropertiesWindow : Window
         // Save thickness and line style
         _drawing.LineWidth = WidthCombo.SelectedItem is int w ? w : 2;
         _drawing.LineStyle = StyleCombo.SelectedItem as string ?? "solid";
+
+        // Save font and size for text drawings
+        if (_drawing.Kind is DrawingKind.Text or DrawingKind.Note or DrawingKind.Sticker)
+        {
+            _drawing.FontFamily = FontCombo.SelectedItem as string ?? "Trebuchet MS";
+            _drawing.FontSize = FontSizeCombo.SelectedItem is int s ? s : 13;
+        }
+
+        // Save Gann ratios
+        if (_drawing.Kind == DrawingKind.GannFan)
+        {
+            var ratios = new List<double>();
+            foreach (var part in GannRatiosBox.Text.Split(','))
+            {
+                if (double.TryParse(part.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out var r) && r > 0)
+                    ratios.Add(r);
+            }
+            _drawing.GannRatios = ratios.Count > 0 ? ratios : null;
+        }
 
         // Save edited prices
         for (var i = 0; i < _drawing.Points.Count && i < _priceBoxes.Count; i++)
