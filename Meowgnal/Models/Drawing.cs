@@ -111,6 +111,18 @@ public sealed class Drawing
     /// <summary>If set, this drawing belongs to a group. All drawings with the same GroupId move and delete together.</summary>
     public string? GroupId { get; set; }
 
+    /// <summary>Z-index for layering. Higher values render on top.</summary>
+    public int ZIndex { get; set; } = 0;
+
+    /// <summary>Font size for Text/Note/Sticker drawings (in pixels).</summary>
+    public int FontSize { get; set; } = 13;
+
+    /// <summary>Font family for Text/Note/Sticker drawings.</summary>
+    public string FontFamily { get; set; } = "Trebuchet MS";
+
+    /// <summary>Custom Gann Fan ratios. If null, defaults [0.25, 0.5, 1, 2, 4] are used.</summary>
+    public List<double>? GannRatios { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 

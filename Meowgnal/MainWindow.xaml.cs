@@ -1690,6 +1690,10 @@ public partial class MainWindow : Window
                         : DrawingKind.HorizontalLine;
 
                     var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", ""), DataSource = _chartDataSource };
+                    if (drawingEl.TryGetProperty("label", out var tLabelEl))
+                        newDrawing.Label = tLabelEl.GetString() ?? "";
+                    if (drawingEl.TryGetProperty("color", out var tColorEl))
+                        newDrawing.Color = tColorEl.GetString() ?? "#2962FF";
 
                     if (drawingEl.TryGetProperty("points", out var pts))
                     {
@@ -1756,6 +1760,18 @@ public partial class MainWindow : Window
                             existing.Points = newPoints;
                             if (drawingEl.TryGetProperty("groupId", out var gidEl))
                                 existing.GroupId = gidEl.ValueKind == JsonValueKind.Null ? null : gidEl.GetString();
+                            if (drawingEl.TryGetProperty("zIndex", out var ziEl))
+                                existing.ZIndex = ziEl.GetInt32();
+                            if (drawingEl.TryGetProperty("fontSize", out var fsEl))
+                                existing.FontSize = fsEl.GetInt32();
+                            if (drawingEl.TryGetProperty("fontFamily", out var ffEl))
+                                existing.FontFamily = ffEl.GetString() ?? "Trebuchet MS";
+                            if (drawingEl.TryGetProperty("gannRatios", out var grEl) && grEl.ValueKind == JsonValueKind.Array)
+                            {
+                                existing.GannRatios = new List<double>();
+                                foreach (var rEl in grEl.EnumerateArray())
+                                    existing.GannRatios.Add(rEl.GetDouble());
+                            }
                             DrawingStorageService.Save(_drawingsFile);
                             _ = SendDrawingsToChartAsync();
                             RebuildObjectList();
@@ -1879,6 +1895,10 @@ public partial class MainWindow : Window
                     var kindStr = drawingEl.TryGetProperty("kind", out var k) ? k.GetString() : "horizontal";
                     var kind = Enum.TryParse<DrawingKind>(kindStr, true, out var parsedKind) ? parsedKind : DrawingKind.HorizontalLine;
                     var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", ""), DataSource = _chartDataSource };
+                    if (drawingEl.TryGetProperty("label", out var labelEl))
+                        newDrawing.Label = labelEl.GetString() ?? "";
+                    if (drawingEl.TryGetProperty("color", out var colorEl))
+                        newDrawing.Color = colorEl.GetString() ?? "#2962FF";
 
                     if (drawingEl.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: > 0 } newId)
                         newDrawing.Id = newId;
@@ -2490,6 +2510,10 @@ public partial class MainWindow : Window
                 lineWidth = d.LineWidth,
                 lineStyle = d.LineStyle,
                 groupId = d.GroupId,
+                zIndex = d.ZIndex,
+                fontSize = d.FontSize,
+                fontFamily = d.FontFamily,
+                gannRatios = d.GannRatios,
                 points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
             }).ToArray();
 

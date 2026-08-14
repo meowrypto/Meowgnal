@@ -399,12 +399,7 @@
                     const diff = pts[1].price - pts[0].price;
                     for (const lvl of ALL_FIB_LEVELS) {
                         const yy = py(pts[0].price + diff * lvl);
-                        if (yy !== null) {
-                            const isExt = lvl > 1;
-                            if (isExt) g.dashed.push([lo, yy, hi, yy]);
-                            else g.dashed.push([lo, yy, hi, yy]);
-                            g.labels.push([(lvl * 100).toFixed(1) + '%', hi + 5, yy + 4]);
-                        }
+                        if (yy !== null) { g.dashed.push([lo, yy, hi, yy]); g.labels.push([(lvl * 100).toFixed(1) + '%', hi + 5, yy + 4]); }
                     }
                     break;
                 }
@@ -587,7 +582,7 @@
                     if (x3 === null) break;
                     const ang1 = Math.atan2(y2 - y1, x2 - x1);
                     const ang2 = Math.atan2(y3 - y1, x3 - x1);
-                    const r = Math.hypot(x2 - x1, y2 - y1);
+                    const r = Math.hypot(x2 - x1, y2 - x1);
                     let a1 = ang1, a2 = ang2;
                     if (a2 < a1) a2 += Math.PI * 2;
                     g.arcs.push([x1, y1, r, a1, a2]);
@@ -1346,7 +1341,7 @@
                 const drawing = {
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     kind: drawingMode,
-                    color: defaultColor,
+                    color: TEXT_TOOLS.includes(drawingMode) ? '#000000' : defaultColor,
                     label: '',
                     alert: false,
                     points: pendingPoints.slice(0, need).map(p => ({ time: p.time, price: p.price }))
