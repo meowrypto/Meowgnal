@@ -10,6 +10,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Meowgnal.Views;
@@ -31,6 +32,43 @@ public partial class TemplateStoreWindow : Window
 
         Loaded += (_, _) => _ = LoadTemplatesAsync();
     }
+
+    #region Custom title bar
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) { ToggleMaximize(); return; }
+        if (WindowState == WindowState.Maximized)
+        {
+            var point = PointToScreen(e.GetPosition(this));
+            WindowState = WindowState.Normal;
+            Left = point.X - Width / 2;
+            Top = point.Y - 15;
+        }
+        DragMove();
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void ToggleMaximize()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            WindowState = WindowState.Normal;
+            MaximizeButton.Content = "⛶";
+        }
+        else
+        {
+            WindowState = WindowState.Maximized;
+            MaximizeButton.Content = "❐";
+        }
+    }
+
+    #endregion
 
     private async Task LoadTemplatesAsync()
     {
