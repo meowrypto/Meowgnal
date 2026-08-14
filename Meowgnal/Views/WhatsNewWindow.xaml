@@ -1,0 +1,58 @@
+﻿<Window x:Class="Meowgnal.Views.WhatsNewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="What's New — Meowgnal"
+        Height="540" Width="470"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        FontFamily="Trebuchet MS"
+        FontSize="12"
+        Background="{DynamicResource BackgroundBrush}">
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
+        <SolidColorBrush x:Key="BgPanel" Color="{DynamicResource ColorPanel}"/>
+        <SolidColorBrush x:Key="BorderLine" Color="{DynamicResource ColorBorder}"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
+        <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
+        <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
+    </Window.Resources>
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,12">
+            <TextBlock Text="✨ What's New"
+                       FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextPrimary}"/>
+            <TextBlock Text="All improvements added in the latest updates."
+                       Foreground="{DynamicResource TextMuted}"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Background="{DynamicResource BgPanel}"
+                BorderBrush="{DynamicResource BorderLine}"
+                BorderThickness="1" CornerRadius="6">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="ContentPanel" Margin="14"/>
+            </ScrollViewer>
+        </Border>
+
+        <Button Grid.Row="2"
+                Content="Close"
+                HorizontalAlignment="Right"
+                Margin="0,12,0,0"
+                Padding="20,6"
+                Cursor="Hand"
+                Background="{DynamicResource Accent}"
+                Foreground="White"
+                BorderThickness="0"
+                Click="CloseButton_Click"/>
+    </Grid>
+</Window>

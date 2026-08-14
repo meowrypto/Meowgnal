@@ -319,7 +319,7 @@ public partial class MainWindow : Window
     private void MenuWhatsNew_Click(object sender, RoutedEventArgs e)
     {
         ProfilePopup.IsOpen = false;
-        MessageBox.Show("Welcome to Meowgnal!\n\n- Custom Title Bar\n- Profile & Onboarding\n- Splash Screen\n- License Management", "What's new", MessageBoxButton.OK, MessageBoxImage.Information);
+        new WhatsNewWindow { Owner = this }.ShowDialog();
     }
 
     private void MenuSignOut_Click(object sender, RoutedEventArgs e)
@@ -1872,7 +1872,6 @@ public partial class MainWindow : Window
 
 
         if (msgType == "openDrawingProperties")
-            if (msgType == "openDrawingProperties")
         {
             var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
             if (!string.IsNullOrEmpty(id)) OnOpenDrawingProperties(id);
