@@ -710,8 +710,15 @@
                 if (segDist(x, y, L[0], L[1], L[2], L[3]) <= tol) return true;
             for (const c of g.circles)
                 if (Math.abs(Math.hypot(x - c[0], y - c[1]) - c[2]) <= tol) return true;
-            for (const a of g.arcs)
-                if (Math.abs(Math.hypot(x - a[0], y - a[1]) - a[2]) <= tol) return true;
+            for (const a of g.arcs) {
+                const dist = Math.hypot(x - a[0], y - a[1]);
+                if (Math.abs(dist - a[2]) <= tol) {
+                    const angle = Math.atan2(y - a[1], x - a[0]);
+                    let na = angle;
+                    while (na < a[3]) na += Math.PI * 2;
+                    if (na <= a[4]) return true;
+                }
+            }
             for (const a of g.anchors)
                 if (Math.hypot(x - a[0], y - a[1]) <= a[2]) return true;
             return false;
