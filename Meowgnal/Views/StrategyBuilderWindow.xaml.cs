@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Meowgnal.Models;
 using Meowgnal.Services;
 
@@ -52,6 +53,9 @@ public partial class StrategyBuilderWindow : Window
     // When true, Save creates a new id and appends "(Copy)" to the name.
     private bool _isCopy;
 
+    // Refreshes the live plain-English summary while the user edits.
+    private readonly DispatcherTimer _descTimer;
+
     public ObservableCollection<IndicatorInfo> RegistryOptions { get; } = new();
     public ObservableCollection<OpOption> OpOptions { get; } = new();
     public ObservableCollection<ModeOption> ModeOptions { get; } = new();
@@ -97,6 +101,12 @@ public partial class StrategyBuilderWindow : Window
         TargetMethodCombo.SelectedItem = "Risk to reward ratio";
 
         RefreshTokens();
+
+        // Live summary: refresh on a short interval so every edit is reflected.
+        _descTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        _descTimer.Tick += (_, _) => UpdateDescription();
+        _descTimer.Start();
+        UpdateDescription();
     }
 
     /// <summary>Opens the builder pre-filled from a template or wizard result (Customize flow).</summary>
@@ -143,6 +153,7 @@ public partial class StrategyBuilderWindow : Window
         RiskPercentBox.Text = prefill.RiskManagement.PositionSizing.RiskPercentPerTrade.ToString();
 
         RefreshTokens();
+        UpdateDescription();
     }
 
     /// <summary>Opens the builder from the Strategy Manager.</summary>
@@ -181,6 +192,60 @@ public partial class StrategyBuilderWindow : Window
         System.Text.Json.JsonElement je when je.ValueKind == System.Text.Json.JsonValueKind.Number => je.GetInt32(),
         _ => fallback
     };
+
+    // Builds a strategy object from the current UI state (used by Save and by the live summary).
+    private StrategyDefinition BuildStrategyFromUi()
+    {
+        return new StrategyDefinition
+        {
+            StrategyId = _editing?.StrategyId ?? "preview",
+            Name = string.IsNullOrWhiteSpace(NameBox.Text) ? "My strategy" : NameBox.Text.Trim(),
+            Symbol = SymbolBox.Text,
+            Timeframe = TimeframeBox.Text,
+            DataSource = SourceCombo.SelectedItem is ComboBoxItem ci ? ci.Content?.ToString() ?? "binance" : "binance",
+            Indicators = _indicators.Select(i => new IndicatorDefinition
+            {
+                Id = i.Id,
+                Type = i.Type,
+                Params = i.Type == "MACD"
+                    ? new() { ["fastPeriod"] = 12, ["slowPeriod"] = 26, ["signalPeriod"] = 9 }
+                    : new() { ["period"] = i.Period }
+            }).ToList(),
+            EntryRules = BuildGroup(EntryModeCombo.SelectedValue as string, EntryMinScoreBox.Text, _entry),
+            ExitRules = BuildGroup(ExitModeCombo.SelectedValue as string, null, _exit),
+            RiskManagement = new RiskManagementConfig
+            {
+                StopLoss = new StopLossConfig
+                {
+                    Method = StopMethodCombo.SelectedItem as string == "ATR multiple" ? "ATR" : "fixedPercent",
+                    Multiplier = double.TryParse(StopValueBox.Text, out var sv) ? sv : 2
+                },
+                Target = new TargetConfig
+                {
+                    Method = TargetMethodCombo.SelectedItem as string == "Fixed percent" ? "fixedPercent" : "riskRewardRatio",
+                    Value = double.TryParse(TargetValueBox.Text, out var tv) ? tv : 2
+                },
+                PositionSizing = new PositionSizingConfig
+                {
+                    RiskPercentPerTrade = double.TryParse(RiskPercentBox.Text, out var rv) ? rv : 1
+                }
+            }
+        };
+    }
+
+    // Rebuilds the plain-English summary shown at the bottom of the window.
+    private void UpdateDescription()
+    {
+        if (DescriptionText is null) return;
+        try
+        {
+            DescriptionText.Text = StrategyDescriptionService.Describe(BuildStrategyFromUi());
+        }
+        catch
+        {
+            DescriptionText.Text = "—";
+        }
+    }
 
     // Rebuilds the dropdown tokens from the current indicator rows.
     private void RefreshTokens()
@@ -227,6 +292,7 @@ public partial class StrategyBuilderWindow : Window
         var id = MakeId(info.Type, info.DefaultPeriod, _indicators);
         _indicators.Add(new IndicatorRow { Id = id, Type = info.Type, Period = info.DefaultPeriod });
         RefreshTokens();
+        UpdateDescription();
     }
 
     private void RemoveIndicator_Click(object sender, RoutedEventArgs e)
@@ -234,6 +300,7 @@ public partial class StrategyBuilderWindow : Window
         if (sender is not Button btn || btn.Tag is not IndicatorRow row) return;
         _indicators.Remove(row);
         RefreshTokens();
+        UpdateDescription();
     }
 
     private void IndicatorType_Changed(object sender, SelectionChangedEventArgs e)
@@ -245,62 +312,42 @@ public partial class StrategyBuilderWindow : Window
         row.Period = info.DefaultPeriod;
         row.Id = MakeId(row.Type, row.Period, _indicators);
         RefreshTokens();
+        UpdateDescription();
     }
 
-    private void AddEntry_Click(object sender, RoutedEventArgs e) => _entry.Add(new SentenceRow());
+    private void AddEntry_Click(object sender, RoutedEventArgs e)
+    {
+        _entry.Add(new SentenceRow());
+        UpdateDescription();
+    }
+
     private void RemoveEntry_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not SentenceRow row) return;
         _entry.Remove(row);
+        UpdateDescription();
     }
 
-    private void AddExit_Click(object sender, RoutedEventArgs e) => _exit.Add(new SentenceRow());
+    private void AddExit_Click(object sender, RoutedEventArgs e)
+    {
+        _exit.Add(new SentenceRow());
+        UpdateDescription();
+    }
+
     private void RemoveExit_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not SentenceRow row) return;
         _exit.Remove(row);
+        UpdateDescription();
     }
 
     private void SaveStrategy_Click(object sender, RoutedEventArgs e)
     {
-        var strategy = new StrategyDefinition
-        {
-            StrategyId = Guid.NewGuid().ToString("N"),
-            Name = string.IsNullOrWhiteSpace(NameBox.Text) ? "My strategy" : NameBox.Text.Trim(),
-            Symbol = SymbolBox.Text,
-            Timeframe = TimeframeBox.Text,
-            DataSource = SourceCombo.SelectedItem is ComboBoxItem ci ? ci.Content?.ToString() ?? "binance" : "binance",
-            Indicators = _indicators.Select(i => new IndicatorDefinition
-            {
-                Id = i.Id,
-                Type = i.Type,
-                Params = i.Type == "MACD"
-                    ? new() { ["fastPeriod"] = 12, ["slowPeriod"] = 26, ["signalPeriod"] = 9 }
-                    : new() { ["period"] = i.Period }
-            }).ToList(),
-            EntryRules = BuildGroup(EntryModeCombo.SelectedValue as string, EntryMinScoreBox.Text, _entry),
-            ExitRules = BuildGroup(ExitModeCombo.SelectedValue as string, null, _exit),
-            RiskManagement = new RiskManagementConfig
-            {
-                StopLoss = new StopLossConfig
-                {
-                    Method = StopMethodCombo.SelectedItem as string == "ATR multiple" ? "ATR" : "fixedPercent",
-                    Multiplier = double.TryParse(StopValueBox.Text, out var sv) ? sv : 2
-                },
-                Target = new TargetConfig
-                {
-                    Method = TargetMethodCombo.SelectedItem as string == "Fixed percent" ? "fixedPercent" : "riskRewardRatio",
-                    Value = double.TryParse(TargetValueBox.Text, out var tv) ? tv : 2
-                },
-                PositionSizing = new PositionSizingConfig
-                {
-                    RiskPercentPerTrade = double.TryParse(RiskPercentBox.Text, out var rv) ? rv : 1
-                }
-            }
-        };
+        var strategy = BuildStrategyFromUi();
 
         // Edit mode: keep the original StrategyId so the same file is updated.
         if (_editing is not null) strategy.StrategyId = _editing.StrategyId;
+        else strategy.StrategyId = Guid.NewGuid().ToString("N");
 
         // Copy mode: new id (already generated) + "(Copy)" name suffix.
         if (_isCopy && !strategy.Name.EndsWith("(Copy)")) strategy.Name += " (Copy)";

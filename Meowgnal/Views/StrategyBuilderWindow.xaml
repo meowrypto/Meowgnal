@@ -94,179 +94,194 @@
         </Style>
     </Window.Resources>
 
-    <ScrollViewer Padding="20" VerticalScrollBarVisibility="Auto">
-        <StackPanel>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-            <TextBlock Text="Strategy Builder (Advanced)" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
-            <TextBlock Text="Build your plan as plain sentences — no code needed."
-                       Foreground="{StaticResource TextMuted}" FontSize="12" Margin="0,0,0,14"/>
+        <ScrollViewer Grid.Row="0" Padding="20" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
 
-            <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
-                <StackPanel Margin="0,0,10,0">
-                    <TextBlock Text="Strategy name" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                    <TextBox x:Name="NameBox" Text="My strategy" Width="220"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,10,0">
-                    <TextBlock Text="Symbol" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                    <TextBox x:Name="SymbolBox" Text="BTC/USDT" Width="120"/>
-                </StackPanel>
-                <StackPanel Margin="0,0,10,0">
-                    <TextBlock Text="Timeframe" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                    <TextBox x:Name="TimeframeBox" Text="1h" Width="70"/>
-                </StackPanel>
-                <StackPanel>
-                    <TextBlock Text="Data source" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="SourceCombo" Width="120">
-                        <ComboBoxItem Content="binance" IsSelected="True"/>
-                        <ComboBoxItem Content="hyperliquid"/>
-                    </ComboBox>
-                </StackPanel>
-            </StackPanel>
+                <TextBlock Text="Strategy Builder (Advanced)" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+                <TextBlock Text="Build your plan as plain sentences — no code needed."
+                           Foreground="{StaticResource TextMuted}" FontSize="12" Margin="0,0,0,14"/>
 
-            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,14">
-                <StackPanel>
-                    <TextBlock Text="📊 Indicators (pick from the registry)" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
-                    <TextBlock Text="Each indicator gets a short id (like ema9) that your sentences below can refer to."
-                               Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,10"/>
-                    <ItemsControl x:Name="IndicatorsList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
-                                    <StackPanel Orientation="Horizontal">
-                                        <ComboBox Width="280" Margin="0,0,8,0"
-                                                  ItemsSource="{Binding DataContext.RegistryOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Type"
-                                                  SelectedValue="{Binding Type}"
-                                                  SelectionChanged="IndicatorType_Changed"/>
-                                        <TextBlock Text="period" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
-                                        <TextBox Text="{Binding Period}" Width="55" Margin="0,0,8,0"/>
-                                        <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
-                                                Tag="{Binding}" Click="RemoveIndicator_Click"/>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Button Content="+ Add indicator" Style="{StaticResource SecondaryButton}"
-                            HorizontalAlignment="Left" Padding="12,5" Margin="0,4,0,0" Click="AddIndicator_Click"/>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,14">
-                <StackPanel>
-                    <TextBlock Text="🎯 Entry rules — when to BUY" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <ComboBox x:Name="EntryModeCombo" Width="280"
-                                  ItemsSource="{Binding ModeOptions}"
-                                  DisplayMemberPath="Label" SelectedValuePath="Key"/>
-                        <TextBlock Text="min score" Foreground="{StaticResource TextMuted}" Margin="14,5,6,0"/>
-                        <TextBox x:Name="EntryMinScoreBox" Text="3" Width="50"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Strategy name" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="NameBox" Text="My strategy" Width="220"/>
                     </StackPanel>
-                    <ItemsControl x:Name="EntryList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="When" Foreground="{StaticResource TextMuted}" Margin="0,5,8,0"/>
-                                        <ComboBox Width="170" Margin="0,0,6,0"
-                                                  ItemsSource="{Binding DataContext.TokenOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Left}"/>
-                                        <ComboBox Width="140" Margin="0,0,6,0"
-                                                  ItemsSource="{Binding DataContext.OpOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Key" SelectedValue="{Binding Op}"/>
-                                        <ComboBox Width="170" Margin="0,0,6,0"
-                                                  ItemsSource="{Binding DataContext.TokenOptionsWithNumber, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Right}"/>
-                                        <TextBox Text="{Binding Number}" Width="55" Margin="0,0,6,0"
-                                                 ToolTip="Used only when the right side is a number"/>
-                                        <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
-                                        <TextBox Text="{Binding Weight}" Width="45" Margin="0,0,6,0"/>
-                                        <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
-                                                Tag="{Binding}" Click="RemoveEntry_Click"/>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Button Content="+ Add entry sentence" Style="{StaticResource SecondaryButton}"
-                            HorizontalAlignment="Left" Padding="12,5" Margin="0,4,0,0" Click="AddEntry_Click"/>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,14">
-                <StackPanel>
-                    <TextBlock Text="🚪 Exit rules — when to SELL / close" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <ComboBox x:Name="ExitModeCombo" Width="280"
-                                  ItemsSource="{Binding ModeOptions}"
-                                  DisplayMemberPath="Label" SelectedValuePath="Key"/>
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Symbol" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="SymbolBox" Text="BTC/USDT" Width="120"/>
                     </StackPanel>
-                    <ItemsControl x:Name="ExitList">
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="When" Foreground="{StaticResource TextMuted}" Margin="0,5,8,0"/>
-                                        <ComboBox Width="170" Margin="0,0,6,0"
-                                                  ItemsSource="{Binding DataContext.TokenOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Left}"/>
-                                        <ComboBox Width="140" Margin="0,0,6,0"
-                                                  ItemsSource="{Binding DataContext.OpOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Key" SelectedValue="{Binding Op}"/>
-                                        <ComboBox Width="170" Margin="0,0,6,0"
-                                                  ItemsSource="{Binding DataContext.TokenOptionsWithNumber, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Right}"/>
-                                        <TextBox Text="{Binding Number}" Width="55" Margin="0,0,6,0"
-                                                 ToolTip="Used only when the right side is a number"/>
-                                        <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
-                                        <TextBox Text="{Binding Weight}" Width="45" Margin="0,0,6,0"/>
-                                        <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
-                                                Tag="{Binding}" Click="RemoveExit_Click"/>
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                    <Button Content="+ Add exit sentence" Style="{StaticResource SecondaryButton}"
-                            HorizontalAlignment="Left" Padding="12,5" Margin="0,4,0,0" Click="AddExit_Click"/>
-                </StackPanel>
-            </Border>
-
-            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="🛡 Risk plan (stop-loss, target, sizing)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <StackPanel Margin="0,0,10,0">
-                            <TextBlock Text="Stop-loss method" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                            <ComboBox x:Name="StopMethodCombo" Width="160"/>
-                        </StackPanel>
-                        <StackPanel>
-                            <TextBlock Text="Stop value (percent or ATR x)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                            <TextBox x:Name="StopValueBox" Text="2" Width="70"/>
-                        </StackPanel>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                        <StackPanel Margin="0,0,10,0">
-                            <TextBlock Text="Target method" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                            <ComboBox x:Name="TargetMethodCombo" Width="160"/>
-                        </StackPanel>
-                        <StackPanel>
-                            <TextBlock Text="Target value (ratio or percent)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                            <TextBox x:Name="TargetValueBox" Text="2" Width="70"/>
-                        </StackPanel>
+                    <StackPanel Margin="0,0,10,0">
+                        <TextBlock Text="Timeframe" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TimeframeBox" Text="1h" Width="70"/>
                     </StackPanel>
                     <StackPanel>
-                        <TextBlock Text="Risk per trade (percent of balance)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                        <TextBox x:Name="RiskPercentBox" Text="1" Width="70"/>
+                        <TextBlock Text="Data source" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="SourceCombo" Width="120">
+                            <ComboBoxItem Content="binance" IsSelected="True"/>
+                            <ComboBoxItem Content="hyperliquid"/>
+                        </ComboBox>
                     </StackPanel>
                 </StackPanel>
-            </Border>
 
-            <StackPanel Orientation="Horizontal">
-                <Button Content="Save strategy" Style="{StaticResource PrimaryButton}" Padding="16,8" FontSize="13"
-                        Click="SaveStrategy_Click"/>
-                <TextBlock x:Name="StatusText" Foreground="{StaticResource TextMuted}" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="📊 Indicators (pick from the registry)" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                        <TextBlock Text="Each indicator gets a short id (like ema9) that your sentences below can refer to."
+                                   Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,10"/>
+                        <ItemsControl x:Name="IndicatorsList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ComboBox Width="280" Margin="0,0,8,0"
+                                                      ItemsSource="{Binding DataContext.RegistryOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Label" SelectedValuePath="Type"
+                                                      SelectedValue="{Binding Type}"
+                                                      SelectionChanged="IndicatorType_Changed"/>
+                                            <TextBlock Text="period" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
+                                            <TextBox Text="{Binding Period}" Width="55" Margin="0,0,8,0"/>
+                                            <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
+                                                    Tag="{Binding}" Click="RemoveIndicator_Click"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="+ Add indicator" Style="{StaticResource SecondaryButton}"
+                                HorizontalAlignment="Left" Padding="12,5" Margin="0,4,0,0" Click="AddIndicator_Click"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="🎯 Entry rules — when to BUY" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <ComboBox x:Name="EntryModeCombo" Width="280"
+                                      ItemsSource="{Binding ModeOptions}"
+                                      DisplayMemberPath="Label" SelectedValuePath="Key"/>
+                            <TextBlock Text="min score" Foreground="{StaticResource TextMuted}" Margin="14,5,6,0"/>
+                            <TextBox x:Name="EntryMinScoreBox" Text="3" Width="50"/>
+                        </StackPanel>
+                        <ItemsControl x:Name="EntryList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="When" Foreground="{StaticResource TextMuted}" Margin="0,5,8,0"/>
+                                            <ComboBox Width="170" Margin="0,0,6,0"
+                                                      ItemsSource="{Binding DataContext.TokenOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Left}"/>
+                                            <ComboBox Width="140" Margin="0,0,6,0"
+                                                      ItemsSource="{Binding DataContext.OpOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Label" SelectedValuePath="Key" SelectedValue="{Binding Op}"/>
+                                            <ComboBox Width="170" Margin="0,0,6,0"
+                                                      ItemsSource="{Binding DataContext.TokenOptionsWithNumber, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Right}"/>
+                                            <TextBox Text="{Binding Number}" Width="55" Margin="0,0,6,0"
+                                                     ToolTip="Used only when the right side is a number"/>
+                                            <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
+                                            <TextBox Text="{Binding Weight}" Width="45" Margin="0,0,6,0"/>
+                                            <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
+                                                    Tag="{Binding}" Click="RemoveEntry_Click"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="+ Add entry sentence" Style="{StaticResource SecondaryButton}"
+                                HorizontalAlignment="Left" Padding="12,5" Margin="0,4,0,0" Click="AddEntry_Click"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,14">
+                    <StackPanel>
+                        <TextBlock Text="🚪 Exit rules — when to SELL / close" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <ComboBox x:Name="ExitModeCombo" Width="280"
+                                      ItemsSource="{Binding ModeOptions}"
+                                      DisplayMemberPath="Label" SelectedValuePath="Key"/>
+                        </StackPanel>
+                        <ItemsControl x:Name="ExitList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#131722" CornerRadius="4" Padding="10" Margin="0,0,0,8">
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="When" Foreground="{StaticResource TextMuted}" Margin="0,5,8,0"/>
+                                            <ComboBox Width="170" Margin="0,0,6,0"
+                                                      ItemsSource="{Binding DataContext.TokenOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Left}"/>
+                                            <ComboBox Width="140" Margin="0,0,6,0"
+                                                      ItemsSource="{Binding DataContext.OpOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Label" SelectedValuePath="Key" SelectedValue="{Binding Op}"/>
+                                            <ComboBox Width="170" Margin="0,0,6,0"
+                                                      ItemsSource="{Binding DataContext.TokenOptionsWithNumber, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Label" SelectedValuePath="Id" SelectedValue="{Binding Right}"/>
+                                            <TextBox Text="{Binding Number}" Width="55" Margin="0,0,6,0"
+                                                     ToolTip="Used only when the right side is a number"/>
+                                            <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
+                                            <TextBox Text="{Binding Weight}" Width="45" Margin="0,0,6,0"/>
+                                            <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
+                                                    Tag="{Binding}" Click="RemoveExit_Click"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <Button Content="+ Add exit sentence" Style="{StaticResource SecondaryButton}"
+                                HorizontalAlignment="Left" Padding="12,5" Margin="0,4,0,0" Click="AddExit_Click"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="🛡 Risk plan (stop-loss, target, sizing)" FontWeight="Bold" FontSize="14" Margin="0,0,0,10"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Stop-loss method" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="StopMethodCombo" Width="160"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Stop value (percent or ATR x)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="StopValueBox" Text="2" Width="70"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                            <StackPanel Margin="0,0,10,0">
+                                <TextBlock Text="Target method" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                                <ComboBox x:Name="TargetMethodCombo" Width="160"/>
+                            </StackPanel>
+                            <StackPanel>
+                                <TextBlock Text="Target value (ratio or percent)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                                <TextBox x:Name="TargetValueBox" Text="2" Width="70"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Risk per trade (percent of balance)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                            <TextBox x:Name="RiskPercentBox" Text="1" Width="70"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Save strategy" Style="{StaticResource PrimaryButton}" Padding="16,8" FontSize="13"
+                            Click="SaveStrategy_Click"/>
+                    <TextBlock x:Name="StatusText" Foreground="{StaticResource TextMuted}" Margin="16,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
             </StackPanel>
-        </StackPanel>
-    </ScrollViewer>
+        </ScrollViewer>
+
+        <!-- Live plain-English summary, always visible at the bottom -->
+        <Border Grid.Row="1" Background="#1E222D" BorderBrush="#2A2E39" BorderThickness="0,1,0,0" Padding="20,10">
+            <StackPanel>
+                <TextBlock Text="📖 Plain-English summary (updates live)" Foreground="#787B86" FontSize="11" Margin="0,0,0,4"/>
+                <TextBlock x:Name="DescriptionText" Text="—" Foreground="#D1D4DC" FontSize="12" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Border>
+    </Grid>
 </Window>

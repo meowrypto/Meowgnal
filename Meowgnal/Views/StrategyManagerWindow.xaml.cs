@@ -79,6 +79,24 @@ public partial class StrategyManagerWindow : Window
                 FontSize = 11,
                 Margin = new Thickness(0, 2, 0, 0)
             });
+
+            var summaryLines = StrategyDescriptionService.Describe(s)
+                .Split('\n')
+                .Take(2)
+                .Select(l => l.Trim())
+                .Where(l => l.Length > 0)
+                .ToList();
+            var summary = string.Join("  |  ", summaryLines);
+            left.Children.Add(new TextBlock
+            {
+                Text = summary,
+                Foreground = (Brush)FindResource("TextMuted"),
+                FontSize = 10,
+                FontStyle = FontStyles.Italic,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                MaxHeight = 30,
+                Margin = new Thickness(0, 2, 0, 0)
+            });
             Grid.SetColumn(left, 0);
             grid.Children.Add(left);
 
