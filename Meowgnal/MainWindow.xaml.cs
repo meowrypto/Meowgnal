@@ -183,7 +183,6 @@ public partial class MainWindow : Window
                     settings.IsGuest = true;
                     settings.ProfileName = "Guest";
                     settings.ProfileAvatar = "🐱";
-                    LicenseService.EnsureDemoStarted(settings);
                 }
                 SettingsStorageService.Save(settings);
             }
@@ -195,19 +194,12 @@ public partial class MainWindow : Window
         }
         else if (settings.IsGuest)
         {
-            LicenseService.EnsureDemoStarted(settings);
+           
         }
 
-        // 3. License Check
-        var access = LicenseService.CheckAccess(settings);
-        if (!access.Allowed)
-        {
-            MessageBox.Show(access.Message, "Meowgnal — Demo Expired", MessageBoxButton.OK, MessageBoxImage.Warning);
-            Application.Current.Shutdown();
-            return;
-        }
 
-        UpdateProfileMenu(settings, access.Message);
+
+        UpdateProfileMenu(settings);
 
         _ = InitializeChartWebViewAsync();
 
@@ -241,12 +233,11 @@ public partial class MainWindow : Window
         StartSignalMonitor();
     }
 
-    private void UpdateProfileMenu(AppSettings settings, string statusMsg)
+    private void UpdateProfileMenu(AppSettings settings)
     {
         ProfileAvatarText.Text = settings.ProfileAvatar;
         MenuAvatarText.Text = settings.ProfileAvatar;
         MenuNameText.Text = settings.ProfileName;
-        MenuStatusText.Text = statusMsg;
     }
 
     #region Title Bar Controls
@@ -300,11 +291,7 @@ public partial class MainWindow : Window
         OpenSettingsButton_Click(sender, e);
     }
 
-    private void MenuLicense_Click(object sender, RoutedEventArgs e)
-    {
-        ProfilePopup.IsOpen = false;
-        MessageBox.Show("Dedicated License Activation window will be added in the next step.\nFor now, the demo period is automatically tracked.", "Meowgnal", MessageBoxButton.OK, MessageBoxImage.Information);
-    }
+    
 
     private void MenuHelp_Click(object sender, RoutedEventArgs e)
     {
@@ -330,7 +317,6 @@ public partial class MainWindow : Window
         {
             var settings = SettingsStorageService.Load();
             settings.FirstRunCompleted = false;
-            settings.LicenseKey = "";
             SettingsStorageService.Save(settings);
             Process.Start(Application.ResourceAssembly.Location);
             Application.Current.Shutdown();

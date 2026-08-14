@@ -288,7 +288,6 @@
                         </Border>
 
                         <Button Style="{StaticResource TvButtonLeft}" Content="⚙  App settings" Click="MenuSettings_Click"/>
-                        <Button Style="{StaticResource TvButtonLeft}" Content="🔑  Activate license" Click="MenuLicense_Click"/>
                         <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="❓  Help Center" Click="MenuHelp_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="✨  What's new" Click="MenuWhatsNew_Click"/>

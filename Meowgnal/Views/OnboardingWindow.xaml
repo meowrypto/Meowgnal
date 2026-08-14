@@ -105,8 +105,7 @@
         <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16">
             <StackPanel>
                 <TextBlock Text="Continue as guest" FontWeight="Bold" FontSize="13" Margin="0,0,0,4"/>
-                <TextBlock Text="14-day demo, locked to this PC. You can activate a license later from the profile menu."
-                           Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                
                 <Button Content="Continue as guest" Style="{StaticResource SecondaryButton}"
                         Padding="14,7" HorizontalAlignment="Left" Click="Guest_Click"/>
             </StackPanel>

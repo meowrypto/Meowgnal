@@ -84,7 +84,7 @@ public partial class SettingsWindow : Window
         PanelAccuracy.Visibility = NavAccuracy.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelPaperTrading.Visibility = NavPaperTrading.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelNotifications.Visibility = NavNotifications.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-        PanelLicense.Visibility = NavLicense.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+        
     }
 
     private void TestNotificationButton_Click(object sender, RoutedEventArgs e)

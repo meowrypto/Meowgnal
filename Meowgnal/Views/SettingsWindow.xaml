@@ -162,7 +162,7 @@
                 <RadioButton x:Name="NavAccuracy" Content="Accuracy filters" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                 <RadioButton x:Name="NavPaperTrading" Content="Paper trading" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                 <RadioButton x:Name="NavNotifications" Content="Notifications" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
-                <RadioButton x:Name="NavLicense" Content="License" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
+                
             </StackPanel>
         </Border>
 
@@ -326,9 +326,7 @@
                                Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,15,0,0"/>
                 </StackPanel>
 
-                <StackPanel x:Name="PanelLicense" Visibility="Collapsed">
-                    <TextBlock Text="License management is coming in a future update." Foreground="{StaticResource TextMuted}"/>
-                </StackPanel>
+                
             </Grid>
         </ScrollViewer>
     </Grid>

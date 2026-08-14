@@ -68,6 +68,5 @@ public sealed class AppSettings
     public string ProfileAvatar { get; set; } = "🐱";
     public bool IsGuest { get; set; } = true;
     public DateTime DemoStartDate { get; set; } = DateTime.MinValue;
-    public int DemoTrialDays { get; set; } = 14;
-    public string LicenseKey { get; set; } = "";
+    
 }

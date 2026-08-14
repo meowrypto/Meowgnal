@@ -1,0 +1,17 @@
+﻿Copyright (c) 2026 Farzad (meowrypto)
+
+All rights reserved.
+
+You are free to view, study, and learn from this source code.
+
+You may NOT copy, redistribute, sublicense, sell, rebrand, or use this
+software or any part of its source code — in whole or in part — in your
+own project or product, whether commercial or non-commercial, without
+prior written permission from the copyright holder.
+
+Contributions via Pull Request are welcome and encouraged. By submitting
+a contribution, you agree that it becomes part of this project under
+these same terms, and you grant the copyright holder full rights to use,
+modify, and distribute your contribution as part of the project.
+
+This is source-available software, not open-source in the OSI sense.
