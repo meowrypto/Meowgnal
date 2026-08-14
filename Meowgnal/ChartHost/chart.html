@@ -63,12 +63,28 @@
             font-size: 12px;
             outline: none;
         }
+
+        #hoverTooltip {
+            position: fixed;
+            display: none;
+            z-index: 100;
+            background: #1E222D;
+            border: 1px solid #2A2E39;
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: #D1D4DC;
+            font-size: 11px;
+            font-family: Trebuchet MS, sans-serif;
+            pointer-events: none;
+            max-width: 250px;
+        }
     </style>
     <script src="lightweight-charts.standalone.production.js"></script>
 </head>
 <body>
     <div id="chart"></div>
     <div id="ctxMenu"></div>
+    <div id="hoverTooltip"></div>
     <input id="textInput" />
     <script>
         const COLORS = {
@@ -78,6 +94,8 @@
             volumeUp: 'rgba(8, 153, 129, 0.35)', volumeDown: 'rgba(242, 54, 69, 0.35)'
         };
         const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+        const FIB_EXTENSION_LEVELS = [1.272, 1.618, 2.618];
+        const ALL_FIB_LEVELS = FIB_LEVELS.concat(FIB_EXTENSION_LEVELS);
 
         const chart = LightweightCharts.createChart(document.getElementById('chart'), {
             layout: {
@@ -129,6 +147,8 @@
         drawCanvas.style.zIndex = '3';
         document.getElementById('chart').appendChild(drawCanvas);
         const ctx = drawCanvas.getContext('2d');
+
+        const hoverTooltip = document.getElementById('hoverTooltip');
 
         function resizeCanvas() {
             const el = document.getElementById('chart');
@@ -258,6 +278,22 @@
             return ans;
         }
 
+        // Phase 32 — Snap price to nearest OHLC of the candle at given time
+        function snapPriceToCandle(price, time) {
+            const bar = rawData.find(c => c.time === time);
+            if (!bar) return price;
+            const prices = [bar.open, bar.high, bar.low, bar.close];
+            let closest = prices[0];
+            let minDist = Math.abs(price - prices[0]);
+            for (let i = 1; i < prices.length; i++) {
+                const dist = Math.abs(price - prices[i]);
+                if (dist < minDist) { minDist = dist; closest = prices[i]; }
+            }
+            const threshold = Math.abs(price) * 0.005;
+            if (minDist <= threshold) return closest;
+            return price;
+        }
+
         function applyPositions() {
             if (activeSeries !== null) for (const l of positionLines) { try { activeSeries.removePriceLine(l); } catch (e) { } }
             positionLines = [];
@@ -361,9 +397,14 @@
                     g.lines.push([x1, y1, x2, y2]);
                     const lo = Math.min(x1, x2) - 60, hi = Math.max(x1, x2) + 60;
                     const diff = pts[1].price - pts[0].price;
-                    for (const lvl of FIB_LEVELS) {
+                    for (const lvl of ALL_FIB_LEVELS) {
                         const yy = py(pts[0].price + diff * lvl);
-                        if (yy !== null) { g.dashed.push([lo, yy, hi, yy]); g.labels.push([(lvl * 100).toFixed(1) + '%', hi + 5, yy + 4]); }
+                        if (yy !== null) {
+                            const isExt = lvl > 1;
+                            if (isExt) g.dashed.push([lo, yy, hi, yy]);
+                            else g.dashed.push([lo, yy, hi, yy]);
+                            g.labels.push([(lvl * 100).toFixed(1) + '%', hi + 5, yy + 4]);
+                        }
                     }
                     break;
                 }
@@ -407,7 +448,7 @@
                     const lo = Math.min(x1, x2);
                     const diff = pts[1].price - pts[0].price;
                     g.lines.push([x1, y1, x2, y2]);
-                    for (const lvl of FIB_LEVELS) {
+                    for (const lvl of ALL_FIB_LEVELS) {
                         const yy = py(pts[0].price + diff * lvl);
                         if (yy !== null) { g.dashed.push([lo, yy, W, yy]); g.labels.push([(lvl * 100).toFixed(1) + '%', W - 46, yy - 4]); }
                     }
@@ -442,7 +483,7 @@
                     g.lines.push(slopeCoords(x1, y1, x2, y2, 'ray'));
                     g.lines.push([x1, y1, W, y1]);
                     const diff = pts[1].price - pts[0].price;
-                    for (const lvl of FIB_LEVELS) {
+                    for (const lvl of ALL_FIB_LEVELS) {
                         const yy = py(pts[0].price + diff * lvl);
                         if (yy !== null) g.dashed.push([Math.min(x1, x2), yy, Math.max(x1, x2), yy]);
                     }
@@ -483,7 +524,8 @@
                 }
                 case 'gannfan': {
                     if (m === null) break;
-                    for (const r of [0.25, 0.5, 1, 2, 4]) {
+                    const ratios = d.gannRatios || [0.25, 0.5, 1, 2, 4];
+                    for (const r of ratios) {
                         const yAt = x => y1 + m * r * (x - x1);
                         g.lines.push([x1, y1, W, yAt(W)]);
                     }
@@ -576,15 +618,15 @@
                     break;
                 }
                 case 'text':
-                    g.texts.push({ x: x1, y: y1, s: d.label || '', size: 13 });
+                    g.texts.push({ x: x1, y: y1, s: d.label || '', size: d.fontSize || 13, family: d.fontFamily || 'Trebuchet MS' });
                     g.anchors.push([x1, y1, 24]);
                     break;
                 case 'note':
-                    g.boxes.push({ x: x1, y: y1, s: d.label || '' });
+                    g.boxes.push({ x: x1, y: y1, s: d.label || '', size: d.fontSize || 11, family: d.fontFamily || 'Trebuchet MS' });
                     g.anchors.push([x1, y1, 28]);
                     break;
                 case 'pricelabel':
-                    g.boxes.push({ x: W - 4, y: y1, s: fmtPrice(pts[0].price), right: true });
+                    g.boxes.push({ x: W - 4, y: y1, s: fmtPrice(pts[0].price), right: true, size: 11, family: 'Trebuchet MS' });
                     g.dashed.push([x1, y1, W, y1]);
                     g.anchors.push([W - 40, y1, 28]);
                     break;
@@ -597,7 +639,7 @@
                     g.anchors.push([x1, y1, 16]);
                     break;
                 case 'sticker':
-                    g.texts.push({ x: x1, y: y1, s: d.label || '🐱', size: 22 });
+                    g.texts.push({ x: x1, y: y1, s: d.label || '🐱', size: d.fontSize || 22, family: d.fontFamily || 'Trebuchet MS' });
                     g.anchors.push([x1, y1, 16]);
                     break;
             }
@@ -615,7 +657,6 @@
                 const x = px(pts[0].time);
                 if (x !== null) handles.push({ index: 0, x: x, y: drawCanvas.height / 2, priceOnly: false, timeOnly: true });
             } else if (d.kind === 'rectangle') {
-                // Phase 31 — Rectangle: 4 corner handles for resizing
                 if (pts.length >= 2) {
                     const x1 = px(pts[0].time), y1 = py(pts[0].price);
                     const x2 = px(pts[1].time), y2 = py(pts[1].price);
@@ -627,7 +668,6 @@
                     }
                 }
             } else if (d.kind === 'ellipse') {
-                // Phase 31 — Ellipse: 4 edge handles for resizing
                 if (pts.length >= 2) {
                     const x1 = px(pts[0].time), y1 = py(pts[0].price);
                     const x2 = px(pts[1].time), y2 = py(pts[1].price);
@@ -644,7 +684,6 @@
                     }
                 }
             } else {
-                // Generic: one handle per point (works for all other tools)
                 for (let i = 0; i < pts.length; i++) {
                     const x = px(pts[i].time), y = py(pts[i].price);
                     if (x !== null && y !== null) handles.push({ index: i, x: x, y: y, priceOnly: false, timeOnly: false });
@@ -678,6 +717,31 @@
             return false;
         }
 
+        // Phase 33 — Get kind label for tooltip
+        function getKindLabel(kind) {
+            const labels = {
+                'horizontalline': 'Horizontal Line', 'trendline': 'Trend Line', 'fibonacci': 'Fibonacci',
+                'ray': 'Ray', 'extendedline': 'Extended Line', 'horizontalray': 'Horizontal Ray',
+                'verticalline': 'Vertical Line', 'crossline': 'Cross Line', 'infoline': 'Info Line',
+                'trendangle': 'Trend Angle', 'parallelchannel': 'Parallel Channel',
+                'regressiontrend': 'Regression Trend', 'flattopbottom': 'Flat Top/Bottom',
+                'disjointchannel': 'Disjoint Channel', 'pitchfork': 'Pitchfork',
+                'schiffpitchfork': 'Schiff Pitchfork', 'modifiedschiffpitchfork': 'Modified Schiff',
+                'insidepitchfork': 'Inside Pitchfork', 'fibextension': 'Fib Extension',
+                'fibtimezone': 'Fib Time Zone', 'fibcircles': 'Fib Circles', 'fibspiral': 'Fib Spiral',
+                'fibarcs': 'Fib Arcs', 'fibwedge': 'Fib Wedge', 'fibspeedfan': 'Fib Speed Fan',
+                'pitchfan': 'Pitchfan', 'gannbox': 'Gann Box', 'gannsquare': 'Gann Square',
+                'gannfan': 'Gann Fan', 'rectangle': 'Rectangle', 'rotatedrectangle': 'Rotated Rectangle',
+                'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle',
+                'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
+                'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down',
+                'brush': 'Brush', 'highlighter': 'Highlighter', 'text': 'Text',
+                'note': 'Note', 'pricelabel': 'Price Label', 'pin': 'Pin',
+                'flag': 'Flag', 'sticker': 'Sticker'
+            };
+            return labels[kind] || kind;
+        }
+
         function renderCustomDrawings() {
             if (!ctx || !activeSeries) return;
             ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
@@ -690,13 +754,20 @@
                 }
             }
 
-            for (const d of customDrawings) {
+            // Phase 33 — Sort drawings by zIndex for layering
+            const sortedDrawings = [...customDrawings].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+
+            for (const d of sortedDrawings) {
                 const g = geometry(d);
                 ctx.strokeStyle = d.color; ctx.fillStyle = d.color;
                 ctx.lineWidth = d.kind === 'highlighter' ? 10 : (d.lineWidth || 2);
                 const styleDash = d.lineStyle === 'dashed' ? [6, 6] : d.lineStyle === 'dotted' ? [2, 4] : [];
                 ctx.globalAlpha = d.kind === 'highlighter' ? 0.35 : 1;
-                ctx.font = '11px Trebuchet MS';
+
+                // Phase 33 — Smooth brush/highlighter with round caps
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+
                 ctx.setLineDash(styleDash);
                 for (const L of g.lines) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
                 ctx.setLineDash([5, 5]);
@@ -704,15 +775,26 @@
                 ctx.setLineDash([]);
                 for (const c of g.circles) { ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2); ctx.stroke(); }
                 for (const a of g.arcs) { ctx.beginPath(); ctx.arc(a[0], a[1], a[2], a[3], a[4]); ctx.stroke(); }
+
+                ctx.font = '11px Trebuchet MS';
                 for (const t of g.labels) ctx.fillText(t[0], t[1], t[2]);
-                for (const t of g.texts) { ctx.font = t.size + 'px Trebuchet MS'; ctx.fillText(t.s, t.x, t.y); }
+
+                // Phase 33 — Render texts with custom font size and family
+                for (const t of g.texts) {
+                    ctx.font = (t.size || 13) + 'px ' + (t.family || 'Trebuchet MS');
+                    ctx.fillText(t.s, t.x, t.y);
+                }
+
                 for (const b of g.boxes) {
-                    ctx.font = '11px Trebuchet MS';
+                    const fontSize = b.size || 11;
+                    const fontFamily = b.family || 'Trebuchet MS';
+                    ctx.font = fontSize + 'px ' + fontFamily;
                     const w = ctx.measureText(b.s).width + 10;
                     const bx = b.right ? b.x - w : b.x;
                     ctx.strokeRect(bx, b.y - 12, w, 18);
                     ctx.fillText(b.s, bx + 5, b.y + 1);
                 }
+
                 for (const gl of g.glyphs) {
                     if (gl.t === 'arrowhead') {
                         ctx.beginPath();
@@ -736,8 +818,9 @@
                 }
 
                 ctx.globalAlpha = 1; ctx.lineWidth = 2;
+                ctx.lineCap = 'butt';
+                ctx.lineJoin = 'miter';
 
-                // Phase 30 — Show bell icon on drawings with active alerts
                 if (d.alert) {
                     const pts = d.points || [];
                     if (pts.length > 0) {
@@ -818,6 +901,7 @@
                     customDrawings = msg.drawings || [];
                     for (const d of customDrawings) {
                         if (!d.groupId) d.groupId = null;
+                        if (d.zIndex === undefined) d.zIndex = 0;
                     }
                     for (const id of Array.from(selectedDrawingIds)) {
                         if (!customDrawings.some(d => d.id === id)) {
@@ -864,6 +948,7 @@
 
         const ctxMenu = document.getElementById('ctxMenu');
         let ctxPrice = null;
+        let ctxDrawingId = null;
 
         function menuItem(label, act) {
             const d = document.createElement('div');
@@ -874,8 +959,9 @@
         }
         function menuSep() { const d = document.createElement('div'); d.className = 'ctx-sep'; return d; }
 
-        function openCtxMenu(x, y, price) {
+        function openCtxMenu(x, y, price, drawingId) {
             ctxPrice = price;
+            ctxDrawingId = drawingId;
             ctxMenu.innerHTML = '';
             ctxMenu.style.background = COLORS.background;
             ctxMenu.style.borderColor = COLORS.border;
@@ -886,6 +972,17 @@
             if (price != null) {
                 ctxMenu.appendChild(menuItem('Copy price ' + fmtPrice(price), function () { post({ type: 'copyPrice', price: price }); }));
                 ctxMenu.appendChild(menuItem('Add alert at ' + fmtPrice(price), function () { post({ type: 'addAlert', price: price }); }));
+            }
+            if (drawingId) {
+                ctxMenu.appendChild(menuSep());
+                ctxMenu.appendChild(menuItem('⬆ Bring to Front', function () {
+                    const d = customDrawings.find(dd => dd.id === drawingId);
+                    if (d) { d.zIndex = (d.zIndex || 0) + 1; post({ type: 'updateDrawingZ', id: d.id, zIndex: d.zIndex }); renderCustomDrawings(); }
+                }));
+                ctxMenu.appendChild(menuItem('⬇ Send to Back', function () {
+                    const d = customDrawings.find(dd => dd.id === drawingId);
+                    if (d) { d.zIndex = (d.zIndex || 0) - 1; post({ type: 'updateDrawingZ', id: d.id, zIndex: d.zIndex }); renderCustomDrawings(); }
+                }));
             }
             ctxMenu.appendChild(menuSep());
             ctxMenu.appendChild(menuItem('Chart settings…', function () { post({ type: 'openChartSettings' }); }));
@@ -899,11 +996,23 @@
             e.preventDefault();
             const rect = e.currentTarget.getBoundingClientRect();
             let price = null;
+            let drawingId = null;
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+
             if (activeSeries) {
-                const p = activeSeries.coordinateToPrice(e.clientY - rect.top);
+                const p = activeSeries.coordinateToPrice(my);
                 if (p !== null && p !== undefined && !isNaN(p)) price = p;
             }
-            openCtxMenu(e.clientX, e.clientY, price);
+
+            for (let i = customDrawings.length - 1; i >= 0; i--) {
+                if (!customDrawings[i].locked && hitTest(customDrawings[i], mx, my)) {
+                    drawingId = customDrawings[i].id;
+                    break;
+                }
+            }
+
+            openCtxMenu(e.clientX, e.clientY, price, drawingId);
         });
         document.addEventListener('mousedown', function (e) {
             if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
@@ -977,7 +1086,6 @@
             }
         });
 
-        // Phase 29 — Body drag: allows moving the entire drawing by dragging its body
         chartEl.addEventListener('mousedown', function (e) {
             if (drawingMode) return;
             if (e.button !== 0) return;
@@ -985,7 +1093,6 @@
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
 
-            // Find the top-most drawing under the click
             let clickedDrawing = null;
             for (let i = customDrawings.length - 1; i >= 0; i--) {
                 const d = customDrawings[i];
@@ -997,7 +1104,6 @@
 
             if (!clickedDrawing) return;
 
-            // If clicked drawing is not selected, select it alone (unless Ctrl is pressed)
             if (!selectedDrawingIds.has(clickedDrawing.id)) {
                 if (!isCtrlPressed) {
                     selectedDrawingIds.clear();
@@ -1006,11 +1112,9 @@
                 renderCustomDrawings();
             }
 
-            // Check if clicking on a handle first
             const handle = hitTestHandle(clickedDrawing, x, y);
 
             if (handle) {
-                // Handle drag (existing logic - move single point)
                 dragState = {
                     drawingId: clickedDrawing.id,
                     handleIndex: handle.index,
@@ -1023,7 +1127,6 @@
                     originalPoints: clickedDrawing.groupId ? customDrawings.filter(d => d.groupId === clickedDrawing.groupId && d.id !== clickedDrawing.id).map(d => ({ id: d.id, points: JSON.parse(JSON.stringify(d.points)) })) : []
                 };
             } else {
-                // Body drag — move all points of the drawing together
                 const startPrice = activeSeries ? activeSeries.coordinateToPrice(y) : null;
                 const startTime = chart.timeScale().coordinateToTime(x);
                 if (startPrice === null || startPrice === undefined || startTime === null || startTime === undefined) return;
@@ -1049,7 +1152,37 @@
         });
 
         window.addEventListener('mousemove', function (e) {
-            if (!dragState) return;
+            if (!dragState) {
+                // Phase 34 — Hover tooltip
+                const rect = chartEl.getBoundingClientRect();
+                const mx = e.clientX - rect.left;
+                const my = e.clientY - rect.top;
+                let hoveredDrawing = null;
+                if (!drawingMode && mx >= 0 && my >= 0 && mx <= rect.width && my <= rect.height) {
+                    for (let i = customDrawings.length - 1; i >= 0; i--) {
+                        if (hitTest(customDrawings[i], mx, my)) {
+                            hoveredDrawing = customDrawings[i];
+                            break;
+                        }
+                    }
+                }
+                if (hoveredDrawing) {
+                    const kindLabel = getKindLabel(hoveredDrawing.kind);
+                    const priceInfo = hoveredDrawing.points && hoveredDrawing.points.length > 0
+                        ? ' @ ' + fmtPrice(hoveredDrawing.points[0].price)
+                        : '';
+                    const labelInfo = hoveredDrawing.label ? ' — ' + hoveredDrawing.label : '';
+                    const groupInfo = hoveredDrawing.groupId ? ' [Grouped]' : '';
+                    hoverTooltip.textContent = kindLabel + priceInfo + labelInfo + groupInfo;
+                    hoverTooltip.style.display = 'block';
+                    hoverTooltip.style.left = (e.clientX + 12) + 'px';
+                    hoverTooltip.style.top = (e.clientY + 12) + 'px';
+                } else {
+                    hoverTooltip.style.display = 'none';
+                }
+                return;
+            }
+
             const rect = chartEl.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -1068,7 +1201,6 @@
             const pts = d.points || [];
 
             if (dragState.resizeInfo) {
-                // Phase 31 — Resize drag: update specific points based on resizeInfo
                 if (dragState.resizeInfo.timePoint !== undefined && pts[dragState.resizeInfo.timePoint]) {
                     if (newTime !== null && newTime !== undefined) pts[dragState.resizeInfo.timePoint].time = Math.round(newTime);
                 }
@@ -1076,7 +1208,6 @@
                     pts[dragState.resizeInfo.pricePoint].price = newPrice;
                 }
             } else if (dragState.isBodyDrag) {
-                // Move all points by the delta since last move
                 const deltaPrice = newPrice - dragState.lastPrice;
                 const deltaTime = Math.round(newTime) - dragState.lastTime;
 
@@ -1089,7 +1220,6 @@
                     dragState.lastTime = Math.round(newTime);
                 }
 
-                // Group drag: move all group members together
                 if (dragState.groupId && dragState.originalPoints && dragState.originalPoints.length > 0) {
                     for (const member of dragState.originalPoints) {
                         const memberDrawing = customDrawings.find(dd => dd.id === member.id);
@@ -1102,7 +1232,6 @@
                     }
                 }
             } else {
-                // Handle drag — move only the specific point
                 if (pts[dragState.handleIndex]) {
                     if (!dragState.timeOnly) pts[dragState.handleIndex].price = newPrice;
                     if (!dragState.priceOnly && newTime !== null && newTime !== undefined) {
@@ -1118,7 +1247,6 @@
             const d = customDrawings.find(d => d.id === dragState.drawingId);
             if (d && dragState.committed) {
                 if (dragState.groupId) {
-                    // Send all group members' updates to C#
                     const groupDrawings = customDrawings.filter(dd => dd.groupId === dragState.groupId);
                     post({
                         type: 'updateDrawings',
@@ -1198,7 +1326,11 @@
             const price = activeSeries.coordinateToPrice(y);
             if (price === null || price === undefined) return;
 
-            pendingPoints.push({ time: param.time, price: price });
+            // Phase 32 — Snap to nearest candle
+            const snappedTime = snapToBarTime(param.time);
+            const snappedPrice = snapPriceToCandle(price, snappedTime);
+
+            pendingPoints.push({ time: snappedTime, price: snappedPrice });
 
             const need = NEED[drawingMode] || 2;
             const isMulti = drawingMode === 'polyline' || drawingMode === 'brush' || drawingMode === 'highlighter';
