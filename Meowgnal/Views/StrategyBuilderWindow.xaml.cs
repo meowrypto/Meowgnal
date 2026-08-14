@@ -40,9 +40,17 @@ public partial class StrategyBuilderWindow : Window
 {
     public const string NumberToken = "__num__";
 
+    /// <summary>How the builder was opened from the Strategy Manager.</summary>
+    public enum BuilderOpenMode { Customize, Edit, Copy }
+
     private readonly ObservableCollection<IndicatorRow> _indicators = new();
     private readonly ObservableCollection<SentenceRow> _entry = new();
     private readonly ObservableCollection<SentenceRow> _exit = new();
+
+    // When set, Save keeps this strategy's StrategyId (edit mode).
+    private StrategyDefinition? _editing;
+    // When true, Save creates a new id and appends "(Copy)" to the name.
+    private bool _isCopy;
 
     public ObservableCollection<IndicatorInfo> RegistryOptions { get; } = new();
     public ObservableCollection<OpOption> OpOptions { get; } = new();
@@ -100,12 +108,19 @@ public partial class StrategyBuilderWindow : Window
         NameBox.Text = prefill.Name;
         SymbolBox.Text = prefill.Symbol;
         TimeframeBox.Text = prefill.Timeframe;
-        SourceCombo.SelectedItem = prefill.DataSource == "hyperliquid" ? "hyperliquid" : "binance";
+
+        var source = prefill.DataSource == "hyperliquid" ? "hyperliquid" : "binance";
+        foreach (var item in SourceCombo.Items)
+        {
+            if (item is ComboBoxItem ci && ci.Content?.ToString() == source)
+                SourceCombo.SelectedItem = ci;
+        }
 
         _indicators.Clear();
         foreach (var ind in prefill.Indicators)
         {
-            var period = ind.Params.TryGetValue("period", out var p) ? (int)p : (ind.Type == "MACD" ? 12 : 14);
+            var fallback = ind.Type == "MACD" ? 12 : 14;
+            var period = ind.Params.TryGetValue("period", out var p) ? ToInt(p, fallback) : fallback;
             _indicators.Add(new IndicatorRow { Id = ind.Id, Type = ind.Type, Period = period });
         }
 
@@ -130,6 +145,23 @@ public partial class StrategyBuilderWindow : Window
         RefreshTokens();
     }
 
+    /// <summary>Opens the builder from the Strategy Manager.</summary>
+    /// <param name="prefill">Strategy whose values fill the form.</param>
+    /// <param name="mode">Edit keeps the same StrategyId; Copy creates a new id with a "(Copy)" name.</param>
+    public StrategyBuilderWindow(StrategyDefinition prefill, BuilderOpenMode mode) : this(prefill)
+    {
+        if (mode == BuilderOpenMode.Edit)
+        {
+            _editing = prefill;
+            Title = "Editing: " + prefill.Name;
+        }
+        else if (mode == BuilderOpenMode.Copy)
+        {
+            _isCopy = true;
+            Title = "Copying: " + prefill.Name;
+        }
+    }
+
     private static SentenceRow ToSentenceRow(LeafCondition c) => new()
     {
         Left = c.Left,
@@ -137,6 +169,17 @@ public partial class StrategyBuilderWindow : Window
         Right = c.Right is double d ? NumberToken : (c.Right?.ToString() ?? "price"),
         Number = c.Right is double dn ? dn.ToString() : "30",
         Weight = c.Weight
+    };
+
+    // Safely converts a parameter value (int/long/double/string/JsonElement) to int.
+    private static int ToInt(object? value, int fallback) => value switch
+    {
+        int i => i,
+        long l => (int)l,
+        double d => (int)d,
+        string s when int.TryParse(s, out var n) => n,
+        System.Text.Json.JsonElement je when je.ValueKind == System.Text.Json.JsonValueKind.Number => je.GetInt32(),
+        _ => fallback
     };
 
     // Rebuilds the dropdown tokens from the current indicator rows.
@@ -256,18 +299,24 @@ public partial class StrategyBuilderWindow : Window
             }
         };
 
-        // Unique name: append (2), (3), ... if needed
+        // Edit mode: keep the original StrategyId so the same file is updated.
+        if (_editing is not null) strategy.StrategyId = _editing.StrategyId;
+
+        // Copy mode: new id (already generated) + "(Copy)" name suffix.
+        if (_isCopy && !strategy.Name.EndsWith("(Copy)")) strategy.Name += " (Copy)";
+
+        // Unique name: append (2), (3), ... if needed (excluding the strategy being edited)
         var existing = StrategyStorageService.LoadAll();
         var baseName = strategy.Name;
         var counter = 1;
-        while (existing.Any(s => string.Equals(s.Name, strategy.Name, StringComparison.OrdinalIgnoreCase)))
+        while (existing.Any(s => s.StrategyId != strategy.StrategyId && string.Equals(s.Name, strategy.Name, StringComparison.OrdinalIgnoreCase)))
         {
             counter++;
             strategy.Name = $"{baseName} ({counter})";
         }
 
         StrategyStorageService.Save(strategy);
-        StatusText.Text = $"Saved as '{strategy.Name}' (encrypted)";
+        StatusText.Text = _editing is not null ? $"Updated '{strategy.Name}'" : $"Saved as '{strategy.Name}'";
     }
 
     private static RuleGroup BuildGroup(string? mode, string? minScoreText, ObservableCollection<SentenceRow> rows)

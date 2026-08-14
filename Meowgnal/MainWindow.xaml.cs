@@ -2074,7 +2074,7 @@ public partial class MainWindow : Window
 
     private async void OpenBuilderButton_Click(object sender, RoutedEventArgs e)
     {
-        var win = new TemplateStoreWindow(_chartSymbol) { Owner = this };
+        var win = new StrategyManagerWindow(_chartSymbol) { Owner = this };
         win.ShowDialog();
         await LoadDashboardAsync();
     }
