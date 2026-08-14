@@ -15,8 +15,6 @@ public static class SupportResistanceDetector
     private const int PivotRight = 5;
     private const int MinTouches = 3;
     private const decimal TolerancePercent = 0.25m;
-    private const int MaxLinesAbove = 3;
-    private const int MaxLinesBelow = 3;
     private const int AtrPeriod = 14;
 
     private class LevelCluster
@@ -26,19 +24,22 @@ public static class SupportResistanceDetector
         public bool IsResistance { get; set; }
     }
 
-    public static List<Drawing> Detect(string symbol, List<Bar> bars)
+    /// <summary>
+    /// Returns the list of detected S/R level prices for a given bar series.
+    /// Each entry is tagged as support (Price &lt; currentPrice) or resistance (Price &gt; currentPrice).
+    /// Used by the RuleEngine for the nearSupport / nearResistance operators.
+    /// </summary>
+    public static List<(decimal Price, bool IsResistance)> FindLevels(IReadOnlyList<Bar> bars)
     {
-        var result = new List<Drawing>();
-        if (bars == null || bars.Count < LookbackBars) return result;
+        var result = new List<(decimal, bool)>();
+        if (bars is null || bars.Count < LookbackBars) return result;
 
         var subset = bars.TakeLast(LookbackBars).ToList();
         var currentPrice = subset[^1].Close;
 
-        // Dynamic tolerance based on ATR(14), computed locally with Wilder's smoothing
         var lastAtr = ComputeAtr(subset, AtrPeriod);
         var dynamicTolerance = lastAtr / 2m;
 
-        // Find pivot highs and lows
         var pivots = new List<(int Index, decimal Price, bool IsHigh)>();
 
         for (int i = PivotLeft; i < subset.Count - PivotRight; i++)
@@ -61,7 +62,6 @@ public static class SupportResistanceDetector
             if (isLow) pivots.Add((i, subset[i].Low, false));
         }
 
-        // Cluster pivots into levels
         var levels = new List<LevelCluster>();
 
         foreach (var p in pivots)
@@ -81,39 +81,49 @@ public static class SupportResistanceDetector
             }
         }
 
-        // Filter by min touches
         levels = levels.Where(l => l.Touches >= MinTouches).ToList();
 
-        // Separate above and below, sort by touches, then by distance to current price
         var above = levels.Where(l => l.Price > currentPrice)
                           .OrderByDescending(l => l.Touches)
                           .ThenBy(l => l.Price - currentPrice)
-                          .Take(MaxLinesAbove)
+                          .Take(3)
                           .ToList();
 
         var below = levels.Where(l => l.Price < currentPrice)
                           .OrderByDescending(l => l.Touches)
                           .ThenByDescending(l => currentPrice - l.Price)
-                          .Take(MaxLinesBelow)
+                          .Take(3)
                           .ToList();
 
-        var selected = above.Concat(below);
+        foreach (var level in above.Concat(below))
+            result.Add((level.Price, level.IsResistance));
+
+        return result;
+    }
+
+    public static List<Drawing> Detect(string symbol, List<Bar> bars)
+    {
+        var result = new List<Drawing>();
+        if (bars == null || bars.Count < LookbackBars) return result;
+
+        var subset = bars.TakeLast(LookbackBars).ToList();
+        var levels = FindLevels(bars);
         var cleanSymbol = symbol.Replace("/", "");
 
-        foreach (var level in selected)
+        foreach (var (price, isResistance) in levels)
         {
             result.Add(new Drawing
             {
                 Symbol = cleanSymbol,
                 Kind = DrawingKind.HorizontalLine,
-                Color = level.IsResistance ? "#F23645" : "#089981",
-                Label = level.IsResistance ? "Resistance" : "Support",
+                Color = isResistance ? "#F23645" : "#089981",
+                Label = isResistance ? "Resistance" : "Support",
                 AlertOnCross = false,
                 IsAutoDetected = true,
                 Points = new List<DrawingPoint>
                 {
-                    new DrawingPoint { TimeUnix = new DateTimeOffset(subset[0].Timestamp).ToUnixTimeSeconds(), Price = level.Price },
-                    new DrawingPoint { TimeUnix = new DateTimeOffset(subset[^1].Timestamp).ToUnixTimeSeconds(), Price = level.Price }
+                    new DrawingPoint { TimeUnix = new DateTimeOffset(subset[0].Timestamp).ToUnixTimeSeconds(), Price = price },
+                    new DrawingPoint { TimeUnix = new DateTimeOffset(subset[^1].Timestamp).ToUnixTimeSeconds(), Price = price }
                 }
             });
         }

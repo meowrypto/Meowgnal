@@ -32,6 +32,11 @@ public sealed class LeafCondition : ConditionNode
     // Used only when the parent group's Mode is "threshold".
     [JsonPropertyName("weight")]
     public double Weight { get; set; } = 1;
+
+    // Percent distance threshold for nearSupport / nearResistance.
+    // E.g. 0.5 means the close must be within 0.5% of the nearest support/resistance level.
+    [JsonPropertyName("tolerancePercent")]
+    public double TolerancePercent { get; set; } = 0.5;
 }
 
 // A sub-group of conditions (reserved for Phase 2 nested AND/OR logic).

@@ -14,4 +14,5 @@ public sealed class ConditionRow
     public string Op { get; set; } = "crossesAbove";
     public string Right { get; set; } = "";
     public double Weight { get; set; } = 1;
+    public double Tolerance { get; set; } = 0.5;
 }
