@@ -3,11 +3,18 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="What's New — Meowgnal"
         Height="540" Width="470"
+        WindowStyle="None"
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         FontFamily="Trebuchet MS"
         FontSize="12"
-        Background="{DynamicResource BackgroundBrush}">
+        Background="{StaticResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="0"
+                      GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
@@ -17,42 +24,112 @@
         <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
         <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
         <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
+
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <Border Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderLine}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,12">
-            <TextBlock Text="✨ What's New"
-                       FontSize="18" FontWeight="Bold"
-                       Foreground="{DynamicResource TextPrimary}"/>
-            <TextBlock Text="All improvements added in the latest updates."
-                       Foreground="{DynamicResource TextMuted}"
-                       Margin="0,4,0,0"/>
-        </StackPanel>
+            <!-- Custom title bar (close button only) -->
+            <Border Grid.Row="0" Background="{DynamicResource BgPanel}"
+                    BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="CloseButton_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TitleText" Text="✨ What's New" Foreground="{DynamicResource TextPrimary}"
+                               FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                </DockPanel>
+            </Border>
 
-        <Border Grid.Row="1"
-                Background="{DynamicResource BgPanel}"
-                BorderBrush="{DynamicResource BorderLine}"
-                BorderThickness="1" CornerRadius="6">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <StackPanel x:Name="ContentPanel" Margin="14"/>
-            </ScrollViewer>
-        </Border>
+            <!-- Main content -->
+            <Grid Grid.Row="1" Margin="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-        <Button Grid.Row="2"
-                Content="Close"
-                HorizontalAlignment="Right"
-                Margin="0,12,0,0"
-                Padding="20,6"
-                Cursor="Hand"
-                Background="{DynamicResource Accent}"
-                Foreground="White"
-                BorderThickness="0"
-                Click="CloseButton_Click"/>
-    </Grid>
+                <StackPanel Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock Text="✨ What's New"
+                               FontSize="18" FontWeight="Bold"
+                               Foreground="{DynamicResource TextPrimary}"/>
+                    <TextBlock Text="All improvements added in the latest updates."
+                               Foreground="{DynamicResource TextMuted}"
+                               Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <Border Grid.Row="1"
+                        Background="{DynamicResource BgPanel}"
+                        BorderBrush="{DynamicResource BorderLine}"
+                        BorderThickness="1" CornerRadius="6">
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel x:Name="ContentPanel" Margin="14"/>
+                    </ScrollViewer>
+                </Border>
+
+                <Button Grid.Row="2"
+                        Content="Close"
+                        HorizontalAlignment="Right"
+                        Margin="0,12,0,0"
+                        Padding="20,6"
+                        Click="CloseButton_Click"/>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>

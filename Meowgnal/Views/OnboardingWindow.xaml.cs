@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace Meowgnal.Views;
 
@@ -13,6 +14,22 @@ public partial class OnboardingWindow : Window
     {
         InitializeComponent();
     }
+
+    #region Custom title bar
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // No double-click to maximize on this modal dialog
+        DragMove();
+    }
+
+    private void Close_Click(object sender, RoutedEventArgs e)
+    {
+        DialogResult = false;
+        Close();
+    }
+
+    #endregion
 
     private void CreateProfile_Click(object sender, RoutedEventArgs e)
     {

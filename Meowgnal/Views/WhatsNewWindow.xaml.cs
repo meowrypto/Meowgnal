@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace Meowgnal.Views;
@@ -12,6 +13,16 @@ public partial class WhatsNewWindow : Window
         InitializeComponent();
         BuildContent();
     }
+
+    #region Custom title bar
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        // No double-click to maximize on this modal dialog (ResizeMode=NoResize)
+        DragMove();
+    }
+
+    #endregion
 
     private void BuildContent()
     {
