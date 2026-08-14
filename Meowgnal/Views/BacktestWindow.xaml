@@ -3,30 +3,30 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Title="Backtest" Height="640" Width="760"
-        Background="#131722" WindowStartupLocation="CenterOwner">
+        Background="{DynamicResource BackgroundBrush}" WindowStartupLocation="CenterOwner">
 
     <Window.Resources>
-        <!-- TradingView Dark Palette -->
-        <SolidColorBrush x:Key="PanelBg" Color="#1E222D"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#2A2E39"/>
-        <SolidColorBrush x:Key="TextColor" Color="#D1D4DC"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#787B86"/>
-        <SolidColorBrush x:Key="AccentColor" Color="#2962FF"/>
-        <SolidColorBrush x:Key="DangerColor" Color="#F23645"/>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
+        <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
+        <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
+        <SolidColorBrush x:Key="TextColor" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
+        <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
+        <SolidColorBrush x:Key="Up" Color="{DynamicResource ColorUp}"/>
 
-        <!-- Base Text Style -->
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
         </Style>
 
-        <!-- TextBox -->
         <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Background" Value="{StaticResource PanelBg}"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CaretBrush" Value="White"/>
+            <Setter Property="CaretBrush" Value="{StaticResource TextColor}"/>
             <Style.Triggers>
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
@@ -34,7 +34,6 @@
             </Style.Triggers>
         </Style>
 
-        <!-- Button -->
         <Style TargetType="Button">
             <Setter Property="Background" Value="{StaticResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
@@ -61,16 +60,15 @@
             </Setter>
         </Style>
 
-        <!-- ComboBox -->
         <Style TargetType="ComboBox">
-            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Background" Value="{StaticResource PanelBg}"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,4"/>
         </Style>
         <Style TargetType="ComboBoxItem">
-            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Background" Value="{StaticResource PanelBg}"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Style.Triggers>
                 <Trigger Property="IsHighlighted" Value="True">
@@ -80,13 +78,12 @@
             </Style.Triggers>
         </Style>
 
-        <!-- DataGrid -->
         <Style TargetType="DataGrid">
             <Setter Property="Background" Value="{StaticResource PanelBg}"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="RowBackground" Value="{StaticResource PanelBg}"/>
-            <Setter Property="AlternatingRowBackground" Value="#131722"/>
+            <Setter Property="AlternatingRowBackground" Value="{DynamicResource BackgroundBrush}"/>
             <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -94,7 +91,7 @@
             <Setter Property="IsReadOnly" Value="True"/>
         </Style>
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#131722"/>
+            <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
@@ -148,7 +145,6 @@
     </Window.Resources>
 
     <DockPanel Margin="14">
-        <!-- Config bar -->
         <Border DockPanel.Dock="Top" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="12" Margin="0,0,0,14">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Strategy" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -170,14 +166,11 @@
             </StackPanel>
         </Border>
 
-        <!-- Disclaimer -->
         <TextBlock DockPanel.Dock="Bottom" Margin="0,10,0,0" FontSize="11" Foreground="{StaticResource TextMuted}"
                    Text="⚠️ Past backtest results don't guarantee future performance." />
 
-        <!-- Stats + chart + trade log -->
         <ScrollViewer VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <!-- Overfit Warning -->
                 <Border x:Name="OverfitWarning" Background="#3D1A1A" CornerRadius="6" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
                     <StackPanel>
                         <TextBlock Text="⚠️ OVERFIT DETECTED" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource DangerColor}" Margin="0,0,0,4"/>
@@ -189,7 +182,6 @@
                     <lvc:CartesianChart x:Name="EquityChart" Height="220"/>
                 </Border>
 
-                <!-- In-Sample Stats -->
                 <TextBlock Text="In-Sample Results (Training Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
                 <UniformGrid Columns="5" Margin="0,0,0,18">
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
@@ -207,7 +199,7 @@
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
                         <StackPanel>
                             <TextBlock Text="Max drawdown" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="DrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#F23645" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="DrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
@@ -219,7 +211,7 @@
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10">
                         <StackPanel>
                             <TextBlock Text="Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="BalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#089981" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="BalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Up}" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
                     <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,10,10,0">
@@ -236,46 +228,45 @@
                     </Border>
                 </UniformGrid>
 
-                <!-- Out-of-Sample Stats -->
                 <TextBlock x:Name="OosHeader" Text="Out-of-Sample Results (Unseen Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" Visibility="Collapsed"/>
                 <UniformGrid x:Name="OosCards" Columns="5" Margin="0,0,0,18" Visibility="Collapsed">
-                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="OOS Win rate" Foreground="{StaticResource TextMuted}" FontSize="11"/>
                             <TextBlock x:Name="OosWinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="OOS Avg R:R" Foreground="{StaticResource TextMuted}" FontSize="11"/>
                             <TextBlock x:Name="OosAvgRRText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="OOS Max DD" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosDrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#F23645" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="OosDrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="OOS Trades" Foreground="{StaticResource TextMuted}" FontSize="11"/>
                             <TextBlock x:Name="OosTradesText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" BorderBrush="#2A3545" BorderThickness="1">
+                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="OOS Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosBalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="#089981" Margin="0,4,0,0"/>
+                            <TextBlock x:Name="OosBalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Up}" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,10,10,0" BorderBrush="#2A3545" BorderThickness="1">
+                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,10,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="OOS Sharpe" Foreground="{StaticResource TextMuted}" FontSize="11"/>
                             <TextBlock x:Name="OosSharpeText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
                         </StackPanel>
                     </Border>
-                    <Border Background="#151C26" CornerRadius="6" Padding="14,10" Margin="0,10,0,0" BorderBrush="#2A3545" BorderThickness="1">
+                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,10,0,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="OOS Sortino" Foreground="{StaticResource TextMuted}" FontSize="11"/>
                             <TextBlock x:Name="OosSortinoText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
@@ -295,7 +286,6 @@
                     </DataGrid.Columns>
                 </DataGrid>
 
-                <!-- Monthly performance -->
                 <TextBlock Text="Monthly performance" FontWeight="SemiBold" FontSize="14" Margin="0,16,0,8"/>
                 <DataGrid x:Name="MonthlyGrid" AutoGenerateColumns="False" Height="170">
                     <DataGrid.Columns>

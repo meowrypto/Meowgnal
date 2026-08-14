@@ -1,9 +1,15 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
+using Meowgnal.DataProviders;
+using Meowgnal.Engine;
 using Meowgnal.Models;
 using Meowgnal.Services;
 
@@ -27,31 +33,22 @@ public sealed class ModeOption
     public string Label { get; set; } = "";
 }
 
-/// <summary>One sentence row: [left token] [operator] [right token or number].</summary>
-public sealed class SentenceRow
-{
-    public string Left { get; set; } = "price";
-    public string Op { get; set; } = "crossesAbove";
-    public string Right { get; set; } = StrategyBuilderWindow.NumberToken;
-    public string Number { get; set; } = "30";
-    public double Weight { get; set; } = 1;
-    public double Tolerance { get; set; } = 0.5;
-}
+// Represents either a leaf condition or a group of conditions in the UI tree.
 
 public partial class StrategyBuilderWindow : Window
 {
     public const string NumberToken = "__num__";
 
-    /// <summary>How the builder was opened from the Strategy Manager.</summary>
     public enum BuilderOpenMode { Customize, Edit, Copy }
 
     private readonly ObservableCollection<IndicatorRow> _indicators = new();
-    private readonly ObservableCollection<SentenceRow> _entry = new();
-    private readonly ObservableCollection<SentenceRow> _exit = new();
+    private readonly ObservableCollection<ConditionNodeViewModel> _entryGroups = new();
+    private readonly ObservableCollection<ConditionNodeViewModel> _exitGroups = new();
 
     private StrategyDefinition? _editing;
     private bool _isCopy;
     private readonly DispatcherTimer _descTimer;
+    private BacktestResult? _lastTestResult;
 
     public ObservableCollection<IndicatorInfo> RegistryOptions { get; } = new();
     public ObservableCollection<OpOption> OpOptions { get; } = new();
@@ -85,16 +82,20 @@ public partial class StrategyBuilderWindow : Window
         TargetMethodCombo.ItemsSource = TargetMethods;
 
         IndicatorsList.ItemsSource = _indicators;
-        EntryList.ItemsSource = _entry;
-        ExitList.ItemsSource = _exit;
+        EntryList.ItemsSource = _entryGroups;
+        ExitList.ItemsSource = _exitGroups;
 
         _indicators.Add(new IndicatorRow { Id = "ema9", Type = "EMA", Period = 9 });
         _indicators.Add(new IndicatorRow { Id = "ema21", Type = "EMA", Period = 21 });
-        _entry.Add(new SentenceRow { Left = "ema9", Op = "crossesAbove", Right = "ema21" });
-        _exit.Add(new SentenceRow { Left = "ema9", Op = "crossesBelow", Right = "ema21" });
 
-        EntryModeCombo.SelectedValue = "all";
-        ExitModeCombo.SelectedValue = "any";
+        var entryRoot = new ConditionNodeViewModel(true) { Mode = "all", Depth = 0 };
+        entryRoot.Children.Add(new ConditionNodeViewModel(false) { Left = "ema9", Op = "crossesAbove", Right = "ema21", Depth = 1, Parent = entryRoot });
+        _entryGroups.Add(entryRoot);
+
+        var exitRoot = new ConditionNodeViewModel(true) { Mode = "any", Depth = 0 };
+        exitRoot.Children.Add(new ConditionNodeViewModel(false) { Left = "ema9", Op = "crossesBelow", Right = "ema21", Depth = 1, Parent = exitRoot });
+        _exitGroups.Add(exitRoot);
+
         StopMethodCombo.SelectedItem = "Fixed percent";
         TargetMethodCombo.SelectedItem = "Risk to reward ratio";
 
@@ -111,6 +112,7 @@ public partial class StrategyBuilderWindow : Window
         if (prefill is null) return;
 
         Title = $"Customizing: {prefill.Name.Replace(" (Custom)", "")}";
+        TitleText.Text = Title;
         NameBox.Text = prefill.Name;
         SymbolBox.Text = prefill.Symbol;
         TimeframeBox.Text = prefill.Timeframe;
@@ -130,23 +132,21 @@ public partial class StrategyBuilderWindow : Window
             _indicators.Add(new IndicatorRow { Id = ind.Id, Type = ind.Type, Period = period });
         }
 
-        _entry.Clear();
-        foreach (var c in prefill.EntryRules.Conditions.OfType<LeafCondition>())
-            _entry.Add(ToSentenceRow(c));
+        _entryGroups.Clear();
+        if (prefill.EntryRules is not null)
+            _entryGroups.Add(LoadRootGroup(prefill.EntryRules, 0));
 
-        _exit.Clear();
-        foreach (var c in prefill.ExitRules.Conditions.OfType<LeafCondition>())
-            _exit.Add(ToSentenceRow(c));
+        _exitGroups.Clear();
+        if (prefill.ExitRules is not null)
+            _exitGroups.Add(LoadRootGroup(prefill.ExitRules, 0));
 
-        EntryModeCombo.SelectedValue = prefill.EntryRules.Mode;
-        ExitModeCombo.SelectedValue = prefill.ExitRules.Mode;
-        EntryMinScoreBox.Text = prefill.EntryRules.MinScore?.ToString() ?? "3";
+        EntryMinScoreBox.Text = prefill.EntryRules?.MinScore?.ToString() ?? "3";
 
-        StopMethodCombo.SelectedItem = prefill.RiskManagement.StopLoss.Method == "ATR" ? "ATR multiple" : "Fixed percent";
-        StopValueBox.Text = prefill.RiskManagement.StopLoss.Multiplier.ToString();
-        TargetMethodCombo.SelectedItem = prefill.RiskManagement.Target.Method == "fixedPercent" ? "Fixed percent" : "Risk to reward ratio";
-        TargetValueBox.Text = prefill.RiskManagement.Target.Value.ToString();
-        RiskPercentBox.Text = prefill.RiskManagement.PositionSizing.RiskPercentPerTrade.ToString();
+        StopMethodCombo.SelectedItem = prefill.RiskManagement?.StopLoss?.Method == "ATR" ? "ATR multiple" : "Fixed percent";
+        StopValueBox.Text = prefill.RiskManagement?.StopLoss?.Multiplier.ToString() ?? "2";
+        TargetMethodCombo.SelectedItem = prefill.RiskManagement?.Target?.Method == "fixedPercent" ? "Fixed percent" : "Risk to reward ratio";
+        TargetValueBox.Text = prefill.RiskManagement?.Target?.Value.ToString() ?? "2";
+        RiskPercentBox.Text = prefill.RiskManagement?.PositionSizing?.RiskPercentPerTrade.ToString() ?? "1";
 
         RefreshTokens();
         UpdateDescription();
@@ -158,24 +158,110 @@ public partial class StrategyBuilderWindow : Window
         {
             _editing = prefill;
             Title = "Editing: " + prefill.Name;
+            TitleText.Text = Title;
         }
         else if (mode == BuilderOpenMode.Copy)
         {
             _isCopy = true;
             Title = "Copying: " + prefill.Name;
+            TitleText.Text = Title;
         }
     }
 
-    private static SentenceRow ToSentenceRow(LeafCondition c) => new()
-    {
-        Left = c.Left,
-        Op = c.Op,
-        Right = c.Right is double d ? NumberToken : (c.Right?.ToString() ?? "price"),
-        Number = c.Right is double dn ? dn.ToString() : "30",
-        Weight = c.Weight,
-        Tolerance = c.TolerancePercent
-    };
+    #region Custom title bar
 
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) { ToggleMaximize(); return; }
+        if (WindowState == WindowState.Maximized)
+        {
+            var point = PointToScreen(e.GetPosition(this));
+            WindowState = WindowState.Normal;
+            Left = point.X - Width / 2;
+            Top = point.Y - 15;
+        }
+        DragMove();
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void ToggleMaximize()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            WindowState = WindowState.Normal;
+            MaximizeButton.Content = "⛶";
+        }
+        else
+        {
+            WindowState = WindowState.Maximized;
+            MaximizeButton.Content = "❐";
+        }
+    }
+
+    #endregion
+
+    // Recursively loads a RuleGroup into ConditionNodeViewModel tree.
+    // Loads the root RuleGroup (EntryRules or ExitRules) into a view model.
+    private static ConditionNodeViewModel LoadRootGroup(RuleGroup group, int depth)
+    {
+        var vm = new ConditionNodeViewModel(true)
+        {
+            Mode = group.Mode,
+            MinScore = group.MinScore,
+            Depth = depth
+        };
+
+        LoadChildrenInto(vm, group.Conditions, depth);
+        return vm;
+    }
+
+    // Loads a nested ConditionGroup into a view model.
+    private static ConditionNodeViewModel LoadConditionGroup(ConditionGroup group, ConditionNodeViewModel parent, int depth)
+    {
+        var vm = new ConditionNodeViewModel(true)
+        {
+            Mode = group.Mode,
+            MinScore = group.MinScore,
+            Depth = depth,
+            Parent = parent
+        };
+
+        LoadChildrenInto(vm, group.Conditions, depth);
+        return vm;
+    }
+
+    // Helper: loads child nodes (leaf or group) into a parent view model.
+    private static void LoadChildrenInto(ConditionNodeViewModel parent, List<ConditionNode>? nodes, int depth)
+    {
+        if (nodes is null) return;
+
+        foreach (var node in nodes)
+        {
+            if (node is LeafCondition leaf)
+            {
+                parent.Children.Add(new ConditionNodeViewModel(false)
+                {
+                    Left = leaf.Left,
+                    Op = leaf.Op,
+                    Right = leaf.Right is double d ? NumberToken : (leaf.Right?.ToString() ?? "price"),
+                    Number = leaf.Right is double dn ? dn.ToString() : "30",
+                    Weight = leaf.Weight,
+                    Tolerance = leaf.TolerancePercent,
+                    Depth = depth + 1,
+                    Parent = parent
+                });
+            }
+            else if (node is ConditionGroup childGroup)
+            {
+                parent.Children.Add(LoadConditionGroup(childGroup, parent, depth + 1));
+            }
+        }
+    }
     private static int ToInt(object? value, int fallback) => value switch
     {
         int i => i,
@@ -203,8 +289,8 @@ public partial class StrategyBuilderWindow : Window
                     ? new() { ["fastPeriod"] = 12, ["slowPeriod"] = 26, ["signalPeriod"] = 9 }
                     : new() { ["period"] = i.Period }
             }).ToList(),
-            EntryRules = BuildGroup(EntryModeCombo.SelectedValue as string, EntryMinScoreBox.Text, _entry),
-            ExitRules = BuildGroup(ExitModeCombo.SelectedValue as string, null, _exit),
+            EntryRules = BuildRootGroup(_entryGroups.FirstOrDefault()),
+            ExitRules = BuildRootGroup(_exitGroups.FirstOrDefault()),
             RiskManagement = new RiskManagementConfig
             {
                 StopLoss = new StopLossConfig
@@ -225,6 +311,74 @@ public partial class StrategyBuilderWindow : Window
         };
     }
 
+    // Recursively builds a RuleGroup from ConditionNodeViewModel tree.
+    // Builds the root RuleGroup (EntryRules or ExitRules) from the view model.
+    private static RuleGroup BuildRootGroup(ConditionNodeViewModel? vm)
+    {
+        if (vm is null)
+        {
+            return new RuleGroup
+            {
+                Mode = "all",
+                MinScore = null,
+                TriggerMode = "onTransition",
+                Conditions = new List<ConditionNode>()
+            };
+        }
+
+        return new RuleGroup
+        {
+            Mode = vm.Mode,
+            MinScore = vm.MinScore,
+            TriggerMode = "onTransition",
+            Conditions = BuildConditions(vm)
+        };
+    }
+
+    // Builds a nested ConditionGroup from the view model.
+    private static ConditionGroup BuildConditionGroup(ConditionNodeViewModel vm)
+    {
+        return new ConditionGroup
+        {
+            Mode = vm.Mode,
+            MinScore = vm.MinScore,
+            Conditions = BuildConditions(vm)
+        };
+    }
+
+    // Helper: builds the list of ConditionNode (leaf or group) from a view model.
+    private static List<ConditionNode> BuildConditions(ConditionNodeViewModel vm)
+    {
+        var conditions = new List<ConditionNode>();
+
+        foreach (var child in vm.Children)
+        {
+            if (child.IsLeaf)
+            {
+                if (!string.IsNullOrEmpty(child.Left) && !string.IsNullOrEmpty(child.Op))
+                {
+                    conditions.Add(new LeafCondition
+                    {
+                        Left = child.Left,
+                        Op = child.Op,
+                        Right = child.Right == NumberToken
+                            ? (double.TryParse(child.Number, out var n) ? n : 0d)
+                            : child.Right,
+                        Weight = child.Weight,
+                        TolerancePercent = child.Tolerance
+                    });
+                }
+            }
+            else if (child.IsGroup)
+            {
+                var childGroup = BuildConditionGroup(child);
+                if (childGroup.Conditions.Count > 0)
+                    conditions.Add(childGroup);
+            }
+        }
+
+        return conditions;
+    }
     private void UpdateDescription()
     {
         if (DescriptionText is null) return;
@@ -255,7 +409,6 @@ public partial class StrategyBuilderWindow : Window
             }
             else if (info?.SubOutputs is not null)
             {
-                // Multi-output indicators (e.g. Bollinger Bands) expose one token per sub-output.
                 foreach (var sub in info.SubOutputs)
                     TokenOptions.Add(new TokenOption { Id = $"{ind.Id}.{sub}", Label = $"{ind.Type} {sub} ({ind.Id}.{sub})" });
             }
@@ -303,6 +456,7 @@ public partial class StrategyBuilderWindow : Window
 
     private void IndicatorType_Changed(object sender, SelectionChangedEventArgs e)
     {
+        if (e.RemovedItems.Count == 0) return; // Ignore initial selection during window load
         if (sender is not ComboBox combo || combo.DataContext is not IndicatorRow row) return;
         var info = IndicatorRegistry.All.FirstOrDefault(i => i.Type == row.Type);
         if (info is null) return;
@@ -312,31 +466,119 @@ public partial class StrategyBuilderWindow : Window
         UpdateDescription();
     }
 
-    private void AddEntry_Click(object sender, RoutedEventArgs e)
+    // Adds a new leaf condition to the specified parent group.
+    private void AddCondition_Click(object sender, RoutedEventArgs e)
     {
-        _entry.Add(new SentenceRow());
+        if (sender is not Button btn || btn.Tag is not ConditionNodeViewModel parent) return;
+        parent.Children.Add(new ConditionNodeViewModel(false) { Depth = parent.Depth + 1, Parent = parent });
         UpdateDescription();
     }
 
-    private void RemoveEntry_Click(object sender, RoutedEventArgs e)
+    // Adds a new nested group to the specified parent group (max depth = 3).
+    private void AddGroup_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button btn || btn.Tag is not SentenceRow row) return;
-        _entry.Remove(row);
+        if (sender is not Button btn || btn.Tag is not ConditionNodeViewModel parent) return;
+        if (parent.Depth >= 3) return;
+
+        var newGroup = new ConditionNodeViewModel(true)
+        {
+            Mode = "all",
+            Depth = parent.Depth + 1,
+            Parent = parent
+        };
+        newGroup.Children.Add(new ConditionNodeViewModel(false) { Depth = newGroup.Depth + 1, Parent = newGroup });
+        parent.Children.Add(newGroup);
         UpdateDescription();
     }
 
-    private void AddExit_Click(object sender, RoutedEventArgs e)
+    // Removes a condition or group from its parent.
+    private void RemoveNode_Click(object sender, RoutedEventArgs e)
     {
-        _exit.Add(new SentenceRow());
+        if (sender is not Button btn || btn.Tag is not ConditionNodeViewModel node) return;
+        if (node.Parent is null) return; // Root cannot be removed
+
+        node.Parent.Children.Remove(node);
         UpdateDescription();
     }
 
-    private void RemoveExit_Click(object sender, RoutedEventArgs e)
+    #region Quick test
+
+    private async void Test_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is not Button btn || btn.Tag is not SentenceRow row) return;
-        _exit.Remove(row);
-        UpdateDescription();
+        TestButton.IsEnabled = false;
+        TestButton.Content = "⏳ Testing...";
+        TestResultPanel.Visibility = Visibility.Visible;
+        TestResultStatus.Text = "Fetching data and running backtest...";
+        TestWinRate.Text = "—";
+        TestTrades.Text = "—";
+        TestRR.Text = "—";
+        TestDD.Text = "—";
+        SeeFullReportButton.Visibility = Visibility.Collapsed;
+
+        try
+        {
+            var strategy = BuildStrategyFromUi();
+            strategy.StrategyId = Guid.NewGuid().ToString("N");
+
+            if (string.IsNullOrWhiteSpace(strategy.Symbol))
+            {
+                TestResultStatus.Text = "❌ Error: Symbol is required.";
+                return;
+            }
+
+            if (strategy.EntryRules.Conditions.Count == 0)
+            {
+                TestResultStatus.Text = "❌ Error: At least one entry condition is required.";
+                return;
+            }
+
+            var days = TestPeriodCombo.SelectedItem is ComboBoxItem ci && ci.Tag is string tag && int.TryParse(tag, out var d) ? d : 90;
+            var limit = days * 24;
+
+            IDataProvider provider = strategy.DataSource == "hyperliquid"
+                ? new HyperliquidDataProvider()
+                : new BinanceDataProvider();
+
+            var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit);
+            if (bars.Count < 50)
+            {
+                TestResultStatus.Text = "❌ Error: Not enough historical data to run backtest.";
+                return;
+            }
+
+            var result = BacktestEngine.Run(strategy, bars, 10000m, 0.1m, 0.05m);
+            _lastTestResult = result;
+
+            TestResultStatus.Text = $"✅ Backtest complete ({bars.Count} candles, {days} days)";
+            TestWinRate.Text = $"{result.WinRatePercent:N1}%";
+            TestWinRate.Foreground = result.WinRatePercent >= 50 ? (Brush)FindResource("Up") : (Brush)FindResource("Down");
+            TestTrades.Text = result.Trades.Count.ToString();
+            TestRR.Text = result.AverageRiskReward.ToString("N2");
+            TestDD.Text = $"{result.MaxDrawdownPercent:N1}%";
+            SeeFullReportButton.Visibility = Visibility.Visible;
+        }
+        catch (Exception ex)
+        {
+            TestResultStatus.Text = $"❌ Error: {ex.Message}";
+        }
+        finally
+        {
+            TestButton.IsEnabled = true;
+            TestButton.Content = "🧪 Test this strategy";
+        }
     }
+
+    private void SeeFullReport_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lastTestResult is null) return;
+        var strategy = BuildStrategyFromUi();
+        strategy.StrategyId = Guid.NewGuid().ToString("N");
+
+        var win = new BacktestWindow(strategy, _lastTestResult) { Owner = this };
+        win.ShowDialog();
+    }
+
+    #endregion
 
     private void SaveStrategy_Click(object sender, RoutedEventArgs e)
     {
@@ -358,25 +600,5 @@ public partial class StrategyBuilderWindow : Window
 
         StrategyStorageService.Save(strategy);
         StatusText.Text = _editing is not null ? $"Updated '{strategy.Name}'" : $"Saved as '{strategy.Name}'";
-    }
-
-    private static RuleGroup BuildGroup(string? mode, string? minScoreText, ObservableCollection<SentenceRow> rows)
-    {
-        return new RuleGroup
-        {
-            Mode = mode ?? "all",
-            MinScore = minScoreText is not null && double.TryParse(minScoreText, out var s) ? s : null,
-            TriggerMode = "onTransition",
-            Conditions = rows.Select(r => (ConditionNode)new LeafCondition
-            {
-                Left = r.Left,
-                Op = r.Op,
-                Right = r.Right == NumberToken
-                    ? (double.TryParse(r.Number, out var n) ? n : 0d)
-                    : r.Right,
-                Weight = r.Weight,
-                TolerancePercent = r.Tolerance
-            }).ToList()
-        };
     }
 }

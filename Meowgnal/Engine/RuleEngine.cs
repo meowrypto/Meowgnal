@@ -163,6 +163,7 @@ public static class RuleEngine
     private static double? ResolveValue(
         string reference, int index, IReadOnlyList<Bar> bars, Dictionary<string, double?[]> series)
     {
+        if (reference is null) return null;
         if (reference == "price") return (double)bars[index].Close;
         if (reference == "volume") return (double)bars[index].Volume;
         // Supports both plain ids (ema9) and multi-output ids (bb1.upper).

@@ -25,7 +25,19 @@ public partial class BacktestWindow : Window
         StrategyCombo.ItemsSource = strategies;
         if (strategies.Count > 0) StrategyCombo.SelectedIndex = 0;
     }
+    // Opens the window with a pre-computed result (used by StrategyBuilderWindow's quick test).
+    public BacktestWindow(StrategyDefinition strategy, BacktestResult result) : this()
+    {
+        Title = $"Backtest: {strategy.Name}";
+        OosHeader.Visibility = Visibility.Collapsed;
+        OosCards.Visibility = Visibility.Collapsed;
+        OverfitWarning.Visibility = Visibility.Collapsed;
 
+        UpdateInSampleCards(result);
+        RenderChart(result);
+        TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(result.Trades);
+        MonthlyGrid.ItemsSource = new ObservableCollection<MonthlyPerformance>(result.MonthlyBreakdown);
+    }
     private void WalkForwardCheck_Changed(object sender, RoutedEventArgs e)
     {
         var isVisible = WalkForwardCheck.IsChecked == true;

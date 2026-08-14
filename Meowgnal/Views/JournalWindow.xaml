@@ -3,29 +3,68 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:Meowgnal.Views"
         Title="Trading Journal" Height="600" Width="900"
-        Background="#131722" WindowStartupLocation="CenterOwner">
+        WindowStyle="None" WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BackgroundBrush}"
+        FontFamily="Trebuchet MS" FontSize="12">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <views:PnLColorConverter x:Key="PnLColorConverter"/>
-        <SolidColorBrush x:Key="PanelBg" Color="#1E222D"/>
-        <SolidColorBrush x:Key="BorderColor" Color="#2A2E39"/>
-        <SolidColorBrush x:Key="TextColor" Color="#D1D4DC"/>
-        <SolidColorBrush x:Key="TextMuted" Color="#787B86"/>
-        <SolidColorBrush x:Key="AccentColor" Color="#2962FF"/>
-        <SolidColorBrush x:Key="DangerColor" Color="#F23645"/>
-        <SolidColorBrush x:Key="SuccessColor" Color="#089981"/>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
+        <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
+        <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
+        <SolidColorBrush x:Key="TextColor" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
+        <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
+        <SolidColorBrush x:Key="SuccessColor" Color="{DynamicResource ColorUp}"/>
+
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
         </Style>
 
         <Style TargetType="TextBox">
-            <Setter Property="Background" Value="#1E222D"/>
+            <Setter Property="Background" Value="{StaticResource PanelBg}"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CaretBrush" Value="White"/>
+            <Setter Property="CaretBrush" Value="{StaticResource TextColor}"/>
             <Style.Triggers>
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
@@ -64,7 +103,7 @@
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="RowBackground" Value="{StaticResource PanelBg}"/>
-            <Setter Property="AlternatingRowBackground" Value="#131722"/>
+            <Setter Property="AlternatingRowBackground" Value="{StaticResource BackgroundBrush}"/>
             <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="1"/>
@@ -74,7 +113,7 @@
             <Setter Property="SelectionUnit" Value="FullRow"/>
         </Style>
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#131722"/>
+            <Setter Property="Background" Value="{StaticResource BackgroundBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="Padding" Value="8,6"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
@@ -101,56 +140,80 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="10">
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
-            <ColumnDefinition Width="300"/>
-        </Grid.ColumnDefinitions>
+    <Border Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-        <!-- Left: Trades List -->
-        <Border Grid.Column="0" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,10,0">
-            <DataGrid x:Name="JournalGrid" AutoGenerateColumns="False" SelectionChanged="JournalGrid_SelectionChanged">
-                <DataGrid.Columns>
-                    <DataGridTextColumn Header="Symbol" Binding="{Binding Symbol}" Width="80"/>
-                    <DataGridTextColumn Header="Side" Binding="{Binding Side}" Width="50"/>
-                    <DataGridTextColumn Header="Entry" Binding="{Binding EntryPrice, StringFormat=N2}" Width="70"/>
-                    <DataGridTextColumn Header="Exit" Binding="{Binding ExitPrice, StringFormat=N2}" Width="70"/>
-                    <DataGridTextColumn Header="PnL" Binding="{Binding PnL, StringFormat=N2}" Width="70">
-                        <DataGridTextColumn.ElementStyle>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Foreground" Value="{Binding PnL, Converter={StaticResource PnLColorConverter}}"/>
-                            </Style>
-                        </DataGridTextColumn.ElementStyle>
-                    </DataGridTextColumn>
-                    <DataGridTextColumn Header="ROI %" Binding="{Binding RoiPercent, StringFormat=N2}" Width="60"/>
-                    <DataGridTextColumn Header="Date" Binding="{Binding CloseTime, StringFormat=MM/dd HH:mm}" Width="90"/>
-                    <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="*"/>
-                </DataGrid.Columns>
-            </DataGrid>
-        </Border>
+            <Border Grid.Row="0" Background="{StaticResource PanelBg}"
+                    BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    </StackPanel>
+                    <TextBlock Text="📓 Trading Journal" Foreground="{StaticResource TextColor}"
+                               FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                </DockPanel>
+            </Border>
 
-        <!-- Right: Details Panel -->
-        <Border Grid.Column="1" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="12">
-            <StackPanel x:Name="DetailsPanel" IsEnabled="False">
-                <TextBlock Text="Trade Details" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,10"/>
+            <Grid Grid.Row="1" Margin="10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="300"/>
+                </Grid.ColumnDefinitions>
 
-                <TextBlock Text="Notes" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                <TextBox x:Name="NotesBox" Height="120" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12"/>
-
-                <TextBlock Text="Tags (comma separated)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                <TextBox x:Name="TagsBox" Margin="0,0,0,12"/>
-
-                <TextBlock Text="Screenshot" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
-                <Border BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Height="150" Margin="0,0,0,8">
-                    <Image x:Name="ScreenshotImage" Stretch="Uniform"/>
+                <Border Grid.Column="0" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,10,0">
+                    <DataGrid x:Name="JournalGrid" AutoGenerateColumns="False" SelectionChanged="JournalGrid_SelectionChanged">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Symbol" Binding="{Binding Symbol}" Width="80"/>
+                            <DataGridTextColumn Header="Side" Binding="{Binding Side}" Width="50"/>
+                            <DataGridTextColumn Header="Entry" Binding="{Binding EntryPrice, StringFormat=N2}" Width="70"/>
+                            <DataGridTextColumn Header="Exit" Binding="{Binding ExitPrice, StringFormat=N2}" Width="70"/>
+                            <DataGridTextColumn Header="PnL" Binding="{Binding PnL, StringFormat=N2}" Width="70">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{Binding PnL, Converter={StaticResource PnLColorConverter}}"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="ROI %" Binding="{Binding RoiPercent, StringFormat=N2}" Width="60"/>
+                            <DataGridTextColumn Header="Date" Binding="{Binding CloseTime, StringFormat=MM/dd HH:mm}" Width="90"/>
+                            <DataGridTextColumn Header="Notes" Binding="{Binding Notes}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
                 </Border>
-                <Button Content="📎 Attach Screenshot" Click="AttachScreenshot_Click" Margin="0,0,0,16"/>
 
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="Save" Click="Save_Click" Margin="0,0,8,0"/>
-                    <Button Content="Delete" Style="{StaticResource DangerButton}" Click="Delete_Click"/>
-                </StackPanel>
-            </StackPanel>
-        </Border>
-    </Grid>
+                <Border Grid.Column="1" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="12">
+                    <StackPanel x:Name="DetailsPanel" IsEnabled="False">
+                        <TextBlock Text="Trade Details" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,10"/>
+
+                        <TextBlock Text="Notes" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="NotesBox" Height="120" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Tags (comma separated)" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TagsBox" Margin="0,0,0,12"/>
+
+                        <TextBlock Text="Screenshot" Foreground="{StaticResource TextMuted}" Margin="0,0,0,4"/>
+                        <Border BorderBrush="{StaticResource BorderColor}" BorderThickness="1" Height="150" Margin="0,0,0,8">
+                            <Image x:Name="ScreenshotImage" Stretch="Uniform"/>
+                        </Border>
+                        <Button Content="📎 Attach Screenshot" Click="AttachScreenshot_Click" Margin="0,0,0,16"/>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Save" Click="Save_Click" Margin="0,0,8,0"/>
+                            <Button Content="Delete" Style="{StaticResource DangerButton}" Click="Delete_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Border>
 </Window>

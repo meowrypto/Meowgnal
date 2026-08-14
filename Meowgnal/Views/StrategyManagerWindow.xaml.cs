@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Meowgnal.Models;
 using Meowgnal.Services;
@@ -11,6 +12,30 @@ namespace Meowgnal.Views;
 
 public partial class StrategyManagerWindow : Window
 {
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) { ToggleMaximize(); return; }
+        if (WindowState == WindowState.Maximized)
+        {
+            var point = PointToScreen(e.GetPosition(this));
+            WindowState = WindowState.Normal;
+            Left = point.X - Width / 2;
+            Top = point.Y - 15;
+        }
+        DragMove();
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void ToggleMaximize()
+    {
+        MaximizeButton.Content = WindowState == WindowState.Maximized ? "⛶" : "❐";
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
     private readonly string _symbol;
 
     public StrategyManagerWindow(string symbol)

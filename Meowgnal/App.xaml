@@ -3,5 +3,28 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
+        <!-- Default palette (dark theme). ThemeService overwrites these at runtime
+             when the user picks a different theme, so the live app always matches
+             the selected theme. These defaults exist only so the XAML designer and
+             the compiler can resolve DynamicResource references without warnings. -->
+        <Color x:Key="ColorBackground">#131722</Color>
+        <Color x:Key="ColorPanel">#1E222D</Color>
+        <Color x:Key="ColorBorder">#2A2E39</Color>
+        <Color x:Key="ColorTextPrimary">#D1D4DC</Color>
+        <Color x:Key="ColorTextSecondary">#B2B5BE</Color>
+        <Color x:Key="ColorTextMuted">#787B86</Color>
+        <Color x:Key="ColorAccent">#2962FF</Color>
+        <Color x:Key="ColorUp">#089981</Color>
+        <Color x:Key="ColorDown">#F23645</Color>
+
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
+        <SolidColorBrush x:Key="BgPanel" Color="{DynamicResource ColorPanel}"/>
+        <SolidColorBrush x:Key="BorderLine" Color="{DynamicResource ColorBorder}"/>
+        <SolidColorBrush x:Key="TextPrimary" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
+        <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
+        <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="Up" Color="{DynamicResource ColorUp}"/>
+        <SolidColorBrush x:Key="Down" Color="{DynamicResource ColorDown}"/>
     </Application.Resources>
 </Application>
