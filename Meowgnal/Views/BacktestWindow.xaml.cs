@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
@@ -176,10 +177,10 @@ public partial class BacktestWindow : Window
     {
         var points = result.EquityCurve.Select(p => new ObservablePoint(p.Item1.Ticks, (double)p.Item2)).ToList();
 
-        // TradingView palette colors
-        var upColor = new SKColor(0x08, 0x99, 0x81);       // #089981 (TradingView Up)
-        var textMuted = new SKColor(0x78, 0x7B, 0x86);    // #787B86 (TradingView muted)
-        var gridColor = new SKColor(0x2A, 0x2E, 0x39);    // #2A2E39 (TradingView border)
+        // Read theme colors and convert to SKColor for LiveCharts
+        var upColor = ToSkColor("Up");
+        var textMuted = ToSkColor("TextMuted");
+        var gridColor = ToSkColor("BorderColor");
 
         EquityChart.Series =
         [
@@ -212,5 +213,16 @@ public partial class BacktestWindow : Window
                 TextSize = 11
             }
         ];
+    }
+
+    // Converts a WPF brush resource key (like "Up" or "TextMuted") to an SKColor for LiveCharts.
+    private SKColor ToSkColor(string brushKey)
+    {
+        if (FindResource(brushKey) is SolidColorBrush brush)
+        {
+            var c = brush.Color;
+            return new SKColor(c.R, c.G, c.B, c.A);
+        }
+        return SKColors.Gray;
     }
 }

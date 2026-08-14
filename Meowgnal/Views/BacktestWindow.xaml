@@ -22,6 +22,7 @@
         <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
         <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
         <SolidColorBrush x:Key="Up" Color="{DynamicResource ColorUp}"/>
+        <SolidColorBrush x:Key="DangerBg" Color="#3D1A1A"/>
 
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -233,7 +234,7 @@
 
                 <ScrollViewer VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-                        <Border x:Name="OverfitWarning" Background="#3D1A1A" CornerRadius="6" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
+                        <Border x:Name="OverfitWarning" Background="{StaticResource DangerBg}" CornerRadius="6" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBlock Text="⚠️ OVERFIT DETECTED" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource DangerColor}" Margin="0,0,0,4"/>
                                 <TextBlock x:Name="OverfitText" Foreground="{StaticResource TextColor}" FontSize="12" TextWrapping="Wrap"/>
