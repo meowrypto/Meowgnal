@@ -35,6 +35,7 @@ public sealed class SentenceRow
     public string Right { get; set; } = StrategyBuilderWindow.NumberToken;
     public string Number { get; set; } = "30";
     public double Weight { get; set; } = 1;
+    public double Tolerance { get; set; } = 0.5;
 }
 
 public partial class StrategyBuilderWindow : Window
@@ -48,12 +49,8 @@ public partial class StrategyBuilderWindow : Window
     private readonly ObservableCollection<SentenceRow> _entry = new();
     private readonly ObservableCollection<SentenceRow> _exit = new();
 
-    // When set, Save keeps this strategy's StrategyId (edit mode).
     private StrategyDefinition? _editing;
-    // When true, Save creates a new id and appends "(Copy)" to the name.
     private bool _isCopy;
-
-    // Refreshes the live plain-English summary while the user edits.
     private readonly DispatcherTimer _descTimer;
 
     public ObservableCollection<IndicatorInfo> RegistryOptions { get; } = new();
@@ -77,6 +74,8 @@ public partial class StrategyBuilderWindow : Window
         OpOptions.Add(new OpOption { Key = "lessThan", Label = "is less than" });
         OpOptions.Add(new OpOption { Key = "above", Label = "stays above" });
         OpOptions.Add(new OpOption { Key = "below", Label = "stays below" });
+        OpOptions.Add(new OpOption { Key = "nearSupport", Label = "is near support" });
+        OpOptions.Add(new OpOption { Key = "nearResistance", Label = "is near resistance" });
 
         ModeOptions.Add(new ModeOption { Key = "all", Label = "ALL conditions must be true (AND)" });
         ModeOptions.Add(new ModeOption { Key = "any", Label = "ANY condition can be true (OR)" });
@@ -89,7 +88,6 @@ public partial class StrategyBuilderWindow : Window
         EntryList.ItemsSource = _entry;
         ExitList.ItemsSource = _exit;
 
-        // A sensible starter so the form is never empty
         _indicators.Add(new IndicatorRow { Id = "ema9", Type = "EMA", Period = 9 });
         _indicators.Add(new IndicatorRow { Id = "ema21", Type = "EMA", Period = 21 });
         _entry.Add(new SentenceRow { Left = "ema9", Op = "crossesAbove", Right = "ema21" });
@@ -102,14 +100,12 @@ public partial class StrategyBuilderWindow : Window
 
         RefreshTokens();
 
-        // Live summary: refresh on a short interval so every edit is reflected.
         _descTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _descTimer.Tick += (_, _) => UpdateDescription();
         _descTimer.Start();
         UpdateDescription();
     }
 
-    /// <summary>Opens the builder pre-filled from a template or wizard result (Customize flow).</summary>
     public StrategyBuilderWindow(StrategyDefinition prefill) : this()
     {
         if (prefill is null) return;
@@ -156,9 +152,6 @@ public partial class StrategyBuilderWindow : Window
         UpdateDescription();
     }
 
-    /// <summary>Opens the builder from the Strategy Manager.</summary>
-    /// <param name="prefill">Strategy whose values fill the form.</param>
-    /// <param name="mode">Edit keeps the same StrategyId; Copy creates a new id with a "(Copy)" name.</param>
     public StrategyBuilderWindow(StrategyDefinition prefill, BuilderOpenMode mode) : this(prefill)
     {
         if (mode == BuilderOpenMode.Edit)
@@ -179,10 +172,10 @@ public partial class StrategyBuilderWindow : Window
         Op = c.Op,
         Right = c.Right is double d ? NumberToken : (c.Right?.ToString() ?? "price"),
         Number = c.Right is double dn ? dn.ToString() : "30",
-        Weight = c.Weight
+        Weight = c.Weight,
+        Tolerance = c.TolerancePercent
     };
 
-    // Safely converts a parameter value (int/long/double/string/JsonElement) to int.
     private static int ToInt(object? value, int fallback) => value switch
     {
         int i => i,
@@ -193,7 +186,6 @@ public partial class StrategyBuilderWindow : Window
         _ => fallback
     };
 
-    // Builds a strategy object from the current UI state (used by Save and by the live summary).
     private StrategyDefinition BuildStrategyFromUi()
     {
         return new StrategyDefinition
@@ -233,7 +225,6 @@ public partial class StrategyBuilderWindow : Window
         };
     }
 
-    // Rebuilds the plain-English summary shown at the bottom of the window.
     private void UpdateDescription()
     {
         if (DescriptionText is null) return;
@@ -247,7 +238,6 @@ public partial class StrategyBuilderWindow : Window
         }
     }
 
-    // Rebuilds the dropdown tokens from the current indicator rows.
     private void RefreshTokens()
     {
         TokenOptions.Clear();
@@ -256,10 +246,18 @@ public partial class StrategyBuilderWindow : Window
 
         foreach (var ind in _indicators)
         {
+            var info = IndicatorRegistry.All.FirstOrDefault(i => i.Type == ind.Type);
+
             if (ind.Type == "MACD")
             {
                 TokenOptions.Add(new TokenOption { Id = ind.Id, Label = $"MACD line ({ind.Id})" });
                 TokenOptions.Add(new TokenOption { Id = "signal", Label = $"MACD signal ({ind.Id})" });
+            }
+            else if (info?.SubOutputs is not null)
+            {
+                // Multi-output indicators (e.g. Bollinger Bands) expose one token per sub-output.
+                foreach (var sub in info.SubOutputs)
+                    TokenOptions.Add(new TokenOption { Id = $"{ind.Id}.{sub}", Label = $"{ind.Type} {sub} ({ind.Id}.{sub})" });
             }
             else
             {
@@ -305,7 +303,6 @@ public partial class StrategyBuilderWindow : Window
 
     private void IndicatorType_Changed(object sender, SelectionChangedEventArgs e)
     {
-        // When the user picks a new type from the registry, apply its default period and a fresh id.
         if (sender is not ComboBox combo || combo.DataContext is not IndicatorRow row) return;
         var info = IndicatorRegistry.All.FirstOrDefault(i => i.Type == row.Type);
         if (info is null) return;
@@ -345,14 +342,11 @@ public partial class StrategyBuilderWindow : Window
     {
         var strategy = BuildStrategyFromUi();
 
-        // Edit mode: keep the original StrategyId so the same file is updated.
         if (_editing is not null) strategy.StrategyId = _editing.StrategyId;
         else strategy.StrategyId = Guid.NewGuid().ToString("N");
 
-        // Copy mode: new id (already generated) + "(Copy)" name suffix.
         if (_isCopy && !strategy.Name.EndsWith("(Copy)")) strategy.Name += " (Copy)";
 
-        // Unique name: append (2), (3), ... if needed (excluding the strategy being edited)
         var existing = StrategyStorageService.LoadAll();
         var baseName = strategy.Name;
         var counter = 1;
@@ -380,7 +374,8 @@ public partial class StrategyBuilderWindow : Window
                 Right = r.Right == NumberToken
                     ? (double.TryParse(r.Number, out var n) ? n : 0d)
                     : r.Right,
-                Weight = r.Weight
+                Weight = r.Weight,
+                TolerancePercent = r.Tolerance
             }).ToList()
         };
     }

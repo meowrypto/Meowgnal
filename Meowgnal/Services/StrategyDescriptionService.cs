@@ -41,7 +41,7 @@ public static class StrategyDescriptionService
         if (leaves is null || leaves.Count == 0) return $"{title}: (no conditions)";
 
         var joiner = group.Mode == "any" ? " OR " : group.Mode == "all" ? " AND " : ", ";
-        var text = $"{title}: " + string.Join(joiner, leaves.Select(c => Phrase(TokenLabel(c.Left, s), c.Op, RightLabel(c.Right, s))));
+        var text = $"{title}: " + string.Join(joiner, leaves.Select(c => Phrase(TokenLabel(c.Left, s), c.Op, RightLabel(c.Right, s), c)));
 
         if (group.Mode == "threshold" && group.MinScore is not null)
             text += $" — at least {Fmt(group.MinScore.Value)} points must match (weighted).";
@@ -49,16 +49,18 @@ public static class StrategyDescriptionService
         return text;
     }
 
-    private static string Phrase(string left, string op, string right) => op switch
+    private static string Phrase(string left, string op, string right, LeafCondition c) => op switch
     {
         "crossesAbove" => $"{left} crosses above {right}",
         "crossesBelow" => $"{left} crosses below {right}",
         "greaterThan" or "above" => $"{left} is greater than {right}",
         "lessThan" or "below" => $"{left} is less than {right}",
+        "nearSupport" => $"{left} is near support (within {Fmt(c.TolerancePercent)}%)",
+        "nearResistance" => $"{left} is near resistance (within {Fmt(c.TolerancePercent)}%)",
         _ => $"{left} {op} {right}"
     };
 
-    // Turns a raw indicator id like "ema9" into a readable label like "EMA(9)".
+    // Turns a raw indicator id like "ema9" or "bb1.upper" into a readable label.
     private static string TokenLabel(string token, StrategyDefinition s)
     {
         if (string.IsNullOrEmpty(token)) return "?";
@@ -66,11 +68,21 @@ public static class StrategyDescriptionService
         if (token == "volume") return "volume";
         if (token == "signal") return "MACD signal";
 
-        var ind = s.Indicators?.FirstOrDefault(i => i.Id == token);
-        if (ind is null) return token;
-        if (ind.Type == "MACD") return "MACD line";
+        // Multi-output tokens like "bb1.upper" → "BBANDS upper"
+        var dotIndex = token.IndexOf('.');
+        if (dotIndex > 0)
+        {
+            var indId = token.Substring(0, dotIndex);
+            var sub = token.Substring(dotIndex + 1);
+            var ind = s.Indicators?.FirstOrDefault(i => i.Id == indId);
+            if (ind is not null) return $"{ind.Type} {sub}";
+        }
 
-        return $"{ind.Type}({GetPeriod(ind)})";
+        var indicator = s.Indicators?.FirstOrDefault(i => i.Id == token);
+        if (indicator is null) return token;
+        if (indicator.Type == "MACD") return "MACD line";
+
+        return $"{indicator.Type}({GetPeriod(indicator)})";
     }
 
     private static string RightLabel(object? right, StrategyDefinition s)
@@ -86,7 +98,6 @@ public static class StrategyDescriptionService
         return ind.Params.TryGetValue("period", out var p) ? ToInt(p, fallback) : fallback;
     }
 
-    // Safely converts a parameter value (int/long/double/string/JsonElement) to int.
     private static int ToInt(object? value, int fallback) => value switch
     {
         int i => i,

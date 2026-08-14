@@ -187,6 +187,9 @@
                                                      ToolTip="Used only when the right side is a number"/>
                                             <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
                                             <TextBox Text="{Binding Weight}" Width="45" Margin="0,0,6,0"/>
+                                            <TextBlock Text="tol %" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"
+                                                       ToolTip="Percent distance used only for near support/resistance"/>
+                                            <TextBox Text="{Binding Tolerance}" Width="45" Margin="0,0,6,0"/>
                                             <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
                                                     Tag="{Binding}" Click="RemoveEntry_Click"/>
                                         </StackPanel>
@@ -226,6 +229,9 @@
                                                      ToolTip="Used only when the right side is a number"/>
                                             <TextBlock Text="weight" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
                                             <TextBox Text="{Binding Weight}" Width="45" Margin="0,0,6,0"/>
+                                            <TextBlock Text="tol %" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"
+                                                       ToolTip="Percent distance used only for near support/resistance"/>
+                                            <TextBox Text="{Binding Tolerance}" Width="45" Margin="0,0,6,0"/>
                                             <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"
                                                     Tag="{Binding}" Click="RemoveExit_Click"/>
                                         </StackPanel>
