@@ -3,7 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.WPF;assembly=LiveChartsCore.SkiaSharpView.WPF"
         Title="Backtest" Height="640" Width="760"
-        Background="{DynamicResource BackgroundBrush}" WindowStartupLocation="CenterOwner">
+        WindowStyle="None" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
 
     <Window.Resources>
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
@@ -15,6 +22,35 @@
         <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
         <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
         <SolidColorBrush x:Key="Up" Color="{DynamicResource ColorUp}"/>
+
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
@@ -144,158 +180,186 @@
         </Style>
     </Window.Resources>
 
-    <DockPanel Margin="14">
-        <Border DockPanel.Dock="Top" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="12" Margin="0,0,0,14">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Strategy" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                <ComboBox x:Name="StrategyCombo" Width="160" DisplayMemberPath="Name"/>
-                <TextBlock Text="Balance" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
-                <TextBox x:Name="BalanceBox" Text="10000" Width="70"/>
-                <TextBlock Text="Fee %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
-                <TextBox x:Name="FeeBox" Text="0.1" Width="45"/>
-                <TextBlock Text="Slip %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
-                <TextBox x:Name="SlippageBox" Text="0.05" Width="45"/>
+    <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
 
-                <CheckBox x:Name="WalkForwardCheck" Content="Walk-Forward" Margin="16,0,8,0" Checked="WalkForwardCheck_Changed" Unchecked="WalkForwardCheck_Changed"/>
-                <TextBlock x:Name="WindowsLabel" Text="Win:" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" Visibility="Collapsed"/>
-                <TextBox x:Name="WindowsBox" Text="5" Width="30" Visibility="Collapsed"/>
-                <TextBlock x:Name="OosLabel" Text="OOS %:" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="8,0,4,0" Visibility="Collapsed"/>
-                <TextBox x:Name="OosPercentBox" Text="20" Width="30" Visibility="Collapsed"/>
+            <!-- Custom title bar -->
+            <Border Grid.Row="0" Background="{DynamicResource PanelBg}"
+                    BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    </StackPanel>
+                    <TextBlock x:Name="TitleText" Text="Backtest Report" Foreground="{DynamicResource TextColor}"
+                               FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                </DockPanel>
+            </Border>
 
-                <Button Content="▶ Run" Padding="16,6" Margin="16,0,0,0" Click="Run_Click"/>
-            </StackPanel>
-        </Border>
+            <!-- Main content -->
+            <DockPanel Grid.Row="1" Margin="14">
+                <Border DockPanel.Dock="Top" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="12" Margin="0,0,0,14">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Strategy" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <ComboBox x:Name="StrategyCombo" Width="160" DisplayMemberPath="Name"/>
+                        <TextBlock Text="Balance" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
+                        <TextBox x:Name="BalanceBox" Text="10000" Width="70"/>
+                        <TextBlock Text="Fee %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
+                        <TextBox x:Name="FeeBox" Text="0.1" Width="45"/>
+                        <TextBlock Text="Slip %" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="12,0,8,0"/>
+                        <TextBox x:Name="SlippageBox" Text="0.05" Width="45"/>
 
-        <TextBlock DockPanel.Dock="Bottom" Margin="0,10,0,0" FontSize="11" Foreground="{StaticResource TextMuted}"
-                   Text="⚠️ Past backtest results don't guarantee future performance." />
+                        <CheckBox x:Name="WalkForwardCheck" Content="Walk-Forward" Margin="16,0,8,0" Checked="WalkForwardCheck_Changed" Unchecked="WalkForwardCheck_Changed"/>
+                        <TextBlock x:Name="WindowsLabel" Text="Win:" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="0,0,4,0" Visibility="Collapsed"/>
+                        <TextBox x:Name="WindowsBox" Text="5" Width="30" Visibility="Collapsed"/>
+                        <TextBlock x:Name="OosLabel" Text="OOS %:" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" Margin="8,0,4,0" Visibility="Collapsed"/>
+                        <TextBox x:Name="OosPercentBox" Text="20" Width="30" Visibility="Collapsed"/>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <Border x:Name="OverfitWarning" Background="#3D1A1A" CornerRadius="6" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
-                    <StackPanel>
-                        <TextBlock Text="⚠️ OVERFIT DETECTED" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource DangerColor}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="OverfitText" Foreground="{StaticResource TextColor}" FontSize="12" TextWrapping="Wrap"/>
+                        <Button Content="▶ Run" Padding="16,6" Margin="16,0,0,0" Click="Run_Click"/>
                     </StackPanel>
                 </Border>
 
-                <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,0,14">
-                    <lvc:CartesianChart x:Name="EquityChart" Height="220"/>
-                </Border>
+                <TextBlock DockPanel.Dock="Bottom" Margin="0,10,0,0" FontSize="11" Foreground="{StaticResource TextMuted}"
+                           Text="⚠️ Past backtest results don't guarantee future performance." />
 
-                <TextBlock Text="In-Sample Results (Training Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
-                <UniformGrid Columns="5" Margin="0,0,0,18">
-                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
-                        <StackPanel>
-                            <TextBlock Text="Win rate" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="WinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
-                        <StackPanel>
-                            <TextBlock Text="Avg R:R" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="AvgRRText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
-                        <StackPanel>
-                            <TextBlock Text="Max drawdown" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="DrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
-                        <StackPanel>
-                            <TextBlock Text="Total trades" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="TradesText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10">
-                        <StackPanel>
-                            <TextBlock Text="Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="BalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Up}" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,10,10,0">
-                        <StackPanel>
-                            <TextBlock Text="Sharpe ratio" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="SharpeText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,10,0,0">
-                        <StackPanel>
-                            <TextBlock Text="Sortino ratio" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="SortinoText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                </UniformGrid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <Border x:Name="OverfitWarning" Background="#3D1A1A" CornerRadius="6" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock Text="⚠️ OVERFIT DETECTED" FontWeight="SemiBold" FontSize="14" Foreground="{StaticResource DangerColor}" Margin="0,0,0,4"/>
+                                <TextBlock x:Name="OverfitText" Foreground="{StaticResource TextColor}" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
 
-                <TextBlock x:Name="OosHeader" Text="Out-of-Sample Results (Unseen Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" Visibility="Collapsed"/>
-                <UniformGrid x:Name="OosCards" Columns="5" Margin="0,0,0,18" Visibility="Collapsed">
-                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OOS Win rate" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosWinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OOS Avg R:R" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosAvgRRText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OOS Max DD" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosDrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OOS Trades" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosTradesText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OOS Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosBalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Up}" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,10,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OOS Sharpe" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosSharpeText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                    <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,10,0,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="OOS Sortino" Foreground="{StaticResource TextMuted}" FontSize="11"/>
-                            <TextBlock x:Name="OosSortinoText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
-                        </StackPanel>
-                    </Border>
-                </UniformGrid>
+                        <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,0,14">
+                            <lvc:CartesianChart x:Name="EquityChart" Height="220"/>
+                        </Border>
 
-                <TextBlock Text="Trade log" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
-                <DataGrid x:Name="TradesGrid" AutoGenerateColumns="False" Height="200">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Entry time" Binding="{Binding EntryTime}" Width="130"/>
-                        <DataGridTextColumn Header="Entry" Binding="{Binding EntryPrice, StringFormat=N2}" Width="90"/>
-                        <DataGridTextColumn Header="Exit time" Binding="{Binding ExitTime}" Width="130"/>
-                        <DataGridTextColumn Header="Exit" Binding="{Binding ExitPrice, StringFormat=N2}" Width="90"/>
-                        <DataGridTextColumn Header="Reason" Binding="{Binding ExitReason}" Width="80"/>
-                        <DataGridTextColumn Header="PnL %" Binding="{Binding PnLPercent, StringFormat=N2}" Width="70"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                        <TextBlock Text="In-Sample Results (Training Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8"/>
+                        <UniformGrid Columns="5" Margin="0,0,0,18">
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Win rate" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="WinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Avg R:R" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="AvgRRText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Max drawdown" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="DrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Total trades" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="TradesText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10">
+                                <StackPanel>
+                                    <TextBlock Text="Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="BalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Up}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,10,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Sharpe ratio" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="SharpeText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,10,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Sortino ratio" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="SortinoText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
 
-                <TextBlock Text="Monthly performance" FontWeight="SemiBold" FontSize="14" Margin="0,16,0,8"/>
-                <DataGrid x:Name="MonthlyGrid" AutoGenerateColumns="False" Height="170">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Month" Binding="{Binding MonthLabel}" Width="120"/>
-                        <DataGridTextColumn Header="Trades" Binding="{Binding TradeCount}" Width="90"/>
-                        <DataGridTextColumn Header="Net PnL" Binding="{Binding NetPnL, StringFormat=N2}" Width="120"/>
-                        <DataGridTextColumn Header="Win rate %" Binding="{Binding WinRatePercent, StringFormat=N1}" Width="100"/>
-                    </DataGrid.Columns>
-                </DataGrid>
-            </StackPanel>
-        </ScrollViewer>
-    </DockPanel>
+                        <TextBlock x:Name="OosHeader" Text="Out-of-Sample Results (Unseen Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" Visibility="Collapsed"/>
+                        <UniformGrid x:Name="OosCards" Columns="5" Margin="0,0,0,18" Visibility="Collapsed">
+                            <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="OOS Win rate" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="OosWinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="OOS Avg R:R" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="OosAvgRRText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="OOS Max DD" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="OosDrawdownText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="OOS Trades" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="OosTradesText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="OOS Balance" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="OosBalanceResultText" Text="—" FontSize="16" FontWeight="SemiBold" Foreground="{StaticResource Up}" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,10,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="OOS Sharpe" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="OosSharpeText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,10,0,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+                                <StackPanel>
+                                    <TextBlock Text="OOS Sortino" Foreground="{StaticResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="OosSortinoText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <TextBlock Text="Trade log" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
+                        <DataGrid x:Name="TradesGrid" AutoGenerateColumns="False" Height="200">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Entry time" Binding="{Binding EntryTime}" Width="130"/>
+                                <DataGridTextColumn Header="Entry" Binding="{Binding EntryPrice, StringFormat=N2}" Width="90"/>
+                                <DataGridTextColumn Header="Exit time" Binding="{Binding ExitTime}" Width="130"/>
+                                <DataGridTextColumn Header="Exit" Binding="{Binding ExitPrice, StringFormat=N2}" Width="90"/>
+                                <DataGridTextColumn Header="Reason" Binding="{Binding ExitReason}" Width="80"/>
+                                <DataGridTextColumn Header="PnL %" Binding="{Binding PnLPercent, StringFormat=N2}" Width="70"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+
+                        <TextBlock Text="Monthly performance" FontWeight="SemiBold" FontSize="14" Margin="0,16,0,8"/>
+                        <DataGrid x:Name="MonthlyGrid" AutoGenerateColumns="False" Height="170">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Month" Binding="{Binding MonthLabel}" Width="120"/>
+                                <DataGridTextColumn Header="Trades" Binding="{Binding TradeCount}" Width="90"/>
+                                <DataGridTextColumn Header="Net PnL" Binding="{Binding NetPnL, StringFormat=N2}" Width="120"/>
+                                <DataGridTextColumn Header="Win rate %" Binding="{Binding WinRatePercent, StringFormat=N1}" Width="100"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Grid>
+    </Border>
 </Window>

@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Versioning;
 using System.Windows;
+using System.Windows.Input;
 using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
@@ -25,10 +26,12 @@ public partial class BacktestWindow : Window
         StrategyCombo.ItemsSource = strategies;
         if (strategies.Count > 0) StrategyCombo.SelectedIndex = 0;
     }
+
     // Opens the window with a pre-computed result (used by StrategyBuilderWindow's quick test).
     public BacktestWindow(StrategyDefinition strategy, BacktestResult result) : this()
     {
         Title = $"Backtest: {strategy.Name}";
+        TitleText.Text = Title;
         OosHeader.Visibility = Visibility.Collapsed;
         OosCards.Visibility = Visibility.Collapsed;
         OverfitWarning.Visibility = Visibility.Collapsed;
@@ -38,6 +41,44 @@ public partial class BacktestWindow : Window
         TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(result.Trades);
         MonthlyGrid.ItemsSource = new ObservableCollection<MonthlyPerformance>(result.MonthlyBreakdown);
     }
+
+    #region Custom title bar
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2) { ToggleMaximize(); return; }
+        if (WindowState == WindowState.Maximized)
+        {
+            var point = PointToScreen(e.GetPosition(this));
+            WindowState = WindowState.Normal;
+            Left = point.X - Width / 2;
+            Top = point.Y - 15;
+        }
+        DragMove();
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
+
+    private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
+
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void ToggleMaximize()
+    {
+        if (WindowState == WindowState.Maximized)
+        {
+            WindowState = WindowState.Normal;
+            MaximizeButton.Content = "⛶";
+        }
+        else
+        {
+            WindowState = WindowState.Maximized;
+            MaximizeButton.Content = "❐";
+        }
+    }
+
+    #endregion
+
     private void WalkForwardCheck_Changed(object sender, RoutedEventArgs e)
     {
         var isVisible = WalkForwardCheck.IsChecked == true;
