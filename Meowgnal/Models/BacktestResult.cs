@@ -38,4 +38,7 @@ public sealed class BacktestResult
     public double SharpeRatio { get; set; }
     public double SortinoRatio { get; set; }
     public List<MonthlyPerformance> MonthlyBreakdown { get; set; } = new();
+
+    // Statistical confidence: "low" (<30), "moderate" (30-99), "reliable" (100+)
+    public string SampleSizeWarning { get; set; } = "reliable";
 }

@@ -443,7 +443,9 @@ public partial class StrategyBuilderWindow : Window
         if (DescriptionText is null) return;
         try
         {
-            DescriptionText.Text = StrategyDescriptionService.Describe(BuildStrategyFromUi());
+            DescriptionText.Text = StrategyDescriptionService.Describe(
+                BuildStrategyFromUi(),
+                _lastTestResult?.SampleSizeWarning);
         }
         catch
         {
@@ -616,6 +618,8 @@ public partial class StrategyBuilderWindow : Window
             TestRR.Text = result.AverageRiskReward.ToString("N2");
             TestDD.Text = $"{result.MaxDrawdownPercent:N1}%";
             SeeFullReportButton.Visibility = Visibility.Visible;
+            UpdateTestSampleWarning(result);
+            UpdateDescription();
         }
         catch (Exception ex)
         {
@@ -660,5 +664,27 @@ public partial class StrategyBuilderWindow : Window
 
         StrategyStorageService.Save(strategy);
         StatusText.Text = _editing is not null ? $"Updated '{strategy.Name}'" : $"Saved as '{strategy.Name}'";
+    }
+    private void UpdateTestSampleWarning(BacktestResult result)
+    {
+        var n = result.Trades.Count;
+        switch (result.SampleSizeWarning)
+        {
+            case "low":
+                TestSampleWarningBanner.Visibility = Visibility.Visible;
+                TestSampleWarningBanner.Background = new SolidColorBrush(Color.FromRgb(0x3D, 0x1A, 0x1A));
+                TestSampleWarningText.Text = $"⚠️ Only {n} trades — not statistically reliable. Try a longer test period.";
+                TestSampleWarningText.Foreground = new SolidColorBrush(Color.FromRgb(0xF5, 0xE5, 0xE5));
+                break;
+            case "moderate":
+                TestSampleWarningBanner.Visibility = Visibility.Visible;
+                TestSampleWarningBanner.Background = new SolidColorBrush(Color.FromRgb(0x4A, 0x3B, 0x10));
+                TestSampleWarningText.Text = $"⚡ {n} trades — decent, but 100+ gives more confidence.";
+                TestSampleWarningText.Foreground = new SolidColorBrush(Color.FromRgb(0xF5, 0xF0, 0xE0));
+                break;
+            default:
+                TestSampleWarningBanner.Visibility = Visibility.Collapsed;
+                break;
+        }
     }
 }

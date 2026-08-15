@@ -121,7 +121,8 @@ public static class BacktestEngine
             MaxDrawdownPercent = maxDrawdown,
             SharpeRatio = CalculateSharpeRatio(trades),
             SortinoRatio = CalculateSortinoRatio(trades),
-            MonthlyBreakdown = BuildMonthlyBreakdown(trades)
+            MonthlyBreakdown = BuildMonthlyBreakdown(trades),
+            SampleSizeWarning = ComputeSampleSizeWarning(trades.Count)
         };
     }
 
@@ -223,7 +224,8 @@ public static class BacktestEngine
             MaxDrawdownPercent = maxDd,
             SharpeRatio = CalculateSharpeRatio(trades),
             SortinoRatio = CalculateSortinoRatio(trades),
-            MonthlyBreakdown = BuildMonthlyBreakdown(trades)
+            MonthlyBreakdown = BuildMonthlyBreakdown(trades),
+            SampleSizeWarning = ComputeSampleSizeWarning(trades.Count)
         };
     }
 
@@ -272,4 +274,11 @@ public static class BacktestEngine
             })
             .ToList();
     }
+    // Standard statistical thresholds for sample-size reliability.
+    private static string ComputeSampleSizeWarning(int tradeCount) => tradeCount switch
+    {
+        < 30 => "low",
+        < 100 => "moderate",
+        _ => "reliable"
+    };
 }

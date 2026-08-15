@@ -241,6 +241,19 @@
                             </StackPanel>
                         </Border>
 
+                        <Border x:Name="SampleSizeWarningBanner" Background="#3D1A1A" CornerRadius="6" Padding="12" Margin="0,0,0,14" Visibility="Collapsed">
+                            <StackPanel>
+                                <TextBlock x:Name="SampleSizeWarningTitle" FontWeight="SemiBold" FontSize="13" Foreground="#FF6B6B" Margin="0,0,0,4"/>
+                                <TextBlock x:Name="SampleSizeWarningText" Foreground="#F5E5E5" FontSize="12" TextWrapping="Wrap"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border x:Name="SampleSizeReliableBanner" Background="#1E3A2A" CornerRadius="6" Padding="10" Margin="0,0,0,14" Visibility="Collapsed">
+                            <TextBlock Foreground="{StaticResource Up}" FontSize="12">
+                                <Run Text="✓"/> <Run x:Name="SampleSizeReliableText" Text=""/>
+                            </TextBlock>
+                        </Border>
+
                         <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,0,14">
                             <lvc:CartesianChart x:Name="EquityChart" Height="220"/>
                         </Border>

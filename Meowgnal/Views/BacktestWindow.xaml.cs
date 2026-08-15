@@ -160,7 +160,42 @@ public partial class BacktestWindow : Window
         BalanceResultText.Text = $"{result.StartingBalance:N0} → {result.FinalBalance:N0}";
         SharpeText.Text = result.SharpeRatio.ToString("N2");
         SortinoText.Text = result.SortinoRatio.ToString("N2");
+
+        UpdateSampleSizeBanner(result);
     }
+
+    private void UpdateSampleSizeBanner(BacktestResult result)
+    {
+        var n = result.Trades.Count;
+        switch (result.SampleSizeWarning)
+        {
+            case "low":
+                SampleSizeWarningBanner.Visibility = Visibility.Visible;
+                SampleSizeWarningBanner.Background = new SolidColorBrush(Color.FromRgb(0x3D, 0x1A, 0x1A));
+                SampleSizeWarningTitle.Text = "⚠️ LOW SAMPLE SIZE";
+                SampleSizeWarningTitle.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0x6B, 0x6B));
+                SampleSizeWarningText.Text = $"Only {n} trades — this result is not statistically reliable. At least 30 trades are recommended before trusting a win rate.";
+                SampleSizeWarningText.Foreground = new SolidColorBrush(Color.FromRgb(0xF5, 0xE5, 0xE5));
+                SampleSizeReliableBanner.Visibility = Visibility.Collapsed;
+                break;
+            case "moderate":
+                SampleSizeWarningBanner.Visibility = Visibility.Visible;
+                SampleSizeWarningBanner.Background = new SolidColorBrush(Color.FromRgb(0x4A, 0x3B, 0x10));
+                SampleSizeWarningTitle.Text = "⚡ MODERATE SAMPLE";
+                SampleSizeWarningTitle.Foreground = new SolidColorBrush(Color.FromRgb(0xFF, 0xD9, 0x66));
+                SampleSizeWarningText.Text = $"{n} trades — a decent sample, but more data (100+) would give higher confidence.";
+                SampleSizeWarningText.Foreground = new SolidColorBrush(Color.FromRgb(0xF5, 0xF0, 0xE0));
+                SampleSizeReliableBanner.Visibility = Visibility.Collapsed;
+                break;
+            default:
+                SampleSizeWarningBanner.Visibility = Visibility.Collapsed;
+                SampleSizeReliableBanner.Visibility = Visibility.Visible;
+                SampleSizeReliableText.Text = $"Statistically reliable sample ({n} trades).";
+                SampleSizeReliableText.Foreground = new SolidColorBrush(Color.FromRgb(0x7C, 0xE8, 0xA0));
+                break;
+        }
+    }
+
 
     private void UpdateOutOfSampleCards(BacktestResult result)
     {

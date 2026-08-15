@@ -12,7 +12,7 @@ namespace Meowgnal.Services;
 // non-professional traders can understand exactly what it does.
 public static class StrategyDescriptionService
 {
-    public static string Describe(StrategyDefinition strategy)
+    public static string Describe(StrategyDefinition strategy, string? sampleSizeWarning = null)
     {
         if (strategy is null) return string.Empty;
 
@@ -34,6 +34,9 @@ public static class StrategyDescriptionService
 
             sb.AppendLine($"Stop loss: {stopMethod} ({stopValue}x). Target: {targetMethod} ({targetValue}). Risk per trade: {risk}% of account.");
         }
+
+        if (sampleSizeWarning == "low")
+            sb.AppendLine("⚠️ (based on a small sample — interpret with caution)");
 
         return sb.ToString().TrimEnd();
     }
