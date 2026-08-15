@@ -2837,7 +2837,64 @@ public partial class MainWindow : Window
             case "adx": return new { type = "addIndicator", indicator = "adx", period, values = IndicatorCalculator.ADX(bars, period).ToArray() };
             case "volsma": return new { type = "addIndicator", indicator = "volsma", period, values = IndicatorCalculator.VOLSMA(bars, period).ToArray() };
             case "vwap": return new { type = "addIndicator", indicator = "vwap", values = IndicatorCalculator.VWAP(bars).ToArray() };
-            default: return null;
+            default: return BuildGenericPayload(type, period);
+        }
+    }
+
+    // Generic payload for indicators not hard-coded above (uses IndicatorEngine / FacioQuo).
+    private object? BuildGenericPayload(string type, int period)
+    {
+        var bars = _currentBars;
+        if (bars.Count == 0) return null;
+
+        var def = new IndicatorDefinition
+        {
+            Id = type.ToLowerInvariant(),
+            Type = type,
+            Params = new Dictionary<string, double> { ["period"] = period }
+        };
+
+        Dictionary<string, double?[]> multi;
+        try { multi = IndicatorEngine.CalculateMulti(bars, def); }
+        catch { return null; }
+
+        var series = multi
+            .OrderBy(kv => kv.Key)
+            .Select(kv => new { key = kv.Key, values = kv.Value })
+            .ToArray();
+
+        return new
+        {
+            type = "addIndicator",
+            indicator = type,
+            overlay = IsOverlayIndicator(type),
+            series
+        };
+    }
+
+    // Price-scale indicators draw on top of candles; everything else gets a bottom pane.
+    private static bool IsOverlayIndicator(string type)
+    {
+        switch (type)
+        {
+            case "sma":
+            case "ema":
+            case "wma":
+            case "hma":
+            case "dema":
+            case "tema":
+            case "kama":
+            case "vwma":
+            case "vwap":
+            case "bbands":
+            case "keltner":
+            case "donchian":
+            case "sar":
+            case "supertrend":
+            case "ichimoku":
+                return true;
+            default:
+                return false;
         }
     }
 

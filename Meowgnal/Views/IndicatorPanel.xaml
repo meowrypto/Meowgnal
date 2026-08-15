@@ -6,8 +6,6 @@
              FontFamily="Trebuchet MS" FontSize="12">
 
     <UserControl.Resources>
-
-        <!-- Search box (uses app-level theme brushes only) -->
         <Style x:Key="SearchBox" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
@@ -66,8 +64,6 @@
             </Setter>
         </Style>
 
-        
-        <!-- One indicator row: star + name + description -->
         <DataTemplate x:Key="IndicatorRowTemplate">
             <Border Background="Transparent" Cursor="Hand" Padding="6,6" MouseLeftButtonDown="Row_Click" Tag="{Binding}">
                 <Grid>
@@ -96,14 +92,12 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Live search -->
             <TextBox x:Name="SearchBox" Grid.Row="0" Style="{StaticResource SearchBox}"
                      Margin="10" TextChanged="SearchBox_TextChanged"/>
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel>
 
-                    <!-- Favorites -->
                     <Button Style="{StaticResource CategoryHeaderButton}" Click="FavoritesHeader_Click">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock x:Name="FavoritesArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
@@ -117,27 +111,54 @@
                         <ItemsControl x:Name="FavoritesList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
                     </StackPanel>
 
-                    <!-- Technical -->
-                    <Button Style="{StaticResource CategoryHeaderButton}" Click="TechnicalHeader_Click">
+                    <Button Style="{StaticResource CategoryHeaderButton}" Click="MovingAvgHeader_Click">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="TechnicalArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
-                            <TextBlock Text="📈 Technical" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="MovingAvgArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
+                            <TextBlock Text="📈 Moving Averages" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
-                    <StackPanel x:Name="TechnicalBody">
-                        <ItemsControl x:Name="TechnicalList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
+                    <StackPanel x:Name="MovingAvgBody">
+                        <ItemsControl x:Name="MovingAvgList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
                     </StackPanel>
 
-                    <!-- Fundamental (empty for now) -->
-                    <Button Style="{StaticResource CategoryHeaderButton}" Click="FundamentalHeader_Click">
+                    <Button Style="{StaticResource CategoryHeaderButton}" Click="OscillatorHeader_Click">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock x:Name="FundamentalArrow" Text="▸" Foreground="{DynamicResource TextMuted}" Width="14"/>
-                            <TextBlock Text="📊 Fundamental" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="OscillatorArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
+                            <TextBlock Text="〰️ Oscillators" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
                         </StackPanel>
                     </Button>
-                    <StackPanel x:Name="FundamentalBody" Visibility="Collapsed">
-                        <TextBlock Text="Coming soon" Foreground="{DynamicResource TextMuted}" FontSize="10"
-                                   Margin="24,0,10,8"/>
+                    <StackPanel x:Name="OscillatorBody">
+                        <ItemsControl x:Name="OscillatorList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
+                    </StackPanel>
+
+                    <Button Style="{StaticResource CategoryHeaderButton}" Click="VolatilityHeader_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="VolatilityArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
+                            <TextBlock Text="📊 Volatility" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    <StackPanel x:Name="VolatilityBody">
+                        <ItemsControl x:Name="VolatilityList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
+                    </StackPanel>
+
+                    <Button Style="{StaticResource CategoryHeaderButton}" Click="VolumeHeader_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="VolumeArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
+                            <TextBlock Text="📉 Volume" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    <StackPanel x:Name="VolumeBody">
+                        <ItemsControl x:Name="VolumeList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
+                    </StackPanel>
+
+                    <Button Style="{StaticResource CategoryHeaderButton}" Click="TrendHeader_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="TrendArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
+                            <TextBlock Text="➡️ Trend" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    <StackPanel x:Name="TrendBody">
+                        <ItemsControl x:Name="TrendList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
                     </StackPanel>
 
                 </StackPanel>

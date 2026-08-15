@@ -61,7 +61,11 @@ public partial class IndicatorPanel : UserControl
         IndicatorRegistry.All.Select(i => new IndicatorRowViewModel(i)).ToList();
 
     private readonly ObservableCollection<IndicatorRowViewModel> _favoriteRows = new();
-    private readonly ObservableCollection<IndicatorRowViewModel> _technicalRows = new();
+    private readonly ObservableCollection<IndicatorRowViewModel> _movingAvgRows = new();
+    private readonly ObservableCollection<IndicatorRowViewModel> _oscillatorRows = new();
+    private readonly ObservableCollection<IndicatorRowViewModel> _volatilityRows = new();
+    private readonly ObservableCollection<IndicatorRowViewModel> _volumeRows = new();
+    private readonly ObservableCollection<IndicatorRowViewModel> _trendRows = new();
 
     public event Action<IndicatorInfo>? IndicatorSelected;
 
@@ -69,7 +73,11 @@ public partial class IndicatorPanel : UserControl
     {
         InitializeComponent();
         FavoritesList.ItemsSource = _favoriteRows;
-        TechnicalList.ItemsSource = _technicalRows;
+        MovingAvgList.ItemsSource = _movingAvgRows;
+        OscillatorList.ItemsSource = _oscillatorRows;
+        VolatilityList.ItemsSource = _volatilityRows;
+        VolumeList.ItemsSource = _volumeRows;
+        TrendList.ItemsSource = _trendRows;
 
         foreach (var vm in _all)
             vm.IsFavorite = _settings.FavoriteIndicatorTypes.Contains(vm.Info.Type);
@@ -77,7 +85,6 @@ public partial class IndicatorPanel : UserControl
         ApplyFilter();
     }
 
-    // Shows a check mark next to indicators currently on the chart.
     public void RefreshActiveTypes(IEnumerable<string> activeTypes)
     {
         var set = new HashSet<string>(activeTypes);
@@ -91,9 +98,33 @@ public partial class IndicatorPanel : UserControl
     {
         var q = (SearchBox.Text ?? "").Trim().ToLowerInvariant();
 
-        _technicalRows.Clear();
+        _movingAvgRows.Clear();
+        _oscillatorRows.Clear();
+        _volatilityRows.Clear();
+        _volumeRows.Clear();
+        _trendRows.Clear();
+
         foreach (var vm in _all.Where(v => Matches(v, q)))
-            _technicalRows.Add(vm);
+        {
+            switch (vm.Info.SubCategory)
+            {
+                case "Moving Averages":
+                    _movingAvgRows.Add(vm);
+                    break;
+                case "Oscillators":
+                    _oscillatorRows.Add(vm);
+                    break;
+                case "Volatility":
+                    _volatilityRows.Add(vm);
+                    break;
+                case "Volume":
+                    _volumeRows.Add(vm);
+                    break;
+                case "Trend":
+                    _trendRows.Add(vm);
+                    break;
+            }
+        }
 
         _favoriteRows.Clear();
         foreach (var vm in _all.Where(v => v.IsFavorite && Matches(v, q)))
@@ -131,11 +162,20 @@ public partial class IndicatorPanel : UserControl
     private void FavoritesHeader_Click(object sender, RoutedEventArgs e) =>
         ToggleSection(FavoritesBody, FavoritesArrow);
 
-    private void TechnicalHeader_Click(object sender, RoutedEventArgs e) =>
-        ToggleSection(TechnicalBody, TechnicalArrow);
+    private void MovingAvgHeader_Click(object sender, RoutedEventArgs e) =>
+        ToggleSection(MovingAvgBody, MovingAvgArrow);
 
-    private void FundamentalHeader_Click(object sender, RoutedEventArgs e) =>
-        ToggleSection(FundamentalBody, FundamentalArrow);
+    private void OscillatorHeader_Click(object sender, RoutedEventArgs e) =>
+        ToggleSection(OscillatorBody, OscillatorArrow);
+
+    private void VolatilityHeader_Click(object sender, RoutedEventArgs e) =>
+        ToggleSection(VolatilityBody, VolatilityArrow);
+
+    private void VolumeHeader_Click(object sender, RoutedEventArgs e) =>
+        ToggleSection(VolumeBody, VolumeArrow);
+
+    private void TrendHeader_Click(object sender, RoutedEventArgs e) =>
+        ToggleSection(TrendBody, TrendArrow);
 
     private static void ToggleSection(UIElement body, TextBlock arrow)
     {

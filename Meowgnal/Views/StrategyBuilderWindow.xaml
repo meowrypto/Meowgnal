@@ -275,10 +275,26 @@
                                             <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="4" Padding="10" Margin="0,0,0,8">
                                                 <StackPanel Orientation="Horizontal">
                                                     <ComboBox Width="280" Margin="0,0,8,0"
-                                                              ItemsSource="{Binding DataContext.RegistryOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                              DisplayMemberPath="Label" SelectedValuePath="Type"
+                                                              ItemsSource="{Binding DataContext.GroupedRegistry, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                              SelectedValuePath="Type"
                                                               SelectedValue="{Binding Type}"
-                                                              SelectionChanged="IndicatorType_Changed"/>
+                                                              SelectionChanged="IndicatorType_Changed">
+                                                        <ComboBox.GroupStyle>
+                                                            <GroupStyle>
+                                                                <GroupStyle.HeaderTemplate>
+                                                                    <DataTemplate>
+                                                                        <TextBlock Text="{Binding Name}" FontWeight="Bold"
+                                                                                   Foreground="{StaticResource Accent}" FontSize="11"/>
+                                                                    </DataTemplate>
+                                                                </GroupStyle.HeaderTemplate>
+                                                            </GroupStyle>
+                                                        </ComboBox.GroupStyle>
+                                                        <ComboBox.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding Label}"/>
+                                                            </DataTemplate>
+                                                        </ComboBox.ItemTemplate>
+                                                    </ComboBox>
                                                     <TextBlock Text="period" Foreground="{StaticResource TextMuted}" Margin="0,5,6,0"/>
                                                     <TextBox Text="{Binding Period}" Width="55" Margin="0,0,8,0"/>
                                                     <Button Content="✕" Style="{StaticResource TertiaryButton}" Padding="8,4"

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
 using Meowgnal.DataProviders;
@@ -51,6 +52,7 @@ public partial class StrategyBuilderWindow : Window
     private BacktestResult? _lastTestResult;
 
     public ObservableCollection<IndicatorInfo> RegistryOptions { get; } = new();
+    public ICollectionView GroupedRegistry { get; private set; } = null!;
     public ObservableCollection<OpOption> OpOptions { get; } = new();
     public ObservableCollection<ModeOption> ModeOptions { get; } = new();
     public ObservableCollection<TokenOption> TokenOptions { get; } = new();
@@ -64,6 +66,8 @@ public partial class StrategyBuilderWindow : Window
         DataContext = this;
 
         foreach (var info in IndicatorRegistry.All) RegistryOptions.Add(info);
+        GroupedRegistry = CollectionViewSource.GetDefaultView(RegistryOptions);
+        GroupedRegistry.GroupDescriptions.Add(new PropertyGroupDescription("SubCategory"));
 
         OpOptions.Add(new OpOption { Key = "crossesAbove", Label = "crosses above" });
         OpOptions.Add(new OpOption { Key = "crossesBelow", Label = "crosses below" });

@@ -283,6 +283,30 @@
         // Draws indicator lines sent from the C# indicator panel
         function addIndicatorToChart(msg) {
             const times = rawData.map(c => c.time);
+
+            // Generic multi-series payload (new indicators from IndicatorEngine)
+            if (msg.series) {
+                const colors = ['#2962FF', '#FF9800', '#9C27B0', '#089981', '#F23645', '#00BCD4'];
+                let ci = 0;
+                for (const s of msg.series) {
+                    const pts = [];
+                    for (let i = 0; i < s.values.length && i < times.length; i++) {
+                        const v = s.values[i];
+                        if (v !== null && v !== undefined && !isNaN(v)) pts.push({ time: times[i], value: v });
+                    }
+                    if (pts.length === 0) continue;
+                    const color = colors[ci++ % colors.length];
+                    const line = msg.overlay
+                        ? chart.addLineSeries({ color: color, lineWidth: 2 })
+                        : chart.addLineSeries({ priceScaleId: msg.indicator, color: color, lineWidth: 2 });
+                    line.setData(pts);
+                    indicatorSeries.push(line);
+                }
+                if (!msg.overlay) {
+                    chart.priceScale(msg.indicator).applyOptions({ scaleMargins: { top: 0.75, bottom: 0 }, visible: false });
+                }
+                return;
+            }
             const IND_COLORS = {
                 sma: '#2962FF', ema: '#FF9800', rsi: '#9C27B0',
                 macd: '#2962FF', signal: '#FF9800', histogram: '#787B86',
