@@ -12,6 +12,7 @@ public sealed class AppSettings
     public int SignalCheckIntervalSeconds { get; set; } = 60;
 
     public List<string> FavoriteTimeframes { get; set; } = new() { "15m", "1h", "4h", "1d", "1w", "1M" };
+    public List<string> FavoriteIndicatorIds { get; set; } = new();
 
     // ------------------------------------------------------------------
     // Paper Trading Settings

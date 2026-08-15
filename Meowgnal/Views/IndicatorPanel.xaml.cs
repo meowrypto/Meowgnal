@@ -55,7 +55,8 @@ public sealed class IndicatorRowViewModel : INotifyPropertyChanged
 
 public partial class IndicatorPanel : UserControl
 {
-    private readonly IndicatorSettingsFile _settings = IndicatorSettingsStorageService.Load();
+    // Favorites live in AppSettings (shared, persistent).
+    private readonly List<string> _favoriteIds = SettingsStorageService.Load().FavoriteIndicatorIds;
 
     private readonly List<IndicatorRowViewModel> _all =
         IndicatorRegistry.All.Select(i => new IndicatorRowViewModel(i)).ToList();
@@ -80,9 +81,12 @@ public partial class IndicatorPanel : UserControl
         VolumeList.ItemsSource = _volumeRows;
         TrendList.ItemsSource = _trendRows;
         FundamentalList.ItemsSource = _fundamentalRows;
-        
-        foreach (var vm in _all)
-            vm.IsFavorite = _settings.FavoriteIndicatorTypes.Contains(vm.Info.Type);
+
+        foreach (var id in _favoriteIds)
+        {
+            var vm = _all.FirstOrDefault(v => v.Info.Type == id);
+            if (vm is not null) vm.IsFavorite = true;
+        }
 
         ApplyFilter();
     }
@@ -111,30 +115,22 @@ public partial class IndicatorPanel : UserControl
         {
             switch (vm.Info.SubCategory)
             {
-                case "Moving Averages":
-                    _movingAvgRows.Add(vm);
-                    break;
-                case "Oscillators":
-                    _oscillatorRows.Add(vm);
-                    break;
-                case "Volatility":
-                    _volatilityRows.Add(vm);
-                    break;
-                case "Volume":
-                    _volumeRows.Add(vm);
-                    break;
-                case "Trend":
-                    _trendRows.Add(vm);
-                    break;
-                case "Fundamental":
-                    _fundamentalRows.Add(vm);
-                    break;
+                case "Moving Averages": _movingAvgRows.Add(vm); break;
+                case "Oscillators": _oscillatorRows.Add(vm); break;
+                case "Volatility": _volatilityRows.Add(vm); break;
+                case "Volume": _volumeRows.Add(vm); break;
+                case "Trend": _trendRows.Add(vm); break;
+                case "Fundamental": _fundamentalRows.Add(vm); break;
             }
         }
 
+        // Favorites keep the order the user added them (not alphabetical).
         _favoriteRows.Clear();
-        foreach (var vm in _all.Where(v => v.IsFavorite && Matches(v, q)))
-            _favoriteRows.Add(vm);
+        foreach (var id in _favoriteIds)
+        {
+            var vm = _all.FirstOrDefault(v => v.Info.Type == id);
+            if (vm is not null && Matches(vm, q)) _favoriteRows.Add(vm);
+        }
 
         FavoritesEmptyHint.Visibility = _favoriteRows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -150,9 +146,12 @@ public partial class IndicatorPanel : UserControl
         if (sender is not Button btn || btn.Tag is not IndicatorRowViewModel vm) return;
 
         vm.IsFavorite = !vm.IsFavorite;
-        if (vm.IsFavorite) _settings.FavoriteIndicatorTypes.Add(vm.Info.Type);
-        else _settings.FavoriteIndicatorTypes.Remove(vm.Info.Type);
-        IndicatorSettingsStorageService.Save(_settings);
+        if (vm.IsFavorite) _favoriteIds.Add(vm.Info.Type);
+        else _favoriteIds.Remove(vm.Info.Type);
+
+        var settings = SettingsStorageService.Load();
+        settings.FavoriteIndicatorIds = _favoriteIds;
+        SettingsStorageService.Save(settings);
 
         ApplyFilter();
     }

@@ -105,7 +105,7 @@
                         </StackPanel>
                     </Button>
                     <StackPanel x:Name="FavoritesBody">
-                        <TextBlock x:Name="FavoritesEmptyHint" Text="No favorites yet — click the ☆ next to an indicator."
+                        <TextBlock x:Name="FavoritesEmptyHint" Text="Click the star next to any indicator to add it here"
                                    Foreground="{DynamicResource TextMuted}" FontSize="10"
                                    Margin="24,0,10,8" TextWrapping="Wrap"/>
                         <ItemsControl x:Name="FavoritesList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
