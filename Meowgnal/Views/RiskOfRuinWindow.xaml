@@ -1,0 +1,136 @@
+﻿<Window x:Class="Meowgnal.Views.RiskOfRuinWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Risk of Ruin" Height="420" Width="480"
+        WindowStyle="None" WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource BackgroundBrush}"
+        FontFamily="Trebuchet MS" FontSize="12"
+        ResizeMode="NoResize">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" ResizeBorderThickness="6"
+                      GlassFrameThickness="0" CornerRadius="0"
+                      UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Window.Resources>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
+        <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
+        <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
+        <SolidColorBrush x:Key="TextColor" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
+        <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+
+        <Style x:Key="WindowControlButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
+        </Style>
+    </Window.Resources>
+
+    <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <Border Grid.Row="0" Background="{DynamicResource PanelBg}"
+                    BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,0,0,1"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    </StackPanel>
+                    <TextBlock Text="📉 Risk of Ruin Calculator" Foreground="{DynamicResource TextColor}"
+                               FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
+                </DockPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="20">
+                <StackPanel>
+                    <TextBlock Text="Risk of Ruin Calculator" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+                    <TextBlock Text="What's the probability of losing the entire account with your current parameters?"
+                               Foreground="{StaticResource TextMuted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,20"/>
+
+                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold" FontSize="13" Margin="0,0,0,12">
+                                <Run Text="Win rate: "/>
+                                <Run x:Name="WinRateValueText" Text="50%" FontWeight="Bold" Foreground="{StaticResource AccentColor}"/>
+                            </TextBlock>
+                            <Slider x:Name="WinRateSlider" Minimum="1" Maximum="99" Value="50"
+                                    ValueChanged="Input_Changed" Margin="0,0,0,6"/>
+                            <TextBlock Text="Percentage of trades that close in profit."
+                                       Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock FontWeight="SemiBold" FontSize="13" Margin="0,0,0,12">
+                                <Run Text="Risk per trade: "/>
+                                <Run x:Name="RiskValueText" Text="2%" FontWeight="Bold" Foreground="{StaticResource AccentColor}"/>
+                            </TextBlock>
+                            <Slider x:Name="RiskSlider" Minimum="0.5" Maximum="25" Value="2" TickFrequency="0.5"
+                                    ValueChanged="Input_Changed" Margin="0,0,0,6"/>
+                            <TextBlock Text="Percentage of account balance risked on each trade."
+                                       Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border x:Name="ResultPanel" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="20" Margin="0,0,0,16">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="Risk of Ruin" Foreground="{StaticResource TextMuted}" FontSize="12"
+                                       HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                            <TextBlock x:Name="RuinPercentText" Text="—" FontSize="42" FontWeight="Bold"
+                                       HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="RuinLabel" FontSize="12" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14" Margin="0,0,0,16">
+                        <TextBlock x:Name="ExplanationText" FontSize="12" TextWrapping="Wrap"
+                                   Foreground="{StaticResource TextSecondary}"/>
+                    </Border>
+
+                    <Border BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="4" Padding="10">
+                        <TextBlock Text="⚠️ This uses the classic Gambler's Ruin formula (equal-size bets). It does not account for asymmetric win/loss sizes or stop-loss/take-profit ratios — a Monte Carlo simulation gives more accurate results."
+                                   Foreground="{StaticResource TextMuted}" FontSize="10" TextWrapping="Wrap"/>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+    </Border>
+</Window>

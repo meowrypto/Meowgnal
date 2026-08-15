@@ -687,4 +687,10 @@ public partial class StrategyBuilderWindow : Window
                 break;
         }
     }
+    private void RiskOfRuin_Click(object sender, RoutedEventArgs e)
+    {
+        var strategy = BuildStrategyFromUi();
+        var win = new RiskOfRuinWindow(_lastTestResult, strategy) { Owner = this };
+        win.ShowDialog();
+    }
 }

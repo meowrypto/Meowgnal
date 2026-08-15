@@ -132,6 +132,7 @@ public partial class BacktestWindow : Window
                 OverfitWarning.Visibility = Visibility.Collapsed;
             }
 
+            _lastResult = wfResult.AggregateOutOfSample;
             RenderChart(wfResult.AggregateOutOfSample);
             TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(wfResult.AggregateOutOfSample.Trades);
             MonthlyGrid.ItemsSource = new ObservableCollection<MonthlyPerformance>(wfResult.AggregateOutOfSample.MonthlyBreakdown);
@@ -139,6 +140,7 @@ public partial class BacktestWindow : Window
         else
         {
             var result = BacktestEngine.Run(strategy, bars, balance, fee, slippage);
+            _lastResult = result;
 
             OosHeader.Visibility = Visibility.Collapsed;
             OosCards.Visibility = Visibility.Collapsed;
@@ -260,4 +262,12 @@ public partial class BacktestWindow : Window
         }
         return SKColors.Gray;
     }
+    private void RiskOfRuin_Click(object sender, RoutedEventArgs e)
+    {
+        var strategy = StrategyCombo.SelectedItem as StrategyDefinition;
+        var win = new RiskOfRuinWindow(_lastResult, strategy) { Owner = this };
+        win.ShowDialog();
+    }
+
+    private BacktestResult? _lastResult;
 }

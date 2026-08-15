@@ -375,6 +375,8 @@
                             <Button x:Name="TestButton" Content="🧪 Test this strategy" 
                                     Style="{StaticResource SecondaryButton}" Padding="14,6"
                                     Click="Test_Click"/>
+                            <Button Content="📉 Risk of Ruin" Style="{StaticResource TertiaryButton}"
+                                    Padding="14,6" Margin="8,0,0,0" Click="RiskOfRuin_Click"/>
                             <ComboBox x:Name="TestPeriodCombo" Width="140" Margin="10,0,0,0" VerticalAlignment="Center">
                                 <ComboBoxItem Content="Last 30 days" Tag="30"/>
                                 <ComboBoxItem Content="Last 90 days" Tag="90" IsSelected="True"/>
