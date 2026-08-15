@@ -2906,6 +2906,17 @@ public partial class MainWindow : Window
             await _chartPageReady.Task;
             if (ChartWebView.CoreWebView2 is null || _currentBars.Count == 0) return;
 
+            // Prefetch any fundamental indicators active on this chart
+            var activeDefs = GetActiveIndicators(_chartSymbol)
+                .Select(a => new IndicatorDefinition
+                {
+                    Id = a.Type,
+                    Type = a.Type,
+                    Params = new Dictionary<string, double> { ["period"] = a.Period }
+                })
+                .ToList();
+            await IndicatorEngine.PrefetchFundamentalsAsync(_currentBars, activeDefs, _chartDataSource, _chartSymbol);
+
             ChartWebView.CoreWebView2.PostWebMessageAsJson(
                 System.Text.Json.JsonSerializer.Serialize(new { type = "clearIndicators" }, _indicatorJsonOptions));
 
@@ -3126,6 +3137,7 @@ public partial class MainWindow : Window
             var htf = AccuracyService.NextHtf(strategy.Timeframe);
             if (htf is not null)
                 htfBars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, htf, limit: 120);
+            await IndicatorEngine.PrefetchFundamentalsAsync(bars, strategy.Indicators, strategy.DataSource, strategy.Symbol);
             var signals = RuleEngine.ScanForSignals(strategy, bars);
             if (SettingsStorageService.Load().AccuracyClosedCandleOnly && bars.Count > 0)
                 signals = signals.Where(s => s.Timestamp != bars[^1].Timestamp).ToList();
@@ -3380,6 +3392,7 @@ public partial class MainWindow : Window
             {
                 IDataProvider provider = strategy.DataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
                 var bars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, strategy.Timeframe, limit: 500);
+                await IndicatorEngine.PrefetchFundamentalsAsync(bars, strategy.Indicators, strategy.DataSource, strategy.Symbol);
                 foreach (var signal in RuleEngine.ScanForSignals(strategy, bars))
                     found.Add(new FoundSignal(strategy, signal));
             }

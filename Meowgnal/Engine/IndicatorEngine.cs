@@ -1,14 +1,60 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using FacioQuo.Stock.Indicators;
 using Meowgnal.Models;
+using Meowgnal.Services;
 using Bar = Meowgnal.Models.Bar;
 
 namespace Meowgnal.Engine;
 
 public static class IndicatorEngine
 {
+    // Cache filled by PrefetchFundamentalsAsync before each scan / chart redraw.
+    private static readonly Dictionary<string, double?[]> _fundamentalCache =
+        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly object _cacheLock = new();
+
+    // Fetches every fundamental indicator referenced by the given definitions,
+    // aligned to the candle timeline. Called before backtest / chart rendering.
+    public static async Task PrefetchFundamentalsAsync(
+        IReadOnlyList<Bar> bars,
+        IEnumerable<IndicatorDefinition> defs,
+        string source,
+        string symbol)
+    {
+        var targets = new List<IndicatorDefinition>();
+        foreach (var def in defs)
+        {
+            var info = IndicatorRegistry.All.FirstOrDefault(i =>
+                string.Equals(i.Type, def.Type, StringComparison.OrdinalIgnoreCase));
+            if (info is not null && info.IsFundamental) targets.Add(def);
+        }
+        if (targets.Count == 0) return;
+
+        var tasks = targets.Select(def => Task.Run(async () =>
+        {
+            try
+            {
+                var series = await FundamentalIndicators.GetSeriesAsync(
+                    def.Type, bars, source, symbol);
+                lock (_cacheLock) { _fundamentalCache[def.Id] = series; }
+            }
+            catch (Exception ex)
+            {
+                AppLogger.Error($"Prefetch fundamental {def.Type} failed", ex);
+            }
+        })).ToArray();
+
+        await Task.WhenAll(tasks);
+    }
+
+    public static void ClearFundamentalCache()
+    {
+        lock (_cacheLock) { _fundamentalCache.Clear(); }
+    }
+
     public static double?[] Calculate(IReadOnlyList<Bar> bars, IndicatorDefinition def)
     {
         int Period(string key, int fallback) =>
@@ -21,9 +67,12 @@ public static class IndicatorEngine
             type == "ICHIMOKU" || type == "VORTEX")
             throw new InvalidOperationException($"{def.Type} has multiple outputs; use CalculateMulti.");
 
+        // Fundamental indicators are served from the prefetch cache
+        if (type is "FEARGREED" or "BTCDOM" or "FUNDING" or "OI")
+            throw new InvalidOperationException($"{def.Type} is fundamental; use CalculateMulti after PrefetchFundamentalsAsync.");
+
         return type switch
         {
-            // Moving Averages
             "SMA" => bars.ToSma(Period("period", 20)).Select(r => r.Sma).ToArray(),
             "EMA" => bars.ToEma(Period("period", 9)).Select(r => r.Ema).ToArray(),
             "WMA" => bars.ToWma(Period("period", 20)).Select(r => r.Wma).ToArray(),
@@ -33,7 +82,6 @@ public static class IndicatorEngine
             "KAMA" => bars.ToKama(Period("period", 10)).Select(r => r.Kama).ToArray(),
             "VWMA" => bars.ToVwma(Period("period", 20)).Select(r => r.Vwma).ToArray(),
 
-            // Oscillators
             "RSI" => bars.ToRsi(Period("period", 14)).Select(r => r.Rsi).ToArray(),
             "STOCH" => bars.ToStoch(Period("period", 14)).Select(r => r.K).ToArray(),
             "STOCHRSI" => bars.ToStochRsi(Period("period", 14)).Select(r => r.StochRsi).ToArray(),
@@ -49,12 +97,10 @@ public static class IndicatorEngine
             "MACD" => bars.ToMacd(Period("fastPeriods", 12), Period("slowPeriods", 26), Period("signalPeriods", 9)).Select(r => r.Macd).ToArray(),
             "ADX" => bars.ToAdx(Period("period", 14)).Select(r => r.Adx).ToArray(),
 
-            // Volatility
             "ATR" => bars.ToAtr(Period("period", 14)).Select(r => r.Atr).ToArray(),
             "STDDEV" => bars.ToStdDev(Period("period", 20)).Select(r => r.StdDev).ToArray(),
             "ULCER" => bars.ToUlcerIndex(Period("period", 14)).Select(r => r.UlcerIndex).ToArray(),
 
-            // Volume
             "VOLSMA" => CalcVolumeSma(bars, Period("period", 20)),
             "VWAP" => CalcVwap(bars),
             "OBV" => bars.ToObv().Select(r => (double?)r.Obv).ToArray(),
@@ -62,7 +108,6 @@ public static class IndicatorEngine
             "FORCEINDEX" => bars.ToForceIndex(Period("period", 13)).Select(r => (double?)r.ForceIndex).ToArray(),
             "ADL" => bars.ToAdl().Select(r => (double?)r.Adl).ToArray(),
 
-            // Trend
             "SAR" => bars.ToParabolicSar(0.02, 0.2).Select(r => (double?)r.Sar).ToArray(),
             "SUPERTREND" => bars.ToSuperTrend(Period("period", 10), 3.0).Select(r => (double?)r.SuperTrend).ToArray(),
             "CHOP" => bars.ToChop(Period("period", 14)).Select(r => r.Chop).ToArray(),
@@ -80,6 +125,21 @@ public static class IndicatorEngine
             def.Params.TryGetValue(key, out var v) ? ToInt(v, fallback) : fallback;
 
         var type = def.Type.ToUpperInvariant();
+
+        // Fundamental indicators: serve from the prefetch cache.
+        if (type is "FEARGREED" or "BTCDOM" or "FUNDING" or "OI")
+        {
+            lock (_cacheLock)
+            {
+                if (_fundamentalCache.TryGetValue(def.Id, out var cached))
+                {
+                    result[def.Id] = cached;
+                    return result;
+                }
+            }
+            result[def.Id] = new double?[bars.Count];
+            return result;
+        }
 
         if (type == "BBANDS")
         {
@@ -176,62 +236,52 @@ public static class IndicatorEngine
 
         if (type == "VORTEX")
         {
-            // Hand-rolled Vortex Indicator (independent of FacioQuo naming quirks).
-            // +VM[i] = |High[i] - Low[i-1]|
-            // -VM[i] = |Low[i] - High[i-1]|
-            // TR[i]  = max(High-Low, |High-PrevClose|, |Low-PrevClose|)
-            // +VI = sum(+VM over N) / sum(TR over N)
-            // -VI = sum(-VM over N) / sum(TR over N)
             var n = Period("period", 14);
             var plus = new double?[bars.Count];
             var minus = new double?[bars.Count];
 
-            if (bars.Count < 2 || n <= 0)
+            if (bars.Count >= 2 && n > 0)
             {
-                result[$"{def.Id}.plus"] = plus;
-                result[$"{def.Id}.minus"] = minus;
-                return result;
-            }
+                var plusVm = new double[bars.Count];
+                var minusVm = new double[bars.Count];
+                var tr = new double[bars.Count];
 
-            var plusVm = new double[bars.Count];
-            var minusVm = new double[bars.Count];
-            var tr = new double[bars.Count];
-
-            for (var i = 1; i < bars.Count; i++)
-            {
-                var h = (double)bars[i].High;
-                var l = (double)bars[i].Low;
-                var ph = (double)bars[i - 1].High;
-                var pl = (double)bars[i - 1].Low;
-                var pc = (double)bars[i - 1].Close;
-
-                plusVm[i] = Math.Abs(h - pl);
-                minusVm[i] = Math.Abs(l - ph);
-                tr[i] = Math.Max(h - l, Math.Max(Math.Abs(h - pc), Math.Abs(l - pc)));
-            }
-
-            double sumPvm = 0, sumMvm = 0, sumTr = 0;
-            var start = Math.Max(1, n);
-            for (var i = 1; i < start && i < bars.Count; i++)
-            {
-                sumPvm += plusVm[i];
-                sumMvm += minusVm[i];
-                sumTr += tr[i];
-            }
-
-            for (var i = 1; i < bars.Count; i++)
-            {
-                if (i > n)
+                for (var i = 1; i < bars.Count; i++)
                 {
-                    sumPvm += plusVm[i] - plusVm[i - n];
-                    sumMvm += minusVm[i] - minusVm[i - n];
-                    sumTr += tr[i] - tr[i - n];
+                    var h = (double)bars[i].High;
+                    var l = (double)bars[i].Low;
+                    var ph = (double)bars[i - 1].High;
+                    var pl = (double)bars[i - 1].Low;
+                    var pc = (double)bars[i - 1].Close;
+
+                    plusVm[i] = Math.Abs(h - pl);
+                    minusVm[i] = Math.Abs(l - ph);
+                    tr[i] = Math.Max(h - l, Math.Max(Math.Abs(h - pc), Math.Abs(l - pc)));
                 }
 
-                if (i >= n && sumTr > 0)
+                double sumPvm = 0, sumMvm = 0, sumTr = 0;
+                var start = Math.Max(1, n);
+                for (var i = 1; i < start && i < bars.Count; i++)
                 {
-                    plus[i] = sumPvm / sumTr;
-                    minus[i] = sumMvm / sumTr;
+                    sumPvm += plusVm[i];
+                    sumMvm += minusVm[i];
+                    sumTr += tr[i];
+                }
+
+                for (var i = 1; i < bars.Count; i++)
+                {
+                    if (i > n)
+                    {
+                        sumPvm += plusVm[i] - plusVm[i - n];
+                        sumMvm += minusVm[i] - minusVm[i - n];
+                        sumTr += tr[i] - tr[i - n];
+                    }
+
+                    if (i >= n && sumTr > 0)
+                    {
+                        plus[i] = sumPvm / sumTr;
+                        minus[i] = sumMvm / sumTr;
+                    }
                 }
             }
 
@@ -240,7 +290,6 @@ public static class IndicatorEngine
             return result;
         }
 
-        // Single-output fallback
         result[def.Id] = Calculate(bars, def);
         return result;
     }

@@ -66,6 +66,7 @@ public partial class IndicatorPanel : UserControl
     private readonly ObservableCollection<IndicatorRowViewModel> _volatilityRows = new();
     private readonly ObservableCollection<IndicatorRowViewModel> _volumeRows = new();
     private readonly ObservableCollection<IndicatorRowViewModel> _trendRows = new();
+    private readonly ObservableCollection<IndicatorRowViewModel> _fundamentalRows = new();
 
     public event Action<IndicatorInfo>? IndicatorSelected;
 
@@ -78,7 +79,8 @@ public partial class IndicatorPanel : UserControl
         VolatilityList.ItemsSource = _volatilityRows;
         VolumeList.ItemsSource = _volumeRows;
         TrendList.ItemsSource = _trendRows;
-
+        FundamentalList.ItemsSource = _fundamentalRows;
+        
         foreach (var vm in _all)
             vm.IsFavorite = _settings.FavoriteIndicatorTypes.Contains(vm.Info.Type);
 
@@ -103,6 +105,7 @@ public partial class IndicatorPanel : UserControl
         _volatilityRows.Clear();
         _volumeRows.Clear();
         _trendRows.Clear();
+        _fundamentalRows.Clear();
 
         foreach (var vm in _all.Where(v => Matches(v, q)))
         {
@@ -122,6 +125,9 @@ public partial class IndicatorPanel : UserControl
                     break;
                 case "Trend":
                     _trendRows.Add(vm);
+                    break;
+                case "Fundamental":
+                    _fundamentalRows.Add(vm);
                     break;
             }
         }
@@ -176,6 +182,9 @@ public partial class IndicatorPanel : UserControl
 
     private void TrendHeader_Click(object sender, RoutedEventArgs e) =>
         ToggleSection(TrendBody, TrendArrow);
+
+    private void FundamentalHeader_Click(object sender, RoutedEventArgs e) =>
+        ToggleSection(FundamentalBody, FundamentalArrow);
 
     private static void ToggleSection(UIElement body, TextBlock arrow)
     {

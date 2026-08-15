@@ -11,6 +11,8 @@ public sealed class IndicatorInfo
     public string SubCategory { get; set; } = "Other";
     public string[]? SubOutputs { get; set; }
     public bool HasNoPeriod { get; set; }
+    public bool IsFundamental { get; set; }
+    public string? LimitationNote { get; set; }
 }
 
 public static class IndicatorRegistry
@@ -65,6 +67,12 @@ public static class IndicatorRegistry
         new IndicatorInfo { Type = "SUPERTREND", Label = "SuperTrend", Description = "Trend-following indicator based on ATR. Price above line = bullish.", DefaultPeriod = 10, SubCategory = "Trend" },
         new IndicatorInfo { Type = "ICHIMOKU", Label = "Ichimoku Cloud", Description = "Complete trend system: Tenkan, Kijun, Senkou A/B, Chikou.", DefaultPeriod = 9, SubCategory = "Trend", SubOutputs = new[] { "tenkan", "kijun", "senkouA", "senkouB", "chikou" } },
         new IndicatorInfo { Type = "VORTEX", Label = "Vortex Indicator", Description = "Identifies trend start and direction. VI+ vs VI-.", DefaultPeriod = 14, SubCategory = "Trend", SubOutputs = new[] { "plus", "minus" } },
-        new IndicatorInfo { Type = "CHOP", Label = "Choppiness Index", Description = "Measures if market is trending or choppy. Above 61.8 = choppy.", DefaultPeriod = 14, SubCategory = "Trend" },
+                new IndicatorInfo { Type = "CHOP", Label = "Choppiness Index", Description = "Measures if market is trending or choppy. Above 61.8 = choppy.", DefaultPeriod = 14, SubCategory = "Trend" },
+
+        // === FUNDAMENTAL (external data, not derived from candles) ===
+        new IndicatorInfo { Type = "FEARGREED", Label = "Fear & Greed Index", Description = "Market sentiment 0..100 (Extreme Fear → Extreme Greed). Daily.", DefaultPeriod = 0, SubCategory = "Fundamental", HasNoPeriod = true, IsFundamental = true },
+        new IndicatorInfo { Type = "BTCDOM", Label = "BTC Dominance", Description = "Bitcoin's share of total crypto market cap (percent).", DefaultPeriod = 0, SubCategory = "Fundamental", HasNoPeriod = true, IsFundamental = true, LimitationNote = "Limited historical data for backtesting" },
+        new IndicatorInfo { Type = "FUNDING", Label = "Funding Rate", Description = "Perpetual swap funding rate. Positive = longs pay shorts.", DefaultPeriod = 0, SubCategory = "Fundamental", HasNoPeriod = true, IsFundamental = true },
+        new IndicatorInfo { Type = "OI", Label = "Open Interest", Description = "Total open contracts (USD). Rising OI = new money flowing in.", DefaultPeriod = 0, SubCategory = "Fundamental", HasNoPeriod = true, IsFundamental = true, LimitationNote = "Limited history on Hyperliquid" },
     };
-}
+};

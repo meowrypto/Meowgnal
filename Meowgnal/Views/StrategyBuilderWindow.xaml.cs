@@ -550,6 +550,7 @@ public partial class StrategyBuilderWindow : Window
                 return;
             }
 
+            await IndicatorEngine.PrefetchFundamentalsAsync(bars, strategy.Indicators, strategy.DataSource, strategy.Symbol);
             var result = BacktestEngine.Run(strategy, bars, 10000m, 0.1m, 0.05m);
             _lastTestResult = result;
 

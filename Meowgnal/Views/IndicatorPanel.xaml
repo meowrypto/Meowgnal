@@ -161,6 +161,16 @@
                         <ItemsControl x:Name="TrendList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
                     </StackPanel>
 
+                    <Button Style="{StaticResource CategoryHeaderButton}" Click="FundamentalHeader_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="FundamentalArrow" Text="▾" Foreground="{DynamicResource TextMuted}" Width="14"/>
+                            <TextBlock Text="🌐 Fundamental" Foreground="{DynamicResource TextPrimary}" FontWeight="SemiBold"/>
+                        </StackPanel>
+                    </Button>
+                    <StackPanel x:Name="FundamentalBody">
+                        <ItemsControl x:Name="FundamentalList" ItemTemplate="{StaticResource IndicatorRowTemplate}"/>
+                    </StackPanel>
+
                 </StackPanel>
             </ScrollViewer>
         </Grid>
