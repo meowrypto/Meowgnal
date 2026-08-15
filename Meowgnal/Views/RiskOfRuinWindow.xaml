@@ -21,6 +21,8 @@
         <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
         <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
         <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="Up" Color="{DynamicResource ColorUp}"/>
+        <SolidColorBrush x:Key="Down" Color="{DynamicResource ColorDown}"/>
 
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
