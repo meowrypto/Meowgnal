@@ -8,6 +8,8 @@ public sealed class AppSettings
     public string BinanceApiSecret { get; set; } = "";
 
     public bool ToastNotificationsEnabled { get; set; } = true;
+    public string TelegramBotToken { get; set; } = "";
+    public string TelegramChatId { get; set; } = "";
     public bool SoundNotificationsEnabled { get; set; } = true;
     public int SignalCheckIntervalSeconds { get; set; } = 60;
 

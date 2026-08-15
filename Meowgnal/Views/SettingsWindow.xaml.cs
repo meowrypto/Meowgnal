@@ -63,6 +63,8 @@ public partial class SettingsWindow : Window
         UpdateVolumeMultiplierVisibility();
 
         ToastCheck.IsChecked = _settings.ToastNotificationsEnabled;
+        TelegramBotTokenBox.Password = _settings.TelegramBotToken;
+        TelegramChatIdBox.Text = _settings.TelegramChatId;
         SoundCheck.IsChecked = _settings.SoundNotificationsEnabled;
         IntervalCombo.SelectedIndex = _settings.SignalCheckIntervalSeconds switch
         {
@@ -126,8 +128,40 @@ public partial class SettingsWindow : Window
         if (ToastCheck.IsChecked == true)
             NotificationService.ShowToast("Meowgnal — test", "Notifications are working correctly.");
         if (SoundCheck.IsChecked == true)
+        {
+            
+        }
             NotificationService.PlayAlertSound();
+     }
+        
+
+
+    private async void TestTelegramButton_Click(object sender, RoutedEventArgs e)
+    {
+        TelegramStatusText.Text = "Sending...";
+        TelegramStatusText.Foreground = (System.Windows.Media.Brush)FindResource("TextMuted");
+
+        // Temporarily save so the service can read the new values
+        var tempSettings = SettingsStorageService.Load();
+        tempSettings.TelegramBotToken = TelegramBotTokenBox.Password;
+        tempSettings.TelegramChatId = TelegramChatIdBox.Text;
+        SettingsStorageService.Save(tempSettings);
+
+        var success = await TelegramNotificationService.SendAsync(
+            "🐱 *Meowgnal Test*\nTelegram notifications are working correctly!");
+
+        if (success)
+        {
+            TelegramStatusText.Text = "✓ Message sent!";
+            TelegramStatusText.Foreground = (System.Windows.Media.Brush)FindResource("SuccessColor");
+        }
+        else
+        {
+            TelegramStatusText.Text = "✕ Failed (check token/chat ID)";
+            TelegramStatusText.Foreground = (System.Windows.Media.Brush)FindResource("DangerColor");
+        }
     }
+    
 
     private void ResetPaperAccount_Click(object sender, RoutedEventArgs e)
     {
@@ -163,6 +197,8 @@ public partial class SettingsWindow : Window
         _settings.AccuracyRegimeFilter = AccuracyRegimeCheck.IsChecked == true;
 
         _settings.ToastNotificationsEnabled = ToastCheck.IsChecked == true;
+        _settings.TelegramBotToken = TelegramBotTokenBox.Password;
+        _settings.TelegramChatId = TelegramChatIdBox.Text;
         _settings.SoundNotificationsEnabled = SoundCheck.IsChecked == true;
         _settings.SignalCheckIntervalSeconds = IntervalCombo.SelectedItem is ComboBoxItem item
             && item.Tag is string tag && int.TryParse(tag, out var seconds) ? seconds : 60;

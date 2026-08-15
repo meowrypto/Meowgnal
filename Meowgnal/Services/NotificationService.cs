@@ -1,13 +1,14 @@
 ﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Media;
 using Windows.Data.Xml.Dom;
 using Windows.UI.Notifications;
 
 namespace Meowgnal.Services;
 
-// Central place for user-facing alerts: Windows toast + alert sound.
-// Both are optional and controlled by Settings -> Notifications.
+// Central place for user-facing alerts: Windows toast + alert sound + Telegram.
+// All are optional and controlled by Settings -> Notifications.
 public static class NotificationService
 {
     private static string? _alertSoundPath;
@@ -44,6 +45,30 @@ public static class NotificationService
         {
             // A sound must never crash the app.
         }
+    }
+
+    // Sends both local toast and Telegram notification for a signal.
+    public static async void NotifySignal(
+        string strategyName, string signalType, string symbol, string timeframe, decimal price)
+    {
+        var settings = SettingsStorageService.Load();
+        if (settings.ToastNotificationsEnabled)
+            ShowToast("Meowgnal Signal", $"{signalType}: {symbol} on {timeframe} @ {price:F2}");
+
+        await TelegramNotificationService.NotifySignalAsync(strategyName, signalType, symbol, timeframe, price);
+    }
+
+    // Sends both local toast and Telegram notification for a paper-trading event.
+    public static async void NotifyPaperEvent(string eventType, string symbol, decimal? price = null)
+    {
+        var settings = SettingsStorageService.Load();
+        if (settings.ToastNotificationsEnabled)
+        {
+            var msg = price.HasValue ? $"{eventType}: {symbol} @ {price.Value:F2}" : $"{eventType}: {symbol}";
+            ShowToast("Meowgnal Paper Trade", msg);
+        }
+
+        await TelegramNotificationService.NotifyPaperEventAsync(eventType, symbol, price);
     }
 
     private static void EnsureAlertSoundFile()

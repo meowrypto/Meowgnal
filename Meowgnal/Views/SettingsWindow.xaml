@@ -378,6 +378,7 @@
                         </StackPanel>
 
                         <StackPanel x:Name="PanelNotifications" Visibility="Collapsed">
+                            <TextBlock Text="Local notifications" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,12"/>
                             <CheckBox x:Name="ToastCheck" Content="Windows toast notification on new signal" Margin="0,0,0,12"/>
                             <CheckBox x:Name="SoundCheck" Content="Play alert sound on new signal" Margin="0,0,0,20"/>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
@@ -390,8 +391,20 @@
                                 </ComboBox>
                             </StackPanel>
                             <Button x:Name="TestNotificationButton" Content="Send test notification" HorizontalAlignment="Left" Click="TestNotificationButton_Click"/>
-                            <TextBlock Text="More channels (Telegram, email) are planned for a future update."
-                                       Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,15,0,0"/>
+
+                            <TextBlock Text="Telegram notifications" FontSize="14" FontWeight="SemiBold" Margin="0,30,0,12"/>
+                            <Border BorderBrush="{StaticResource InfoBorder}" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,0,15">
+                                <TextBlock Text="💡 Message @BotFather on Telegram, send /newbot, follow the steps to get your token. To get your Chat ID, message @userinfobot and it will reply with your ID."
+                                           Foreground="{StaticResource InfoText}" FontSize="11" TextWrapping="Wrap"/>
+                            </Border>
+                            <TextBlock Text="Bot Token" Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
+                            <PasswordBox x:Name="TelegramBotTokenBox" Margin="0,0,0,15"/>
+                            <TextBlock Text="Chat ID" Foreground="{StaticResource TextMuted}" Margin="0,0,0,6"/>
+                            <TextBox x:Name="TelegramChatIdBox" Margin="0,0,0,15"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="TestTelegramButton" Content="Send test message" HorizontalAlignment="Left" Click="TestTelegramButton_Click" Margin="0,0,10,0"/>
+                                <TextBlock x:Name="TelegramStatusText" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" FontSize="11"/>
+                            </StackPanel>
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>

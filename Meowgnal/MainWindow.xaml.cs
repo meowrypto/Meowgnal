@@ -49,27 +49,20 @@ public partial class MainWindow : Window
 
     private readonly List<ChartTab> _tabs = new();
     private ChartTab? _activeTab;
-
     private WatchlistsFile _watchlistsFile = new();
     private WatchlistDefinition _activeWatchlist = new();
     private readonly List<WatchlistRow> _watchlistRows = new();
     private readonly DispatcherTimer _watchTimer = new() { Interval = TimeSpan.FromSeconds(5) };
     private bool _refreshingWatchlist;
-
     private PaperAccountFile _paperAccount = new();
     private readonly List<PaperPositionRow> _paperRows = new();
-
     private readonly DispatcherTimer _symbolPreviewDebounce = new() { Interval = TimeSpan.FromMilliseconds(600) };
-
     private readonly ObservableCollection<SignalDisplayItem> _signals = new();
-
     private readonly TaskCompletionSource<bool> _chartPageReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
     private DispatcherTimer? _monitorTimer;
     private readonly HashSet<string> _knownSignalKeys = new();
     private bool _baselineSeeded;
     private bool _isScanning;
-
     private readonly DispatcherTimer _clockTimer = new() { Interval = TimeSpan.FromSeconds(1) };
 
     // Drawing tools state
@@ -94,9 +87,7 @@ public partial class MainWindow : Window
     };
 
     private static readonly string[] CatalogOrder = TimeframeCatalog.SelectMany(g => g.Items).ToArray();
-
     private const int MaxFavoriteTimeframes = 6;
-
     private readonly List<string> _favoriteTfs;
     private readonly HashSet<string> _collapsedGroups = new() { "SECONDS" };
 
@@ -133,31 +124,23 @@ public partial class MainWindow : Window
         TitleBarVersion.Text = v is null ? "" : $"v{v.Major}.{v.Minor}";
 
         splash.Close();
-
         SignalsList.ItemsSource = _signals;
-
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
-
         ApplyChartType("candles");
         SetActiveTool(null);
-
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
-
         ApplyClockSettings();
         UpdateClockText();
         _clockTimer.Tick += (_, _) => UpdateClockText();
         _clockTimer.Start();
-
         _watchTimer.Tick += WatchTimer_Tick;
         _watchTimer.Start();
-
         _symbolPreviewDebounce.Tick += async (_, _) =>
         {
             _symbolPreviewDebounce.Stop();
             await UpdateSymbolPreviewAsync();
         };
-
         IndicatorPanelControl.IndicatorSelected += AddIndicatorToChart;
         Loaded += MainWindow_Loaded;
         PreviewKeyDown += UndoRedo_KeyDown;
@@ -196,13 +179,9 @@ public partial class MainWindow : Window
         }
         else if (settings.IsGuest)
         {
-           
         }
 
-
-
         UpdateProfileMenu(settings);
-
         _ = InitializeChartWebViewAsync();
 
         var first = StrategyStorageService.LoadAll().FirstOrDefault();
@@ -221,7 +200,7 @@ public partial class MainWindow : Window
         _alerts = PriceAlertStorageService.Load();
         _watchlistsFile = WatchlistStorageService.Load();
         _activeWatchlist = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == _watchlistsFile.ActiveListName)
-                           ?? _watchlistsFile.Lists[0];
+            ?? _watchlistsFile.Lists[0];
         WatchlistNameText.Text = _activeWatchlist.Name;
         RebuildWatchlistPanel();
         _ = RefreshWatchlistPricesAsync();
@@ -243,6 +222,7 @@ public partial class MainWindow : Window
     }
 
     #region Title Bar Controls
+
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2)
@@ -281,9 +261,11 @@ public partial class MainWindow : Window
             MaximizeButton.Content = "❐";
         }
     }
+
     #endregion
 
     #region Profile Menu
+
     private void ProfileButton_Click(object sender, RoutedEventArgs e) =>
         ProfilePopup.IsOpen = !ProfilePopup.IsOpen;
 
@@ -292,8 +274,6 @@ public partial class MainWindow : Window
         ProfilePopup.IsOpen = false;
         OpenSettingsButton_Click(sender, e);
     }
-
-    
 
     private void MenuHelp_Click(object sender, RoutedEventArgs e)
     {
@@ -364,10 +344,10 @@ public partial class MainWindow : Window
     {
         try { await _chartPageReady.Task; } catch { return; }
         if (ChartWebView.CoreWebView2 is null) return;
-
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
             JsonSerializer.Serialize(new { type = "setTheme", colors = ThemeService.GetChartColors(SettingsStorageService.Load()) }));
     }
+
     #endregion
 
     private void RebuildTabsBar()
@@ -427,7 +407,6 @@ public partial class MainWindow : Window
     {
         if (sender is not TextBlock t || t.Tag is not ChartTab tab) return;
         if (_tabs.Count <= 1) return;
-
         _tabs.Remove(tab);
         if (_activeTab == tab)
         {
@@ -454,7 +433,6 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
-
         NewTabPopup.IsOpen = false;
 
         var existing = _tabs.FirstOrDefault(t => t.Symbol == symbol);
@@ -465,7 +443,7 @@ public partial class MainWindow : Window
         }
 
         var dataSource = StrategyStorageService.LoadAll().FirstOrDefault(s => s.Symbol == symbol)?.DataSource
-                         ?? SettingsStorageService.Load().DefaultDataSource;
+            ?? SettingsStorageService.Load().DefaultDataSource;
 
         var tab = new ChartTab
         {
@@ -500,7 +478,6 @@ public partial class MainWindow : Window
         RebuildTimeframeBar();
         ApplyChartType(_chartType);
         _ = SendChartTypeAsync(_chartType);
-
         await LoadChartAsync();
         RebuildObjectList();
         ObjectsSymbolText.Text = _chartSymbol;
@@ -511,7 +488,6 @@ public partial class MainWindow : Window
         WatchlistPane.Visibility = which == "watchlist" ? Visibility.Visible : Visibility.Collapsed;
         SignalsPane.Visibility = which == "signals" ? Visibility.Visible : Visibility.Collapsed;
         PaperPane.Visibility = which == "paper" ? Visibility.Visible : Visibility.Collapsed;
-
         TabWatchlistButton.Background = which == "watchlist" ? (Brush)FindResource("Accent") : Brushes.Transparent;
         TabWatchlistButton.Foreground = which == "watchlist" ? Brushes.White : (Brush)FindResource("TextSecondary");
         TabSignalsButton.Background = which == "signals" ? (Brush)FindResource("Accent") : Brushes.Transparent;
@@ -602,6 +578,7 @@ public partial class MainWindow : Window
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center,
             });
+
             var last = new TextBlock
             {
                 Text = "—",
@@ -645,14 +622,12 @@ public partial class MainWindow : Window
     private async void WatchlistRow_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is not Grid g || g.Tag is not WatchlistItem item) return;
-
         var existing = _tabs.FirstOrDefault(t => t.Symbol == item.Symbol);
         if (existing is not null)
         {
             await ActivateTabAsync(existing);
             return;
         }
-
         var tab = new ChartTab { Symbol = item.Symbol, DataSource = item.DataSource };
         _tabs.Add(tab);
         await ActivateTabAsync(tab);
@@ -662,7 +637,6 @@ public partial class MainWindow : Window
     {
         e.Handled = true;
         if (sender is not TextBlock t || t.Tag is not WatchlistItem item) return;
-
         _activeWatchlist.Items.Remove(item);
         SaveWatchlists();
         RebuildWatchlistPanel();
@@ -676,7 +650,6 @@ public partial class MainWindow : Window
             WatchlistSwitchPopup.IsOpen = false;
             return;
         }
-
         SwitchListPanel.Children.Clear();
         foreach (var list in _watchlistsFile.Lists)
         {
@@ -696,10 +669,8 @@ public partial class MainWindow : Window
     {
         if (sender is not Button b || b.Tag is not string name) return;
         WatchlistSwitchPopup.IsOpen = false;
-
         var list = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == name);
         if (list is null || list == _activeWatchlist) return;
-
         _activeWatchlist = list;
         _watchlistsFile.ActiveListName = list.Name;
         SaveWatchlists();
@@ -728,13 +699,11 @@ public partial class MainWindow : Window
             NotificationService.ShowToast("Meowgnal", "A watchlist with this name already exists.");
             return;
         }
-
         var list = new WatchlistDefinition { Name = name };
         _watchlistsFile.Lists.Add(list);
         _watchlistsFile.ActiveListName = name;
         _activeWatchlist = list;
         SaveWatchlists();
-
         NewWatchlistPopup.IsOpen = false;
         WatchlistNameText.Text = name;
         RebuildWatchlistPanel();
@@ -766,19 +735,15 @@ public partial class MainWindow : Window
             SourceHyperRadio.Content = "Hyperliquid — …";
             return;
         }
-
         var binanceTask = SafeTickerAsync(new BinanceDataProvider(), symbol);
         var hyperTask = SafeTickerAsync(new HyperliquidDataProvider(), symbol);
         await Task.WhenAll(binanceTask, hyperTask);
-
         var b = binanceTask.Result;
         var h = hyperTask.Result;
-
         SourceBinanceRadio.IsEnabled = b is not null;
         SourceBinanceRadio.Content = b is null ? "Binance — not available" : $"Binance — {FormatPrice(b.Last)}";
         SourceHyperRadio.IsEnabled = h is not null;
         SourceHyperRadio.Content = h is null ? "Hyperliquid — not available" : $"Hyperliquid — {FormatPrice(h.Last)}";
-
         if (b is not null) SourceBinanceRadio.IsChecked = true;
         else if (h is not null) SourceHyperRadio.IsChecked = true;
     }
@@ -805,15 +770,12 @@ public partial class MainWindow : Window
                 MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
-
         var source = SourceHyperRadio.IsChecked == true ? "hyperliquid" : "binance";
-
         if (_activeWatchlist.Items.Any(i => i.Symbol == symbol && i.DataSource == source))
         {
             NotificationService.ShowToast("Meowgnal", $"{symbol} is already in this list.");
             return;
         }
-
         _activeWatchlist.Items.Add(new WatchlistItem { Symbol = symbol, DataSource = source });
         SaveWatchlists();
         AddSymbolPopup.IsOpen = false;
@@ -842,7 +804,6 @@ public partial class MainWindow : Window
     private async Task RefreshWatchlistPricesAsync()
     {
         if (_watchlistRows.Count == 0) return;
-
         foreach (var group in _watchlistRows.GroupBy(r => r.Item.DataSource).ToList())
         {
             try
@@ -851,7 +812,6 @@ public partial class MainWindow : Window
                     ? new HyperliquidDataProvider()
                     : new BinanceDataProvider();
                 var tickers = await provider.GetTickersAsync(group.Select(r => r.Item.Symbol).Distinct());
-
                 foreach (var row in group)
                 {
                     if (!tickers.TryGetValue(row.Item.Symbol, out var t)) continue;
@@ -1027,11 +987,9 @@ public partial class MainWindow : Window
         foreach (var trade in _paperAccount.TradeHistory.Take(10))
         {
             var tsp = new StackPanel { Margin = new Thickness(0, 0, 0, 8) };
-
             var line1 = new Grid();
             line1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             line1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
             var left = new StackPanel { Orientation = Orientation.Horizontal };
             left.Children.Add(new TextBlock
             {
@@ -1047,7 +1005,6 @@ public partial class MainWindow : Window
                 FontSize = 9,
             });
             line1.Children.Add(left);
-
             var pnl = new TextBlock
             {
                 Text = $"{trade.PnL:+0.00;-0.00}",
@@ -1058,7 +1015,6 @@ public partial class MainWindow : Window
             Grid.SetColumn(pnl, 1);
             line1.Children.Add(pnl);
             tsp.Children.Add(line1);
-
             tsp.Children.Add(new TextBlock
             {
                 Text = $"{trade.Reason} · {trade.CloseTime:MM/dd HH:mm}",
@@ -1066,7 +1022,6 @@ public partial class MainWindow : Window
                 FontSize = 9,
                 Margin = new Thickness(0, 1, 0, 0),
             });
-
             PaperHistoryPanel.Children.Add(tsp);
         }
 
@@ -1076,7 +1031,6 @@ public partial class MainWindow : Window
     private void UpdatePaperSummary(Dictionary<string, decimal> prices)
     {
         var settings = SettingsStorageService.Load();
-
         decimal unrealized = 0m;
         foreach (var p in _paperAccount.OpenPositions)
             if (prices.TryGetValue(p.Symbol, out var px))
@@ -1128,6 +1082,7 @@ public partial class MainWindow : Window
             : balance * settings.PaperPositionSizePercent / 100m;
         if (suggested <= 0) suggested = 100m;
         PopMarginBox.Text = Math.Round(Math.Min(suggested, balance), 2).ToString();
+
         OpenPositionPopup.IsOpen = true;
     }
 
@@ -1167,8 +1122,8 @@ public partial class MainWindow : Window
             NotificationService.ShowToast("Meowgnal", $"{symbol} is not available on either exchange.");
             return;
         }
-        var entry = ticker.Last;
 
+        var entry = ticker.Last;
         var slPrice = slPct > 0
             ? (side == PositionSide.Long ? entry * (1m - slPct / 100m) : entry * (1m + slPct / 100m))
             : 0m;
@@ -1186,7 +1141,6 @@ public partial class MainWindow : Window
         var result = PaperTradingEngine.TryOpen(
             _paperAccount, settings, symbol, dataSource, side, entry, leverage,
             slPrice, tpPrice, trailing, trailDist, trailAct, marginUsdt, strategyId: null);
-
         if (!result.Ok)
         {
             NotificationService.ShowToast("Meowgnal", result.Error);
@@ -1200,12 +1154,12 @@ public partial class MainWindow : Window
         NotificationService.ShowToast("Meowgnal",
             $"{(side == PositionSide.Long ? "LONG" : "SHORT")} {symbol} opened: {result.Position!.Size} @ {FormatPrice(entry)} " +
             $"(margin {result.Position.Margin:N2} USDT, {leverage:0}x)");
+        NotificationService.NotifyPaperEvent($"{(side == PositionSide.Long ? "LONG" : "SHORT")} opened", symbol, entry);
     }
 
     private async void PaperClose_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button b || b.Tag is not PaperPosition pos) return;
-
         var settings = SettingsStorageService.Load();
         IDataProvider provider = pos.DataSource == "hyperliquid"
             ? new HyperliquidDataProvider()
@@ -1223,6 +1177,7 @@ public partial class MainWindow : Window
         RebuildPaperPanel();
         _ = SendPositionsToChartAsync();
         NotificationService.ShowToast("Meowgnal", $"{trade.Symbol} closed: PnL {trade.PnL:+0.00;-0.00} USDT");
+        NotificationService.NotifyPaperEvent($"Closed ({trade.Reason})", trade.Symbol, ticker.Last);
     }
 
     private void CheckDailySuspension(AppSettings settings)
@@ -1287,16 +1242,12 @@ public partial class MainWindow : Window
         }
 
         var closedTrades = new List<PaperTrade>();
-
         foreach (var pos in _paperAccount.OpenPositions.ToList())
         {
             if (!prices.TryGetValue(pos.Symbol, out var last)) continue;
-
             PaperTradingEngine.UpdateTrailing(pos, last);
-
             var checkHigh = Math.Max(last, highs.TryGetValue(pos.Symbol, out var h) ? h : last);
             var checkLow = Math.Min(last, lows.TryGetValue(pos.Symbol, out var l) ? l : last);
-
             var reason = PaperTradingEngine.CheckStops(pos, checkHigh, checkLow);
             if (reason is not null)
                 closedTrades.Add(PaperTradingEngine.Close(_paperAccount, pos, last, reason.Value, settings.PaperTakerFeePercent));
@@ -1318,6 +1269,8 @@ public partial class MainWindow : Window
         foreach (var trade in closedTrades)
             NotificationService.ShowToast($"Meowgnal — {trade.Symbol}",
                 $"Position closed ({trade.Reason}): PnL {trade.PnL:+0.00;-0.00} USDT");
+        foreach (var trade in closedTrades)
+            NotificationService.NotifyPaperEvent($"Closed ({trade.Reason})", trade.Symbol);
 
         if (closedTrades.Count > 0)
         {
@@ -1351,18 +1304,15 @@ public partial class MainWindow : Window
                         ? new HyperliquidDataProvider()
                         : new BinanceDataProvider();
                     var tickers = await provider.GetTickersAsync(group.Select(a => a.Symbol).Distinct());
-
                     foreach (var alert in group.ToList())
                     {
                         if (!tickers.TryGetValue(alert.Symbol, out var t)) continue;
                         var above = t.Last >= alert.Price;
-
                         if (alert.WasAbove is null)
                         {
                             alert.WasAbove = above;
                             continue;
                         }
-
                         if (above != alert.WasAbove)
                         {
                             _alerts.Alerts.Remove(alert);
@@ -1377,10 +1327,8 @@ public partial class MainWindow : Window
                 {
                 }
             }
-
             PriceAlertStorageService.Save(_alerts);
         }
-
         await CheckDrawingAlertsAsync();
     }
 
@@ -1396,7 +1344,6 @@ public partial class MainWindow : Window
                         !string.IsNullOrWhiteSpace(d.Symbol) &&
                         d.Points.Count > 0)
             .ToList();
-
         if (horizontalDrawings.Count == 0) return;
 
         foreach (var group in horizontalDrawings.GroupBy(d => d.DataSource).ToList())
@@ -1406,17 +1353,14 @@ public partial class MainWindow : Window
                 IDataProvider provider = group.Key == "hyperliquid"
                     ? new HyperliquidDataProvider()
                     : new BinanceDataProvider();
-
                 var symbols = group.Select(d => d.Symbol).Distinct();
                 var tickers = await provider.GetTickersAsync(symbols);
 
                 foreach (var drawing in group)
                 {
                     if (!tickers.TryGetValue(drawing.Symbol, out var t)) continue;
-
                     var alertPrice = GetAlertPrice(drawing);
                     if (alertPrice <= 0) continue;
-
                     var above = t.Last >= alertPrice;
 
                     // Seed the baseline on first tick, no alert yet
@@ -1430,17 +1374,14 @@ public partial class MainWindow : Window
                     if (above != wasAbove)
                     {
                         _drawingAlertWasAbove[drawing.Id] = above;
-
                         // Disable alert after first trigger (user can re-enable in properties)
                         drawing.AlertOnCross = false;
                         DrawingStorageService.Save(_drawingsFile);
                         _ = SendDrawingsToChartAsync();
                         RebuildObjectList();
-
                         var kindName = KindLabel(drawing.Kind);
                         NotificationService.ShowToast($"Meowgnal — {drawing.Symbol}",
                             $"🔔 {kindName} crossed {alertPrice:N2} (now {t.Last:N2})");
-
                         if (SettingsStorageService.Load().SoundNotificationsEnabled)
                             NotificationService.PlayAlertSound();
                     }
@@ -1460,7 +1401,6 @@ public partial class MainWindow : Window
     private static decimal GetAlertPrice(Drawing drawing)
     {
         if (drawing.Points.Count == 0) return 0m;
-
         return drawing.Kind switch
         {
             DrawingKind.HorizontalLine => drawing.Points[0].Price,
@@ -1480,11 +1420,9 @@ public partial class MainWindow : Window
     private async Task AutoTradeSignalsAsync(List<FoundSignal> fresh, AppSettings settings)
     {
         var changed = false;
-
         foreach (var f in fresh)
         {
             if (_paperAccount.IsSuspendedUntilTomorrow) break;
-
             var symbol = f.Strategy.Symbol;
             IDataProvider provider = f.Strategy.DataSource == "hyperliquid"
                 ? new HyperliquidDataProvider()
@@ -1498,12 +1436,10 @@ public partial class MainWindow : Window
                 if (_paperAccount.OpenPositions.Any(p => p.Symbol == symbol)) continue;
                 // Portfolio gate: only auto-trade strategies approved in the Portfolio window
                 if (!IsStrategyInPortfolio(f.Strategy, settings)) continue;
-
                 // Portfolio limit: max total open positions across all strategies
                 if (settings.PortfolioMaxTotalPositions > 0 &&
                     _paperAccount.OpenPositions.Count >= settings.PortfolioMaxTotalPositions)
                     continue;
-
                 // Portfolio limit: max open positions per strategy
                 if (settings.PortfolioMaxPositionsPerStrategy > 0 &&
                     _paperAccount.OpenPositions.Count(p => p.StrategyId == f.Strategy.StrategyId) >= settings.PortfolioMaxPositionsPerStrategy)
@@ -1521,24 +1457,24 @@ public partial class MainWindow : Window
                     settings.PaperDefaultLeverage, slPrice, tpPrice,
                     trailingEnabled: false, trailingDistancePercent: 0m, trailingActivationPercent: 0m,
                     customMarginUsdt: 0m, strategyId: f.Strategy.StrategyId);
-
                 if (result.Ok)
                 {
                     changed = true;
                     NotificationService.ShowToast("Meowgnal — auto trade",
                         $"AUTO LONG {symbol} @ {FormatPrice(price)} (margin {result.Position!.Margin:N2} USDT) by {f.Strategy.Name}");
+                    NotificationService.NotifyPaperEvent($"AUTO LONG by {f.Strategy.Name}", symbol, price);
                 }
             }
             else
             {
                 var pos = _paperAccount.OpenPositions.FirstOrDefault(p => p.Symbol == symbol);
                 if (pos is null) continue;
-
                 var trade = PaperTradingEngine.Close(_paperAccount, pos, price, CloseReason.SignalExit, settings.PaperTakerFeePercent);
                 changed = true;
                 CheckDailySuspension(settings);
                 NotificationService.ShowToast("Meowgnal — auto trade",
                     $"AUTO CLOSE {trade.Symbol}: PnL {trade.PnL:+0.00;-0.00} USDT ({f.Strategy.Name})");
+                NotificationService.NotifyPaperEvent($"AUTO CLOSE ({f.Strategy.Name})", trade.Symbol, price);
             }
         }
 
@@ -1585,20 +1521,16 @@ public partial class MainWindow : Window
         try
         {
             await ChartWebView.EnsureCoreWebView2Async();
-
             var core = ChartWebView.CoreWebView2;
-
             core.Settings.AreDefaultContextMenusEnabled = false;
             core.Settings.AreDevToolsEnabled = false;
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.IsZoomControlEnabled = false;
-
             core.NavigationCompleted += (_, _) =>
             {
                 _chartPageReady.TrySetResult(true);
                 _ = SendDrawingsToChartAsync();
             };
-
             core.WebMessageReceived += OnChartWebMessageReceived;
 
             var hostFolder = Path.Combine(AppContext.BaseDirectory, "ChartHost");
@@ -1610,7 +1542,7 @@ public partial class MainWindow : Window
             _chartPageReady.TrySetCanceled();
             MessageBox.Show(
                 "The chart engine (WebView2 Runtime) is not installed on this system.\n" +
-                "Please download and install this small official package from Microsoft, then run the app again:\n\n" +
+                "Please download and install this small official package from Microsoft, then run the app again:\n" +
                 "https://go.microsoft.com/fwlink/p/?LinkId=2124703",
                 "Meowgnal — chart engine missing",
                 MessageBoxButton.OK,
@@ -1635,10 +1567,8 @@ public partial class MainWindow : Window
             if (probe.RootElement.ValueKind == JsonValueKind.String)
                 json = probe.RootElement.GetString()!;
         }
-
         using var doc = JsonDocument.Parse(json);
         var root = doc.RootElement;
-
         if (!root.TryGetProperty("type", out var typeProp)) return;
         var msgType = typeProp.GetString();
 
@@ -1721,13 +1651,11 @@ public partial class MainWindow : Window
                     var kind = Enum.TryParse<DrawingKind>(normalizedKind, true, out var parsedKind)
                         ? parsedKind
                         : DrawingKind.HorizontalLine;
-
                     var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", ""), DataSource = _chartDataSource };
                     if (drawingEl.TryGetProperty("label", out var tLabelEl))
                         newDrawing.Label = tLabelEl.GetString() ?? "";
                     if (drawingEl.TryGetProperty("color", out var tColorEl))
                         newDrawing.Color = tColorEl.GetString() ?? "#2962FF";
-
                     if (drawingEl.TryGetProperty("points", out var pts))
                     {
                         foreach (var pt in pts.EnumerateArray())
@@ -1739,14 +1667,12 @@ public partial class MainWindow : Window
                             });
                         }
                     }
-
                     if (newDrawing.Points.Count > 0)
                     {
                         CaptureSnapshot();
                         _drawingsFile.Drawings.Add(newDrawing);
                         DrawingStorageService.Save(_drawingsFile);
                     }
-
                     _activeDrawingMode = null;
                     SetActiveTool(null);
                     _ = SendDrawingModeToChartAsync("none");
@@ -1787,7 +1713,6 @@ public partial class MainWindow : Window
                                 Price = pt.GetProperty("price").GetDecimal()
                             });
                         }
-
                         if (newPoints.Count > 0)
                         {
                             existing.Points = newPoints;
@@ -1815,6 +1740,7 @@ public partial class MainWindow : Window
             catch { }
             return;
         }
+
         if (msgType == "updateDrawings")
         {
             try
@@ -1828,7 +1754,6 @@ public partial class MainWindow : Window
                         var id = idEl.GetString();
                         var existing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
                         if (existing is null || existing.IsLocked) continue;
-
                         if (drawingEl.TryGetProperty("points", out var pts))
                         {
                             var newPoints = new List<DrawingPoint>();
@@ -1850,6 +1775,7 @@ public partial class MainWindow : Window
             catch { }
             return;
         }
+
         if (msgType == "groupDrawings")
         {
             try
@@ -1858,7 +1784,6 @@ public partial class MainWindow : Window
                 {
                     var groupId = root.TryGetProperty("groupId", out var gidEl) ? gidEl.GetString() : Guid.NewGuid().ToString("N");
                     if (string.IsNullOrEmpty(groupId)) groupId = Guid.NewGuid().ToString("N");
-
                     CaptureSnapshot();
                     var idSet = new HashSet<string>();
                     foreach (var idEl in idsEl.EnumerateArray())
@@ -1903,7 +1828,6 @@ public partial class MainWindow : Window
             return;
         }
 
-
         if (msgType == "openDrawingProperties")
         {
             var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
@@ -1911,10 +1835,8 @@ public partial class MainWindow : Window
             return;
         }
 
-
         if (msgType == "copyToast")
         {
-
             return;
         }
 
@@ -1931,7 +1853,6 @@ public partial class MainWindow : Window
                         newDrawing.Label = labelEl.GetString() ?? "";
                     if (drawingEl.TryGetProperty("color", out var colorEl))
                         newDrawing.Color = colorEl.GetString() ?? "#2962FF";
-
                     if (drawingEl.TryGetProperty("id", out var idEl) && idEl.GetString() is { Length: > 0 } newId)
                         newDrawing.Id = newId;
                     if (drawingEl.TryGetProperty("color", out var cEl))
@@ -1949,7 +1870,6 @@ public partial class MainWindow : Window
                             });
                         }
                     }
-
                     if (newDrawing.Points.Count > 0)
                     {
                         CaptureSnapshot();
@@ -1957,15 +1877,14 @@ public partial class MainWindow : Window
                         DrawingStorageService.Save(_drawingsFile);
                         _ = SendDrawingsToChartAsync();
                         RebuildObjectList();
-
                     }
                 }
             }
             catch { }
             return;
         }
-        if (msgType != "crosshair") return;
 
+        if (msgType != "crosshair") return;
         if (root.TryGetProperty("hasData", out var hasData) && hasData.GetBoolean())
         {
             SetOhlcHeader(
@@ -1994,7 +1913,6 @@ public partial class MainWindow : Window
         OhlcHighText.Text = high.ToString("N2");
         OhlcLowText.Text = low.ToString("N2");
         OhlcCloseText.Text = close.ToString("N2");
-
         OhlcOpenText.Foreground = open >= prevOpen ? UpBrush : DownBrush;
         OhlcHighText.Foreground = high >= prevHigh ? UpBrush : DownBrush;
         OhlcLowText.Foreground = low >= prevLow ? UpBrush : DownBrush;
@@ -2019,13 +1937,11 @@ public partial class MainWindow : Window
         var s = SettingsStorageService.Load();
         _clockMode = s.ClockMode;
         _clockZone = null;
-
         if (_clockMode == "custom" && !string.IsNullOrEmpty(s.ClockTimeZoneId))
         {
             try { _clockZone = TimeZoneInfo.FindSystemTimeZoneById(s.ClockTimeZoneId); }
             catch { _clockMode = "utc"; }
         }
-
         ClockZoneText.Text = _clockMode switch
         {
             "system" => "LOCAL",
@@ -2067,12 +1983,10 @@ public partial class MainWindow : Window
     private void BuildTimeZoneMenu()
     {
         TimeZoneListPanel.Children.Clear();
-
         var zones = TimeZoneInfo.GetSystemTimeZones()
             .OrderBy(z => z.BaseUtcOffset)
             .ThenBy(z => z.DisplayName, StringComparer.OrdinalIgnoreCase)
             .ToList();
-
         foreach (var zone in zones)
         {
             var isSelected = _clockMode == "custom" && _clockZone?.Id == zone.Id;
@@ -2098,7 +2012,6 @@ public partial class MainWindow : Window
         var settings = SettingsStorageService.Load();
         settings.ClockMode = mode;
         SettingsStorageService.Save(settings);
-
         ClockPopup.IsOpen = false;
         ApplyClockSettings();
         UpdateClockText();
@@ -2111,7 +2024,6 @@ public partial class MainWindow : Window
         settings.ClockMode = "custom";
         settings.ClockTimeZoneId = zoneId;
         SettingsStorageService.Save(settings);
-
         ClockPopup.IsOpen = false;
         ApplyClockSettings();
         UpdateClockText();
@@ -2127,7 +2039,9 @@ public partial class MainWindow : Window
     }
 
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
+
     private void OpenJournalButton_Click(object sender, RoutedEventArgs e) => new JournalWindow().ShowDialog();
+
     private void OpenPortfolioButton_Click(object sender, RoutedEventArgs e) => new PortfolioWindow().ShowDialog();
 
     private void ColorPickerButton_Click(object sender, RoutedEventArgs e) => ColorPopup.IsOpen = !ColorPopup.IsOpen;
@@ -2175,7 +2089,6 @@ public partial class MainWindow : Window
         {
             var drawing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
             if (drawing is null) return;
-
             // Snapshot first so Ctrl+Z can revert the property changes
             CaptureSnapshot();
             var win = new DrawingPropertiesWindow(drawing) { Owner = this };
@@ -2190,7 +2103,7 @@ public partial class MainWindow : Window
         {
             AppLogger.Fatal("Error opening drawing properties", ex);
             MessageBox.Show(
-                "Error opening drawing properties:\n\n" + ex.Message,
+                "Error opening drawing properties:\n" + ex.Message,
                 "Meowgnal",
                 MessageBoxButton.OK,
                 MessageBoxImage.Error);
@@ -2206,12 +2119,10 @@ public partial class MainWindow : Window
     private void RebuildTimeframeBar()
     {
         TimeframePanel.Children.Clear();
-
         var toShow = _favoriteTfs
             .Union(new[] { _chartTimeframe })
             .OrderBy(tf => Array.IndexOf(CatalogOrder, tf))
             .ToList();
-
         foreach (var tf in toShow)
         {
             var btn = new Button
@@ -2246,7 +2157,6 @@ public partial class MainWindow : Window
             TimeframePopup.IsOpen = false;
             return;
         }
-
         BuildTimeframeMenu();
         FitTimeframeMenuToWindow();
         TimeframePopup.IsOpen = true;
@@ -2257,7 +2167,6 @@ public partial class MainWindow : Window
         var buttonBottomY = TimeframeMenuButton.TranslatePoint(
             new Point(0, TimeframeMenuButton.ActualHeight), this).Y;
         var clientBottomY = (Content as FrameworkElement)?.ActualHeight ?? ActualHeight;
-
         var available = clientBottomY - buttonBottomY - 6;
         TimeframeMenuScroll.MaxHeight = Math.Clamp(available, 160, 640);
     }
@@ -2265,7 +2174,6 @@ public partial class MainWindow : Window
     private void BuildTimeframeMenu()
     {
         TimeframeMenuPanel.Children.Clear();
-
         foreach (var (group, items) in TimeframeCatalog)
         {
             if (TimeframeMenuPanel.Children.Count > 0)
@@ -2279,7 +2187,6 @@ public partial class MainWindow : Window
             }
 
             var isCollapsed = _collapsedGroups.Contains(group);
-
             var header = new Button
             {
                 Style = (Style)FindResource("TvButtonLeft"),
@@ -2309,7 +2216,6 @@ public partial class MainWindow : Window
             {
                 Visibility = isCollapsed ? Visibility.Collapsed : Visibility.Visible,
             };
-
             foreach (var tf in items)
             {
                 var row = new Grid();
@@ -2342,7 +2248,6 @@ public partial class MainWindow : Window
                 row.Children.Add(starBtn);
                 groupPanel.Children.Add(row);
             }
-
             TimeframeMenuPanel.Children.Add(groupPanel);
         }
     }
@@ -2368,7 +2273,6 @@ public partial class MainWindow : Window
     private void TimeframeStar_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tf) return;
-
         if (!_favoriteTfs.Remove(tf))
         {
             if (_favoriteTfs.Count >= MaxFavoriteTimeframes)
@@ -2378,11 +2282,9 @@ public partial class MainWindow : Window
             }
             _favoriteTfs.Add(tf);
         }
-
         var settings = SettingsStorageService.Load();
         settings.FavoriteTimeframes = _favoriteTfs;
         SettingsStorageService.Save(settings);
-
         RebuildTimeframeBar();
         BuildTimeframeMenu();
     }
@@ -2438,14 +2340,12 @@ public partial class MainWindow : Window
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
-
         var symbolClean = _chartSymbol.Replace("/", "");
 
         if (tag == "clear")
         {
             var res = MessageBox.Show($"Delete all drawings for {_chartSymbol}?", "Meowgnal", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (res != MessageBoxResult.Yes) return;
-
             CaptureSnapshot();
             _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
             DrawingStorageService.Save(_drawingsFile);
@@ -2458,9 +2358,7 @@ public partial class MainWindow : Window
         {
             if (_currentBars.Count == 0) return;
             var autoLevels = SupportResistanceDetector.Detect(_chartSymbol, _currentBars);
-
             foreach (var d in autoLevels) d.DataSource = _chartDataSource;
-
             CaptureSnapshot(); _drawingsFile.Drawings.AddRange(autoLevels);
             DrawingStorageService.Save(_drawingsFile);
             await SendDrawingsToChartAsync();
@@ -2511,9 +2409,8 @@ public partial class MainWindow : Window
     {
         try { await _chartPageReady.Task; } catch { return; }
         if (ChartWebView.CoreWebView2 is null) return;
-
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
-                        JsonSerializer.Serialize(new { type = "setDrawingMode", mode, color = _drawingsFile.DefaultColor }));
+            JsonSerializer.Serialize(new { type = "setDrawingMode", mode, color = _drawingsFile.DefaultColor }));
     }
 
     private async Task SendDrawingsToChartAsync()
@@ -2522,6 +2419,7 @@ public partial class MainWindow : Window
         if (ChartWebView.CoreWebView2 is null) return;
 
         var symbolClean = _chartSymbol.Replace("/", "");
+
         // Phase 27 — Eye toggle: send empty list when drawings are hidden
         if (SettingsStorageService.Load().DrawingsHidden)
         {
@@ -2529,6 +2427,7 @@ public partial class MainWindow : Window
                 JsonSerializer.Serialize(new { type = "setDrawings", drawings = Array.Empty<object>() }));
             return;
         }
+
         var drawings = _drawingsFile.Drawings
             .Where(d => d.Symbol == symbolClean && d.IsVisible)
             .Select(d => new
@@ -2552,7 +2451,9 @@ public partial class MainWindow : Window
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
             JsonSerializer.Serialize(new { type = "setDrawings", drawings }));
     }
+
     #region Object Tree
+
     private void ObjectsButton_Click(object sender, RoutedEventArgs e)
     {
         RebuildObjectList();
@@ -2638,7 +2539,6 @@ public partial class MainWindow : Window
 
             var label = string.IsNullOrWhiteSpace(d.Label) ? KindLabel(d.Kind) : $"{KindLabel(d.Kind)} — {d.Label}";
             var leftSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-
             Border dot;
             try
             {
@@ -2659,7 +2559,6 @@ public partial class MainWindow : Window
                 dot = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 0, 8, 0), Background = new SolidColorBrush(Colors.Gray), VerticalAlignment = VerticalAlignment.Center };
             }
             leftSp.Children.Add(dot);
-
             var nameText = new TextBlock
             {
                 Text = label,
@@ -2671,7 +2570,6 @@ public partial class MainWindow : Window
             leftSp.Children.Add(nameText);
 
             var rightSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-
             var editBtn = new Button
             {
                 Content = "✏️",
@@ -2682,7 +2580,6 @@ public partial class MainWindow : Window
                 FontSize = 11
             };
             editBtn.Click += ObjectEdit_Click;
-
             var lockBtn = new Button
             {
                 Content = d.IsLocked ? "🔒" : "🔓",
@@ -2693,7 +2590,6 @@ public partial class MainWindow : Window
                 FontSize = 11
             };
             lockBtn.Click += ObjectLock_Click;
-
             var hideBtn = new Button
             {
                 Content = d.IsVisible ? "👁️" : "🚫",
@@ -2704,7 +2600,6 @@ public partial class MainWindow : Window
                 FontSize = 11
             };
             hideBtn.Click += ObjectHide_Click;
-
             var delBtn = new Button
             {
                 Content = "🗑️",
@@ -2716,7 +2611,6 @@ public partial class MainWindow : Window
                 Foreground = (Brush)FindResource("Down")
             };
             delBtn.Click += ObjectDelete_Click;
-
             rightSp.Children.Add(editBtn);
             rightSp.Children.Add(lockBtn);
             rightSp.Children.Add(hideBtn);
@@ -2773,6 +2667,7 @@ public partial class MainWindow : Window
             RebuildObjectList();
         }
     }
+
     private void ExportTemplate_Click(object sender, RoutedEventArgs e)
     {
         var symbolClean = _chartSymbol.Replace("/", "");
@@ -2782,7 +2677,6 @@ public partial class MainWindow : Window
             NotificationService.ShowToast("Meowgnal", "No drawings to export.");
             return;
         }
-
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Title = "Export drawing template",
@@ -2797,7 +2691,6 @@ public partial class MainWindow : Window
             SourceSymbol = _chartSymbol,
             Drawings = drawings
         };
-
         if (TemplateService.Export(template, dialog.FileName))
             NotificationService.ShowToast("Meowgnal", $"Exported {drawings.Count} drawings.");
         else
@@ -2834,12 +2727,12 @@ public partial class MainWindow : Window
         RebuildObjectList();
         NotificationService.ShowToast("Meowgnal", $"Imported {template.Drawings.Count} drawings from {template.Name}.");
     }
+
     #endregion
 
     #region Indicator Panel
 
     private readonly IndicatorSettingsFile _indicatorSettings = IndicatorSettingsStorageService.Load();
-
     private static readonly System.Text.Json.JsonSerializerOptions _indicatorJsonOptions = new()
     {
         NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
@@ -3000,6 +2893,7 @@ public partial class MainWindow : Window
     }
 
     #endregion
+
     private void ChartTypeButton_Click(object sender, RoutedEventArgs e) =>
         ChartTypePopup.IsOpen = !ChartTypePopup.IsOpen;
 
@@ -3036,7 +2930,6 @@ public partial class MainWindow : Window
         {
             return;
         }
-
         if (ChartWebView.CoreWebView2 is null) return;
         ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "setChartType", chartType }));
     }
@@ -3052,6 +2945,7 @@ public partial class MainWindow : Window
     {
         var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         if (!ctrl) return;
+
         // Do not hijack Ctrl+Z/Ctrl+Y while typing in text boxes
         if (Keyboard.FocusedElement is TextBox or PasswordBox) return;
 
@@ -3124,7 +3018,6 @@ public partial class MainWindow : Window
     private async void ScreenshotButton_Click(object sender, RoutedEventArgs e)
     {
         if (ChartWebView.CoreWebView2 is null) return;
-
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Title = "Save chart screenshot",
@@ -3132,7 +3025,6 @@ public partial class MainWindow : Window
             FileName = $"Meowgnal_{_chartSymbol.Replace("/", "")}_{DateTime.Now:yyyyMMdd_HHmmss}.png"
         };
         if (dialog.ShowDialog() != true) return;
-
         await using var stream = File.Create(dialog.FileName);
         await ChartWebView.CoreWebView2.CapturePreviewAsync(CoreWebView2CapturePreviewImageFormat.Png, stream);
     }
@@ -3222,15 +3114,13 @@ public partial class MainWindow : Window
     private async Task UpdateChartAsync(List<Bar> bars)
     {
         _currentBars = bars;
-
         var last = bars[^1];
         var prev = bars.Count > 1 ? bars[^2] : last;
         SetOhlcHeader(last.Open, last.High, last.Low, last.Close, prev.Open, prev.High, prev.Low, prev.Close);
-
-    await SendCandlesToChartAsync(bars);
-    await RefreshIndicatorsOnChartAsync();
-    _ = SendPositionsToChartAsync();
-    _ = SendDrawingsToChartAsync();
+        await SendCandlesToChartAsync(bars);
+        await RefreshIndicatorsOnChartAsync();
+        _ = SendPositionsToChartAsync();
+        _ = SendDrawingsToChartAsync();
         _ = SendThemeToChartAsync();
     }
 
@@ -3244,7 +3134,6 @@ public partial class MainWindow : Window
         {
             return;
         }
-
         if (ChartWebView.CoreWebView2 is null) return;
 
         var payload = new
@@ -3261,7 +3150,6 @@ public partial class MainWindow : Window
                 volume = b.Volume
             }).ToArray()
         };
-
         ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
     }
 
@@ -3306,6 +3194,7 @@ public partial class MainWindow : Window
             _monitorTimer.Interval = interval;
         }
     }
+
     private async Task<bool> AccuracyPassAsync(FoundSignal f, AppSettings settings)
     {
         try
@@ -3365,8 +3254,8 @@ public partial class MainWindow : Window
             }
 
             var fresh = found
-    .Where(f => !_knownSignalKeys.Contains(MakeSignalKey(f.Strategy.StrategyId, f.Signal)))
-    .ToList();
+                .Where(f => !_knownSignalKeys.Contains(MakeSignalKey(f.Strategy.StrategyId, f.Signal)))
+                .ToList();
 
             // Phase 34 — Accuracy Engine filters
             var passed = new List<FoundSignal>();
@@ -3379,6 +3268,7 @@ public partial class MainWindow : Window
             foreach (var f in fresh)
             {
                 _knownSignalKeys.Add(MakeSignalKey(f.Strategy.StrategyId, f.Signal));
+
                 // Phase 26 — calculate quality score for live signals
                 IDataProvider provider = f.Strategy.DataSource == "hyperliquid"
                     ? new HyperliquidDataProvider()
@@ -3389,6 +3279,7 @@ public partial class MainWindow : Window
                 if (htf is not null)
                     htfBars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, htf, limit: 120);
                 var quality = AccuracyService.CalculateQuality(f.Signal, bars, htfBars, settings);
+
                 _signals.Insert(0, new SignalDisplayItem
                 {
                     Symbol = f.Strategy.Symbol,
@@ -3399,6 +3290,13 @@ public partial class MainWindow : Window
                     QualityLabel = quality.Label,
                     QualityReason = quality.Reason
                 });
+
+                NotificationService.NotifySignal(
+                    f.Strategy.Name,
+                    f.Signal.Type == SignalType.Entry ? "Entry" : "Exit",
+                    f.Strategy.Symbol,
+                    f.Strategy.Timeframe,
+                    bars[^1].Close);
             }
 
             while (_signals.Count > 30) _signals.RemoveAt(_signals.Count - 1);
@@ -3413,7 +3311,6 @@ public partial class MainWindow : Window
                         $"{(f.Signal.Type == SignalType.Entry ? "BUY" : "SELL")} signal: {f.Strategy.Name}");
                 }
             }
-
             if (settings.SoundNotificationsEnabled)
                 NotificationService.PlayAlertSound();
 
