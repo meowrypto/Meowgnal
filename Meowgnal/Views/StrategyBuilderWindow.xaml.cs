@@ -22,6 +22,23 @@ public sealed class TokenOption
     public string Label { get; set; } = "";
 }
 
+// One row in the indicator picker (duplicates allowed for the Favorites group).
+public sealed class RegistryOption
+{
+    public string Type { get; init; } = "";
+    public string Label { get; init; } = "";
+    public IndicatorGroup Group { get; init; } = new();
+}
+
+// Group key with explicit ordering so "⭐ Favorites" always comes first.
+public sealed class IndicatorGroup : IComparable<IndicatorGroup>
+{
+    public string Name { get; init; } = "";
+    public int Order { get; init; }
+    public int CompareTo(IndicatorGroup? other) => other is null ? 1 : Order.CompareTo(other.Order);
+    public override string ToString() => Name;
+}
+
 public sealed class OpOption
 {
     public string Key { get; set; } = "";
@@ -51,7 +68,7 @@ public partial class StrategyBuilderWindow : Window
     private readonly DispatcherTimer _descTimer;
     private BacktestResult? _lastTestResult;
 
-    public ObservableCollection<IndicatorInfo> RegistryOptions { get; } = new();
+    public ObservableCollection<RegistryOption> RegistryOptions { get; } = new();
     public ICollectionView GroupedRegistry { get; private set; } = null!;
     public ObservableCollection<OpOption> OpOptions { get; } = new();
     public ObservableCollection<ModeOption> ModeOptions { get; } = new();
@@ -62,12 +79,11 @@ public partial class StrategyBuilderWindow : Window
 
     public StrategyBuilderWindow()
     {
+        BuildRegistryOptions();
         InitializeComponent();
         DataContext = this;
 
-        foreach (var info in IndicatorRegistry.All) RegistryOptions.Add(info);
-        GroupedRegistry = CollectionViewSource.GetDefaultView(RegistryOptions);
-        GroupedRegistry.GroupDescriptions.Add(new PropertyGroupDescription("SubCategory"));
+        
 
         OpOptions.Add(new OpOption { Key = "crossesAbove", Label = "crosses above" });
         OpOptions.Add(new OpOption { Key = "crossesBelow", Label = "crosses below" });
@@ -109,6 +125,45 @@ public partial class StrategyBuilderWindow : Window
         _descTimer.Tick += (_, _) => UpdateDescription();
         _descTimer.Start();
         UpdateDescription();
+    }
+
+    // Fills the indicator picker: a "⭐ Favorites" group on top (read from
+    // AppSettings.FavoriteIndicatorIds), then every indicator by SubCategory.
+    private void BuildRegistryOptions()
+    {
+        RegistryOptions.Clear();
+
+        var favorites = SettingsStorageService.Load().FavoriteIndicatorIds;
+        var favGroup = new IndicatorGroup { Name = "⭐ Favorites", Order = 0 };
+
+        foreach (var favType in favorites)
+        {
+            var info = IndicatorRegistry.All.FirstOrDefault(i => i.Type == favType);
+            if (info is not null)
+                RegistryOptions.Add(new RegistryOption { Type = info.Type, Label = info.Label, Group = favGroup });
+        }
+
+        var nextOrder = 1;
+        var orderOfCategory = new Dictionary<string, int>();
+        foreach (var info in IndicatorRegistry.All)
+        {
+            if (!orderOfCategory.TryGetValue(info.SubCategory, out var o))
+            {
+                o = nextOrder++;
+                orderOfCategory[info.SubCategory] = o;
+            }
+
+            RegistryOptions.Add(new RegistryOption
+            {
+                Type = info.Type,
+                Label = info.Label,
+                Group = new IndicatorGroup { Name = info.SubCategory, Order = o }
+            });
+        }
+
+        GroupedRegistry = CollectionViewSource.GetDefaultView(RegistryOptions);
+        GroupedRegistry.GroupDescriptions.Clear();
+        GroupedRegistry.GroupDescriptions.Add(new PropertyGroupDescription("Group"));
     }
 
     public StrategyBuilderWindow(StrategyDefinition prefill) : this()
