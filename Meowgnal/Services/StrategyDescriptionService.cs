@@ -218,4 +218,136 @@ public static class StrategyDescriptionService
     };
 
     private static string Fmt(double value) => value.ToString("0.##", CultureInfo.InvariantCulture);
+    // Plain-English explanation of why a trade was entered, using real indicator values.
+    public static string DescribeTradeEntry(
+        StrategyDefinition strategy,
+        Dictionary<string, decimal>? snapshot)
+    {
+        if (strategy?.EntryRules is null || strategy.EntryRules.Conditions.Count == 0)
+            return "Entered manually.";
+
+        var body = DescribeConditionsLive(strategy.EntryRules.Conditions, strategy.EntryRules.Mode, strategy, snapshot);
+        if (string.IsNullOrWhiteSpace(body)) return "Entry conditions were met.";
+
+        return $"Entered because {body}.";
+    }
+
+    // Plain-English explanation of why a trade was closed.
+    public static string DescribeTradeExit(
+        CloseReason reason, decimal exitPrice,
+        StrategyDefinition? strategy = null,
+        Dictionary<string, decimal>? snapshot = null)
+    {
+        var priceText = exitPrice.ToString("N2");
+        switch (reason)
+        {
+            case CloseReason.StopLoss:
+                return $"Closed at stop loss ({priceText}).";
+            case CloseReason.TakeProfit:
+                return $"Closed at take profit ({priceText}).";
+            case CloseReason.Liquidation:
+                return $"Liquidated at {priceText}.";
+            case CloseReason.Manual:
+                return $"Manually closed at {priceText}.";
+            case CloseReason.TrailingStop:
+                return $"Closed by trailing stop at {priceText}.";
+            case CloseReason.RiskRule:
+                return $"Closed due to daily risk limit at {priceText}.";
+            case CloseReason.SignalExit:
+                if (strategy?.ExitRules is not null && strategy.ExitRules.Conditions.Count > 0)
+                {
+                    var body = DescribeConditionsLive(strategy.ExitRules.Conditions, strategy.ExitRules.Mode, strategy, snapshot);
+                    if (!string.IsNullOrWhiteSpace(body))
+                        return $"Closed because {body} ({priceText}).";
+                }
+                return $"Closed by exit signal at {priceText}.";
+            default:
+                return $"Closed at {priceText}.";
+        }
+    }
+
+    // Like DescribeConditions, but replaces each token with its real numeric value.
+    private static string DescribeConditionsLive(
+        IEnumerable<ConditionNode>? conditions,
+        string mode,
+        StrategyDefinition strategy,
+        Dictionary<string, decimal>? snapshot)
+    {
+        if (conditions is null) return string.Empty;
+
+        var parts = new List<string>();
+
+        foreach (var node in conditions)
+        {
+            if (node is LeafCondition leaf)
+            {
+                var phrase = PhraseLive(leaf, strategy, snapshot);
+                if (!string.IsNullOrWhiteSpace(phrase)) parts.Add(phrase);
+            }
+            else if (node is ConditionGroup group)
+            {
+                var nested = DescribeConditionsLive(group.Conditions, group.Mode, strategy, snapshot);
+                if (!string.IsNullOrWhiteSpace(nested)) parts.Add($"({nested})");
+            }
+        }
+
+        if (parts.Count == 0) return string.Empty;
+        if (parts.Count == 1) return parts[0];
+        return string.Join(GetJoiner(mode), parts);
+    }
+
+    private static string PhraseLive(LeafCondition leaf, StrategyDefinition strategy, Dictionary<string, decimal>? snapshot)
+    {
+        var leftLabel = TokenLabel(leaf.Left, strategy);
+        var leftVal = snapshot is not null && leaf.Left is not null && snapshot.TryGetValue(leaf.Left, out var lv)
+            ? FormatPriceValue(lv) : null;
+        var leftText = leftVal is not null ? $"{leftLabel} was {leftVal}" : leftLabel;
+
+        if (leaf.Op == "nearSupport" || leaf.Op == "nearResistance")
+        {
+            var kind = leaf.Op == "nearSupport" ? "support" : "resistance";
+            return $"{leftLabel} was near {kind} (within {Fmt(leaf.TolerancePercent)}%)";
+        }
+
+        var rightText = FormatRightLive(leaf.Right, strategy, snapshot);
+
+        return leaf.Op switch
+        {
+            "crossesAbove" => $"{leftLabel} crossed above {rightText} ({leftText})",
+            "crossesBelow" => $"{leftLabel} crossed below {rightText} ({leftText})",
+            "greaterThan" or "above" => $"{leftText} was above {rightText}",
+            "lessThan" or "below" => $"{leftText} was below {rightText}",
+            _ => $"{leftLabel} {leaf.Op} {rightText}"
+        };
+    }
+
+    private static string FormatRightLive(object? right, StrategyDefinition strategy, Dictionary<string, decimal>? snapshot)
+    {
+        if (right is double d) return Fmt(d);
+        if (right is int i) return i.ToString();
+        if (right is string s)
+        {
+            var label = TokenLabel(s, strategy);
+            if (snapshot is not null && snapshot.TryGetValue(s, out var v))
+                return $"{label} ({FormatPriceValue(v)})";
+            return label;
+        }
+        if (right is System.Text.Json.JsonElement je)
+        {
+            if (je.ValueKind == System.Text.Json.JsonValueKind.Number && je.TryGetDouble(out var dv))
+                return Fmt(dv);
+            if (je.ValueKind == System.Text.Json.JsonValueKind.String)
+                return FormatRightLive(je.GetString(), strategy, snapshot);
+        }
+        return right?.ToString() ?? "";
+    }
+
+    private static string FormatPriceValue(decimal v)
+    {
+        var abs = Math.Abs(v);
+        if (abs >= 1000) return v.ToString("N2");
+        if (abs >= 1) return v.ToString("N4");
+        if (abs >= 0.01m) return v.ToString("N4");
+        return v.ToString("0.000000");
+    }
 }

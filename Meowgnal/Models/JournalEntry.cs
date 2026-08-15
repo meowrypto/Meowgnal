@@ -20,6 +20,9 @@ public class JournalEntry
     public DateTime CloseTime { get; set; }
     public string? StrategyId { get; set; }
 
+    // Trade autopsy: combined plain-English reason for entry + exit.
+    public string TradeExplanation { get; set; } = "";
+
     // Journal-specific fields
     public string Notes { get; set; } = "";
     public List<string> Tags { get; set; } = [];
@@ -43,8 +46,17 @@ public class JournalEntry
             Reason = trade.Reason,
             OpenTime = trade.OpenTime,
             CloseTime = trade.CloseTime,
-            StrategyId = trade.StrategyId
+            StrategyId = trade.StrategyId,
+            TradeExplanation = BuildTradeExplanation(trade)
         };
+    }
+
+    private static string BuildTradeExplanation(PaperTrade trade)
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(trade.EntryExplanation)) parts.Add(trade.EntryExplanation);
+        if (!string.IsNullOrWhiteSpace(trade.ExitExplanation)) parts.Add(trade.ExitExplanation);
+        return parts.Count == 0 ? "" : string.Join(" ", parts);
     }
 }
 

@@ -170,6 +170,39 @@ public static class RuleEngine
         return series.TryGetValue(reference, out var arr) && index < arr.Length ? arr[index] : null;
     }
 
+    // Captures the real numeric value of every token referenced the conditions,
+    // so we can later explain "why" a trade opened in plain English.
+    public static Dictionary<string, decimal> CaptureSnapshot(
+        List<ConditionNode> conditions, int index, IReadOnlyList<Bar> bars,
+        Dictionary<string, double?[]> series)
+    {
+        var snapshot = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        CollectTokens(conditions, snapshot);
+
+        var result = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        foreach (var token in snapshot.Keys)
+        {
+            var value = ResolveValue(token, index, bars, series);
+            if (value.HasValue) result[token] = (decimal)value.Value;
+        }
+        return result;
+    }
+
+    private static void CollectTokens(List<ConditionNode> conditions, Dictionary<string, decimal> tokens)
+    {
+        foreach (var node in conditions)
+        {
+            if (node is LeafCondition leaf)
+            {
+                if (!string.IsNullOrEmpty(leaf.Left)) tokens[leaf.Left] = 0m;
+                if (leaf.Right is string s) tokens[s] = 0m;
+            }
+            else if (node is ConditionGroup group)
+            {
+                CollectTokens(group.Conditions, tokens);
+            }
+        }
+    }
     private static double? ResolveRight(
         object right, int index, IReadOnlyList<Bar> bars, Dictionary<string, double?[]> series) => right switch
         {

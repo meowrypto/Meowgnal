@@ -14,6 +14,11 @@ public sealed class BacktestTrade
     public string ExitReason { get; set; } = ""; // "stopLoss" | "target" | "signal"
     public decimal PnL { get; set; }
     public double PnLPercent { get; set; }
+
+    // Trade autopsy: real indicator values at entry + plain-English explanation.
+    public Dictionary<string, decimal> IndicatorSnapshotAtEntry { get; set; } = new();
+    public string EntryExplanation { get; set; } = "";
+    public string ExitExplanation { get; set; } = "";
 }
 
 public sealed class MonthlyPerformance

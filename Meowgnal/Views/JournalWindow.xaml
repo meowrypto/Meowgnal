@@ -15,6 +15,7 @@
 
     <Window.Resources>
         <views:PnLColorConverter x:Key="PnLColorConverter"/>
+        <views:ExplanationVisibilityConverter x:Key="ExplanationVisibilityConverter"/>
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
         <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
         <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
@@ -173,6 +174,20 @@
                 <Border Grid.Column="0" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="10" Margin="0,0,10,0">
                     <DataGrid x:Name="JournalGrid" AutoGenerateColumns="False" SelectionChanged="JournalGrid_SelectionChanged">
                         <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="🔍" Width="36">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="🔍" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand"
+                                                   Visibility="{Binding TradeExplanation, Converter={StaticResource ExplanationVisibilityConverter}}">
+                                            <TextBlock.ToolTip>
+                                                <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="4" Padding="10" MaxWidth="420">
+                                                    <TextBlock Text="{Binding TradeExplanation}" TextWrapping="Wrap" Foreground="{DynamicResource TextColor}"/>
+                                                </Border>
+                                            </TextBlock.ToolTip>
+                                        </TextBlock>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="Symbol" Binding="{Binding Symbol}" Width="80"/>
                             <DataGridTextColumn Header="Side" Binding="{Binding Side}" Width="50"/>
                             <DataGridTextColumn Header="Entry" Binding="{Binding EntryPrice, StringFormat=N2}" Width="70"/>

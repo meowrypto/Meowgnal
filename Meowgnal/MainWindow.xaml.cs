@@ -1452,11 +1452,25 @@ public partial class MainWindow : Window
                     ? price * (1m + settings.PaperDefaultTakeProfitPercent / 100m)
                     : 0m;
 
+                // Build entry autopsy: real indicator values at the signal bar.
+                var barsForSnapshot = await provider.GetHistoricalCandlesAsync(symbol, f.Strategy.Timeframe, limit: 50);
+                var entrySnapshot = new Dictionary<string, decimal>();
+                var entryExplanation = "Auto-opened by signal.";
+                if (barsForSnapshot.Count > 0)
+                {
+                    var series = RuleEngine.CalculateIndicatorSeries(barsForSnapshot, f.Strategy.Indicators);
+                    var lastIdx = barsForSnapshot.Count - 1;
+                    entrySnapshot = RuleEngine.CaptureSnapshot(
+                        f.Strategy.EntryRules.Conditions, lastIdx, barsForSnapshot, series);
+                    entryExplanation = StrategyDescriptionService.DescribeTradeEntry(f.Strategy, entrySnapshot);
+                }
+
                 var result = PaperTradingEngine.TryOpen(
                     _paperAccount, settings, symbol, f.Strategy.DataSource, PositionSide.Long, price,
                     settings.PaperDefaultLeverage, slPrice, tpPrice,
                     trailingEnabled: false, trailingDistancePercent: 0m, trailingActivationPercent: 0m,
-                    customMarginUsdt: 0m, strategyId: f.Strategy.StrategyId);
+                    customMarginUsdt: 0m, strategyId: f.Strategy.StrategyId,
+                    entrySnapshot: entrySnapshot, entryExplanation: entryExplanation);
                 if (result.Ok)
                 {
                     changed = true;
@@ -1469,7 +1483,7 @@ public partial class MainWindow : Window
             {
                 var pos = _paperAccount.OpenPositions.FirstOrDefault(p => p.Symbol == symbol);
                 if (pos is null) continue;
-                var trade = PaperTradingEngine.Close(_paperAccount, pos, price, CloseReason.SignalExit, settings.PaperTakerFeePercent);
+                var trade = PaperTradingEngine.Close(_paperAccount, pos, price, CloseReason.SignalExit, settings.PaperTakerFeePercent, f.Strategy);
                 changed = true;
                 CheckDailySuspension(settings);
                 NotificationService.ShowToast("Meowgnal — auto trade",

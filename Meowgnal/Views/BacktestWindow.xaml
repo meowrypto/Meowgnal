@@ -353,6 +353,22 @@
                         <TextBlock Text="Trade log" FontWeight="SemiBold" FontSize="14" Margin="0,0,0,8"/>
                         <DataGrid x:Name="TradesGrid" AutoGenerateColumns="False" Height="200">
                             <DataGrid.Columns>
+                                <DataGridTemplateColumn Header="🔍" Width="40">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="🔍" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" Cursor="Hand">
+                                                <TextBlock.ToolTip>
+                                                    <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="4" Padding="10" MaxWidth="420">
+                                                        <StackPanel>
+                                                            <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource SuccessColor}" Margin="0,0,0,4" TextWrapping="Wrap" Text="{Binding EntryExplanation}"/>
+                                                            <TextBlock FontWeight="SemiBold" Foreground="{DynamicResource DangerColor}" Margin="0,6,0,0" TextWrapping="Wrap" Text="{Binding ExitExplanation}"/>
+                                                        </StackPanel>
+                                                    </Border>
+                                                </TextBlock.ToolTip>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
                                 <DataGridTextColumn Header="Entry time" Binding="{Binding EntryTime}" Width="130"/>
                                 <DataGridTextColumn Header="Entry" Binding="{Binding EntryPrice, StringFormat=N2}" Width="90"/>
                                 <DataGridTextColumn Header="Exit time" Binding="{Binding ExitTime}" Width="130"/>

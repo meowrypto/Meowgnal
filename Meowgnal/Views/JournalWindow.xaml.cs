@@ -8,6 +8,8 @@ using Meowgnal.Models;
 using Meowgnal.Services;
 using System.Windows.Input;
 
+
+
 namespace Meowgnal.Views;
 
 public partial class JournalWindow : Window

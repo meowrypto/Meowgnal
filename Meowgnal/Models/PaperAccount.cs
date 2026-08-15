@@ -35,6 +35,10 @@ public class PaperPosition
     public decimal EntryFee { get; set; }
     public string? StrategyId { get; set; }
 
+    // Trade autopsy: real indicator values + plain-English reason for opening.
+    public Dictionary<string, decimal> IndicatorSnapshotAtEntry { get; set; } = new();
+    public string EntryExplanation { get; set; } = "";
+
     public decimal UnrealizedPnL(decimal currentPrice, decimal takerFeePercent)
     {
         var gross = Side == PositionSide.Long
@@ -69,6 +73,11 @@ public class PaperTrade
     public DateTime OpenTime { get; set; }
     public DateTime CloseTime { get; set; }
     public string? StrategyId { get; set; }
+
+    // Trade autopsy: real indicator values + plain-English reasons.
+    public Dictionary<string, decimal> IndicatorSnapshotAtEntry { get; set; } = new();
+    public string EntryExplanation { get; set; } = "";
+    public string ExitExplanation { get; set; } = "";
 }
 
 public class PaperAccountFile

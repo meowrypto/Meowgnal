@@ -31,11 +31,12 @@ public static class PaperTradingEngine
     }
 
     public static OpenResult TryOpen(
-        PaperAccountFile account, AppSettings settings, string symbol, string dataSource,
-        PositionSide side, decimal entryPrice, decimal leverage,
-        decimal stopLossPrice, decimal takeProfitPrice,
-        bool trailingEnabled, decimal trailingDistancePercent, decimal trailingActivationPercent,
-        decimal customMarginUsdt = 0m, string? strategyId = null)
+    PaperAccountFile account, AppSettings settings, string symbol, string dataSource,
+    PositionSide side, decimal entryPrice, decimal leverage,
+    decimal stopLossPrice, decimal takeProfitPrice,
+    bool trailingEnabled, decimal trailingDistancePercent, decimal trailingActivationPercent,
+    decimal customMarginUsdt = 0m, string? strategyId = null,
+    Dictionary<string, decimal>? entrySnapshot = null, string? entryExplanation = null)
     {
         CheckDailyReset(account);
         if (account.IsSuspendedUntilTomorrow)
@@ -111,6 +112,8 @@ public static class PaperTradingEngine
             LowestPriceSinceEntry = entryPrice,
             OpenTime = DateTime.UtcNow,
             StrategyId = strategyId,
+            IndicatorSnapshotAtEntry = entrySnapshot ?? new Dictionary<string, decimal>(),
+            EntryExplanation = entryExplanation ?? "Manually opened by user."
         };
 
         account.CurrentBalance -= margin + entryFee;
@@ -184,7 +187,8 @@ public static class PaperTradingEngine
     }
 
     public static PaperTrade Close(PaperAccountFile account, PaperPosition position,
-        decimal exitPrice, CloseReason reason, decimal takerFeePercent)
+    decimal exitPrice, CloseReason reason, decimal takerFeePercent,
+    StrategyDefinition? strategy = null, Dictionary<string, decimal>? exitSnapshot = null)
     {
         decimal gross, exitFee, netPnL;
 
@@ -207,6 +211,9 @@ public static class PaperTradingEngine
 
         account.OpenPositions.Remove(position);
 
+        var exitExplanation = StrategyDescriptionService.DescribeTradeExit(
+    reason, exitPrice, strategy, exitSnapshot);
+
         var trade = new PaperTrade
         {
             PositionId = position.PositionId,
@@ -225,6 +232,9 @@ public static class PaperTradingEngine
             OpenTime = position.OpenTime,
             CloseTime = DateTime.UtcNow,
             StrategyId = position.StrategyId,
+            IndicatorSnapshotAtEntry = position.IndicatorSnapshotAtEntry ?? new Dictionary<string, decimal>(),
+            EntryExplanation = position.EntryExplanation ?? "",
+            ExitExplanation = exitExplanation
         };
 
         account.TradeHistory.Insert(0, trade);

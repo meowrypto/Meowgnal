@@ -1,8 +1,9 @@
-﻿using System;
+﻿using FacioQuo.Stock.Indicators;
+using Meowgnal.Models;
+using Meowgnal.Services;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using FacioQuo.Stock.Indicators;
-using Meowgnal.Models;
 using Bar = Meowgnal.Models.Bar;
 
 namespace Meowgnal.Engine;
@@ -30,6 +31,8 @@ public static class BacktestEngine
         decimal entryPrice = 0, stopLoss = 0, target = 0, quantity = 0;
         var prevEntrySignal = false;
         var prevExitSignal = false;
+        Dictionary<string, decimal> _pendingEntrySnapshot = new();
+        string _pendingEntryExplanation = "";
 
         for (var i = 0; i < bars.Count; i++)
         {
@@ -44,6 +47,12 @@ public static class BacktestEngine
             {
                 var nextBar = bars[i + 1];
                 entryPrice = nextBar.Open * (1 + slippagePercent / 100m);
+
+                // Capture real indicator values at the entry bar for autopsy.
+                var entrySnapshot = RuleEngine.CaptureSnapshot(
+                    strategy.EntryRules.Conditions, i, bars, series);
+                _pendingEntrySnapshot = entrySnapshot;
+                _pendingEntryExplanation = StrategyDescriptionService.DescribeTradeEntry(strategy, entrySnapshot);
 
                 var atrValue = i < atr.Length ? atr[i] : null;
                 var stopDistance = atrValue.HasValue
@@ -78,6 +87,20 @@ public static class BacktestEngine
                     var fees = (entryPrice * quantity + exitPrice * quantity) * (feePercent / 100m);
                     var netPnl = grossPnl - fees;
 
+                    // Build exit autopsy.
+                    var reasonEnum = exitReason switch
+                    {
+                        "stopLoss" => CloseReason.StopLoss,
+                        "target" => CloseReason.TakeProfit,
+                        "signal" => CloseReason.SignalExit,
+                        _ => CloseReason.SignalExit
+                    };
+                    var exitSnapshot = exitReason == "signal"
+                        ? RuleEngine.CaptureSnapshot(strategy.ExitRules.Conditions, i, bars, series)
+                        : new Dictionary<string, decimal>();
+                    var exitExplanation = StrategyDescriptionService.DescribeTradeExit(
+                        reasonEnum, exitPrice, strategy, exitSnapshot);
+
                     balance += netPnl;
                     trades.Add(new BacktestTrade
                     {
@@ -89,7 +112,10 @@ public static class BacktestEngine
                         TargetPrice = target,
                         ExitReason = exitReason,
                         PnL = netPnl,
-                        PnLPercent = (double)((exitPrice - entryPrice) / entryPrice * 100m)
+                        PnLPercent = (double)((exitPrice - entryPrice) / entryPrice * 100m),
+                        IndicatorSnapshotAtEntry = _pendingEntrySnapshot,
+                        EntryExplanation = _pendingEntryExplanation,
+                        ExitExplanation = exitExplanation
                     });
 
                     inPosition = false;
