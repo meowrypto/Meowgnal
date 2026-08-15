@@ -194,13 +194,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                 CornerRadius="4" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#2A2E39"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#2A2E39"/>
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -219,13 +219,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="{TemplateBinding Background}"
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
                                 CornerRadius="4" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#2A2E39"/>
+                                <Setter TargetName="Bd" Property="Background" Value="#2A2E39"/>
                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -761,6 +761,21 @@
                                                 </StackPanel>
                                             </Button>
                                         </StackPanel>
+                                    </Border>
+                                </Popup>
+                                <Rectangle Width="1" Height="18" Fill="{DynamicResource BorderLine}" Margin="8,0"/>
+                                <Button x:Name="IndicatorButton" Style="{StaticResource TvButton}" Click="IndicatorButton_Click" ToolTip="Indicators">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="f(x)" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Indicators" VerticalAlignment="Center"/>
+                                        <TextBlock Text="▾" FontSize="9" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                                    </StackPanel>
+                                </Button>
+                                <Popup x:Name="IndicatorPopup" StaysOpen="False" AllowsTransparency="True"
+                                       Placement="Bottom" PlacementTarget="{Binding ElementName=IndicatorButton}">
+                                    <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                            BorderThickness="1" CornerRadius="4" Padding="0" Margin="0,4,0,0">
+                                        <views:IndicatorPanel x:Name="IndicatorPanelControl"/>
                                     </Border>
                                 </Popup>
                             </StackPanel>

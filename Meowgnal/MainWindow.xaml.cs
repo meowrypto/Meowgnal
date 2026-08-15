@@ -2789,6 +2789,33 @@ public partial class MainWindow : Window
     }
     #endregion
 
+    #region Indicator Panel
+
+    private void IndicatorButton_Click(object sender, RoutedEventArgs e)
+    {
+        IndicatorPopup.IsOpen = !IndicatorPopup.IsOpen;
+
+        // Wire up the event handler if not already done
+        if (IndicatorPanelControl is not null)
+        {
+            IndicatorPanelControl.IndicatorSelected -= AddIndicatorToChart;
+            IndicatorPanelControl.IndicatorSelected += AddIndicatorToChart;
+        }
+    }
+
+    // Adds the selected indicator to the chart with default settings.
+    // For now, shows a toast notification; later we'll wire it to chart.html.
+    private void AddIndicatorToChart(IndicatorInfo info)
+    {
+        NotificationService.ShowToast("Meowgnal", $"Added {info.Label} to chart (default period: {info.DefaultPeriod}).");
+
+        // Close the popup after selection
+        IndicatorPopup.IsOpen = false;
+
+        // TODO (next task): wire this to chart.html to actually display the indicator
+    }
+
+    #endregion
     private void ChartTypeButton_Click(object sender, RoutedEventArgs e) =>
         ChartTypePopup.IsOpen = !ChartTypePopup.IsOpen;
 
