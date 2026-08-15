@@ -16,12 +16,12 @@
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
         <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
         <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextColor" Color="{DynamicResource ColorTextPrimary}"/>
         <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
         <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
-        <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
-        <SolidColorBrush x:Key="Up" Color="{DynamicResource ColorUp}"/>
-        <SolidColorBrush x:Key="Down" Color="{DynamicResource ColorDown}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
+        <SolidColorBrush x:Key="SuccessColor" Color="{DynamicResource ColorUp}"/>
 
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -77,19 +77,16 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
-
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
-
         <Style x:Key="TertiaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
@@ -111,14 +108,15 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" 
+                                Click="Minimize_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" 
+                                Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
                                 WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" 
+                                Click="Close_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
-                    <TextBlock x:Name="TitleText" Text="Strategy Templates" Foreground="{StaticResource TextPrimary}"
+                    <TextBlock Text="Strategy Templates" Foreground="{StaticResource TextColor}"
                                FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
                 </DockPanel>
             </Border>
@@ -134,7 +132,7 @@
 
                 <!-- Header -->
                 <StackPanel Grid.Row="0" Margin="0,0,0,4">
-                    <TextBlock Text="Strategy Templates" Foreground="{StaticResource TextPrimary}"
+                    <TextBlock Text="Strategy Templates" Foreground="{StaticResource TextColor}"
                                FontSize="22" FontWeight="Bold"/>
                     <TextBlock x:Name="SubtitleText" Text="Pick a template or build from scratch"
                                Foreground="{StaticResource TextMuted}" FontSize="13" Margin="0,4,0,0"/>
@@ -156,7 +154,7 @@
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Active chart:" Foreground="{StaticResource TextMuted}"
                                    FontSize="12" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="ActiveSymbolText" Text="—" Foreground="{StaticResource Accent}"
+                        <TextBlock x:Name="ActiveSymbolText" Text="—" Foreground="{StaticResource AccentColor}"
                                    FontSize="13" FontWeight="Bold" Margin="8,0,0,0" VerticalAlignment="Center"/>
                         <TextBlock Text=" · backtests run on this symbol" Foreground="{StaticResource TextMuted}"
                                    FontSize="11" Margin="10,1,0,0" VerticalAlignment="Center"/>
@@ -178,7 +176,7 @@
                                         Padding="16" Margin="0,0,8,8">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Template.Name}"
-                                                   Foreground="{StaticResource TextPrimary}"
+                                                   Foreground="{StaticResource TextColor}"
                                                    FontSize="15" FontWeight="Bold"/>
                                         <TextBlock Text="{Binding Template.Description}"
                                                    Foreground="{StaticResource TextSecondary}"
@@ -206,11 +204,11 @@
                                                 <StackPanel Orientation="Horizontal">
                                                     <StackPanel Margin="0,0,16,0">
                                                         <TextBlock Text="Win rate" Foreground="{StaticResource TextMuted}" FontSize="10"/>
-                                                        <TextBlock Text="{Binding WinRate}" Foreground="{StaticResource TextPrimary}" FontSize="13" FontWeight="Bold"/>
+                                                        <TextBlock Text="{Binding WinRate}" Foreground="{StaticResource TextColor}" FontSize="13" FontWeight="Bold"/>
                                                     </StackPanel>
                                                     <StackPanel Margin="0,0,16,0">
                                                         <TextBlock Text="Trades" Foreground="{StaticResource TextMuted}" FontSize="10"/>
-                                                        <TextBlock Text="{Binding TradeCount}" Foreground="{StaticResource TextPrimary}" FontSize="13" FontWeight="Bold"/>
+                                                        <TextBlock Text="{Binding TradeCount}" Foreground="{StaticResource TextColor}" FontSize="13" FontWeight="Bold"/>
                                                     </StackPanel>
                                                     <StackPanel>
                                                         <TextBlock Text="Return" Foreground="{StaticResource TextMuted}" FontSize="10"/>

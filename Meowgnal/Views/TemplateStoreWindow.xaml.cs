@@ -141,7 +141,7 @@ public partial class TemplateStoreWindow : Window
         card.WinRate = $"{winRate:N0}%";
         card.TradeCount = trades.ToString();
         card.ReturnPct = $"{returnPct:+0.0;-0.0} %";
-        card.ReturnColor = returnPct >= 0 ? (Brush)FindResource("Up") : (Brush)FindResource("Down");
+        card.ReturnColor = returnPct >= 0 ? (Brush)FindResource("SuccessColor") : (Brush)FindResource("DangerColor");
     }
 
     private void UseTemplate_Click(object sender, RoutedEventArgs e)

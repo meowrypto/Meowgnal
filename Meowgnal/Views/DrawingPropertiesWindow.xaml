@@ -16,10 +16,12 @@
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
         <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
         <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextColor" Color="{DynamicResource ColorTextPrimary}"/>
         <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
         <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
-        <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
+        <SolidColorBrush x:Key="SuccessColor" Color="{DynamicResource ColorUp}"/>
 
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -73,12 +75,12 @@
             </Setter>
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
@@ -94,7 +96,7 @@
                                 BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="4"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentColor}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -103,35 +105,30 @@
         </Style>
         <Style TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource PanelBg}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CaretBrush" Value="{StaticResource TextPrimary}"/>
-            <Style.Triggers>
-                <Trigger Property="IsFocused" Value="True">
-                    <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
-                </Trigger>
-            </Style.Triggers>
+            <Setter Property="CaretBrush" Value="{StaticResource TextColor}"/>
         </Style>
         <Style TargetType="ComboBox">
             <Setter Property="Background" Value="{StaticResource PanelBg}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="Padding" Value="6,4"/>
         </Style>
         <Style TargetType="ComboBoxItem">
             <Setter Property="Background" Value="{StaticResource PanelBg}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Style.Triggers>
                 <Trigger Property="IsHighlighted" Value="True">
-                    <Setter Property="Background" Value="{StaticResource Accent}"/>
+                    <Setter Property="Background" Value="{StaticResource AccentColor}"/>
                     <Setter Property="Foreground" Value="White"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
         <Style TargetType="CheckBox">
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="Margin" Value="0,0,0,8"/>
         </Style>
     </Window.Resources>
@@ -149,14 +146,15 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" 
+                                Click="Minimize_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" 
+                                Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
                                 WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" 
+                                Click="Close_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
-                    <TextBlock x:Name="TitleText" Text="🎨 Drawing Properties" Foreground="{StaticResource TextPrimary}"
+                    <TextBlock Text="Drawing Properties" Foreground="{StaticResource TextColor}"
                                FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
                 </DockPanel>
             </Border>
@@ -164,11 +162,15 @@
             <!-- Main content -->
             <Grid Grid.Row="1" Margin="20">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                <TextBlock Grid.Row="0" Text="🎨 Drawing Properties" FontSize="15" FontWeight="Bold"
+                           Foreground="{StaticResource TextColor}" Margin="0,0,0,14"/>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
                         <!-- Style section -->
                         <TextBlock Text="STYLE" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
@@ -226,7 +228,7 @@
                     </StackPanel>
                 </ScrollViewer>
 
-                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
                     <Button Content="Cancel" Style="{StaticResource SecondaryButton}" Padding="14,6"
                             Margin="0,0,8,0" Click="Cancel_Click"/>
                     <Button Content="Save" Style="{StaticResource PrimaryButton}" Padding="16,6" Click="Ok_Click"/>

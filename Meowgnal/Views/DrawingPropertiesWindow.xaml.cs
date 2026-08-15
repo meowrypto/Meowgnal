@@ -74,7 +74,7 @@ public partial class DrawingPropertiesWindow : Window
             {
                 Text = $"P{i + 1}",
                 VerticalAlignment = VerticalAlignment.Center,
-                Foreground = (Brush)FindResource("TextPrimary")
+                Foreground = (Brush)FindResource("TextColor")
             };
             Grid.SetColumn(header, 0);
             row.Children.Add(header);
