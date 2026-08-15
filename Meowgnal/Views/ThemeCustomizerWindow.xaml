@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Meowgnal.Views.ThemeCustomizerWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Custom Theme" Height="560" Width="470"
+        Title="Custom Theme" Height="592" Width="470"
         WindowStyle="None" WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}"
         FontFamily="Trebuchet MS" FontSize="12" ResizeMode="NoResize">
@@ -16,13 +16,16 @@
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
         <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
         <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextColor" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
         <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
-        <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
+        <SolidColorBrush x:Key="SuccessColor" Color="{DynamicResource ColorUp}"/>
 
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="Template">
@@ -72,12 +75,12 @@
             </Setter>
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
@@ -93,7 +96,7 @@
                                 BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="4"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentColor}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -102,11 +105,11 @@
         </Style>
         <Style x:Key="HexBox" TargetType="TextBox">
             <Setter Property="Background" Value="{StaticResource PanelBg}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CaretBrush" Value="{StaticResource TextPrimary}"/>
+            <Setter Property="CaretBrush" Value="{StaticResource TextColor}"/>
         </Style>
     </Window.Resources>
 
@@ -123,14 +126,15 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}"
+                                Click="Minimize_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32"
+                                Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
                                 WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}"
+                                Click="Close_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
-                    <TextBlock x:Name="TitleText" Text="Custom Theme" Foreground="{StaticResource TextPrimary}"
+                    <TextBlock Text="Custom Theme" Foreground="{StaticResource TextColor}"
                                FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
                 </DockPanel>
             </Border>
@@ -144,7 +148,7 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                    <TextBlock Text="Custom Theme" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextPrimary}"/>
+                    <TextBlock Text="Custom Theme" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextColor}"/>
                     <TextBlock Text="Click a swatch or type a hex code, then Save and apply."
                                Foreground="{StaticResource TextMuted}" FontSize="12" Margin="0,4,0,0"/>
                 </StackPanel>
@@ -155,7 +159,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchBackground" Width="34" Height="24" RadiusX="4" RadiusY="4"
                                        Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Background" Width="90" Foreground="{StaticResource TextPrimary}"
+                            <TextBlock Text="Background" Width="90" Foreground="{StaticResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexBackground" Style="{StaticResource HexBox}" Width="90"
                                      Tag="bg" TextChanged="Hex_TextChanged"/>
@@ -165,7 +169,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchPanel" Width="34" Height="24" RadiusX="4" RadiusY="4"
                                        Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Panels" Width="90" Foreground="{StaticResource TextPrimary}"
+                            <TextBlock Text="Panels" Width="90" Foreground="{StaticResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexPanel" Style="{StaticResource HexBox}" Width="90"
                                      Tag="panel" TextChanged="Hex_TextChanged"/>
@@ -175,7 +179,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchBorder" Width="34" Height="24" RadiusX="4" RadiusY="4"
                                        Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Borders" Width="90" Foreground="{StaticResource TextPrimary}"
+                            <TextBlock Text="Borders" Width="90" Foreground="{StaticResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexBorder" Style="{StaticResource HexBox}" Width="90"
                                      Tag="border" TextChanged="Hex_TextChanged"/>
@@ -185,7 +189,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchText" Width="34" Height="24" RadiusX="4" RadiusY="4"
                                        Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Text" Width="90" Foreground="{StaticResource TextPrimary}"
+                            <TextBlock Text="Text" Width="90" Foreground="{StaticResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexText" Style="{StaticResource HexBox}" Width="90"
                                      Tag="text" TextChanged="Hex_TextChanged"/>
@@ -195,7 +199,7 @@
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchAccent" Width="34" Height="24" RadiusX="4" RadiusY="4"
                                        Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Accent" Width="90" Foreground="{StaticResource TextPrimary}"
+                            <TextBlock Text="Accent" Width="90" Foreground="{StaticResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexAccent" Style="{StaticResource HexBox}" Width="90"
                                      Tag="accent" TextChanged="Hex_TextChanged"/>

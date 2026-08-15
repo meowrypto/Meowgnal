@@ -48,7 +48,7 @@ public partial class ChartSettingsWindow : Window
             Text = "🔔 Price alerts",
             FontSize = 14,
             FontWeight = FontWeights.Bold,
-            Foreground = (Brush)FindResource("TextPrimary"),
+            Foreground = (Brush)FindResource("TextColor"),
             Margin = new Thickness(0, 16, 0, 8)
         });
         RootPanel.Children.Add(_alertsPanel);
@@ -111,7 +111,7 @@ public partial class ChartSettingsWindow : Window
         {
             Text = label,
             Width = 120,
-            Foreground = (Brush)FindResource("TextPrimary"),
+            Foreground = (Brush)FindResource("TextColor"),
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(10, 0, 0, 0)
         });
@@ -231,7 +231,7 @@ public partial class ChartSettingsWindow : Window
             row.Children.Add(new TextBlock
             {
                 Text = $"{alert.Symbol}  @  {alert.Price:N2}",
-                Foreground = (Brush)FindResource("TextPrimary"),
+                Foreground = (Brush)FindResource("TextColor"),
                 VerticalAlignment = VerticalAlignment.Center,
                 Width = 260
             });

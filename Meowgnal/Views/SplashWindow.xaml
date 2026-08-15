@@ -6,13 +6,22 @@
         WindowStartupLocation="CenterScreen"
         Width="780" Height="520">
 
-    <Border CornerRadius="14" Background="#131722" BorderBrush="#2A2E39" BorderThickness="1" ClipToBounds="True">
+    <!-- NOTE: no WindowChrome here on purpose. AllowsTransparency=True is
+         incompatible with WindowChrome, and a splash needs no control buttons. -->
+    <Window.Resources>
+        <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
+        <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+    </Window.Resources>
+
+    <Border CornerRadius="14" BorderBrush="{StaticResource BorderColor}" BorderThickness="1"
+            Background="{StaticResource BackgroundBrush}" ClipToBounds="True">
         <Grid>
             <!-- Illustrated winter cat scene -->
             <Image Source="pack://application:,,,/Assets/splash-cat.png" Stretch="UniformToFill"/>
 
-            <!-- Blue info pill (same style as the sample splash) -->
-            <Border Background="#2962FF" CornerRadius="0,120,120,0"
+            <!-- Brand info pill (follows the theme accent color) -->
+            <Border Background="{StaticResource AccentColor}" CornerRadius="0,120,120,0"
                     HorizontalAlignment="Left" VerticalAlignment="Top"
                     Margin="0,70,0,0" Padding="44,38" Width="440">
                 <StackPanel>
@@ -29,7 +38,7 @@
                                Foreground="White" Opacity="0.75" Margin="0,20,0,0"
                                FontFamily="Trebuchet MS"/>
                     <ProgressBar IsIndeterminate="True" Width="280" Height="4" Margin="0,24,0,0"
-                                 Foreground="White" Background="#5B8CFF" BorderThickness="0"
+                                 Foreground="White" Background="Transparent" BorderThickness="0"
                                  HorizontalAlignment="Left"/>
                 </StackPanel>
             </Border>

@@ -18,7 +18,7 @@ public partial class WhatsNewWindow : Window
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        // No double-click to maximize on this modal dialog (ResizeMode=NoResize)
+        // No double-click maximize on this modal dialog (ResizeMode=NoResize)
         DragMove();
     }
 
@@ -56,7 +56,7 @@ public partial class WhatsNewWindow : Window
             Text = text,
             FontSize = 14,
             FontWeight = FontWeights.Bold,
-            Foreground = (Brush)FindResource("Accent"),
+            Foreground = (Brush)FindResource("AccentColor"),
             Margin = new Thickness(0, 10, 0, 6)
         });
     }

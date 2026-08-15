@@ -19,10 +19,11 @@ public partial class OnboardingWindow : Window
 
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        // No double-click to maximize on this modal dialog
+        // No double-click maximize on this modal dialog (ResizeMode=NoResize)
         DragMove();
     }
 
+    // Same behavior as the old system X button: declining the onboarding.
     private void Close_Click(object sender, RoutedEventArgs e)
     {
         DialogResult = false;

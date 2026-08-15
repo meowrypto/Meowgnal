@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Meowgnal.Views.StrategyWizardWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Strategy Wizard" Height="560" Width="560"
+        Title="Strategy Wizard" Height="592" Width="560"
         WindowStyle="None" WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}"
         FontFamily="Trebuchet MS" FontSize="12">
@@ -16,10 +16,12 @@
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
         <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
         <SolidColorBrush x:Key="BorderColor" Color="{DynamicResource ColorBorder}"/>
-        <SolidColorBrush x:Key="TextPrimary" Color="{DynamicResource ColorTextPrimary}"/>
+        <SolidColorBrush x:Key="TextColor" Color="{DynamicResource ColorTextPrimary}"/>
         <SolidColorBrush x:Key="TextSecondary" Color="{DynamicResource ColorTextSecondary}"/>
         <SolidColorBrush x:Key="TextMuted" Color="{DynamicResource ColorTextMuted}"/>
-        <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
+        <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
+        <SolidColorBrush x:Key="SuccessColor" Color="{DynamicResource ColorUp}"/>
 
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
@@ -75,19 +77,18 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-            <Setter Property="Background" Value="{StaticResource Accent}"/>
+            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
-
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource Accent}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource Accent}"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentColor}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
         </Style>
 
+        <!-- Pill-shaped radio button -->
         <Style x:Key="PillRadio" TargetType="RadioButton">
             <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
             <Setter Property="Background" Value="Transparent"/>
@@ -105,12 +106,12 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource Accent}"/>
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="Bd" Property="Background" Value="{StaticResource AccentColor}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentColor}"/>
                                 <Setter Property="Foreground" Value="White"/>
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource Accent}"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentColor}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -132,19 +133,20 @@
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}"
+                                Click="Minimize_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32"
+                                Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
                                 WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}"
+                                Click="Close_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
-                    <TextBlock x:Name="TitleText" Text="Strategy Wizard" Foreground="{StaticResource TextPrimary}"
+                    <TextBlock Text="Strategy Wizard" Foreground="{StaticResource TextColor}"
                                FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
                 </DockPanel>
             </Border>
 
-            <!-- Main content -->
+            <!-- Main content (all 3 questions stay visible; title bar never overlaps) -->
             <Grid Grid.Row="1" Margin="24">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -156,7 +158,7 @@
 
                 <!-- Header -->
                 <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                    <TextBlock Text="Strategy Wizard" Foreground="{StaticResource TextPrimary}"
+                    <TextBlock Text="Strategy Wizard" Foreground="{StaticResource TextColor}"
                                FontSize="20" FontWeight="Bold"/>
                     <TextBlock Text="Answer 3 simple questions — the wizard builds a complete strategy for you."
                                Foreground="{StaticResource TextMuted}" FontSize="12" Margin="0,4,0,0"/>
@@ -165,7 +167,7 @@
                 <!-- Question 1 -->
                 <Border Grid.Row="1" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="1) What is your trading style?" Foreground="{StaticResource TextPrimary}"
+                        <TextBlock Text="1) What is your trading style?" Foreground="{StaticResource TextColor}"
                                    FontSize="13" FontWeight="Bold" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="StyleTrend" Content="Trend" GroupName="StyleGroup"
@@ -181,7 +183,7 @@
                 <!-- Question 2 -->
                 <Border Grid.Row="2" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,12">
                     <StackPanel>
-                        <TextBlock Text="2) How fast do you trade?" Foreground="{StaticResource TextPrimary}"
+                        <TextBlock Text="2) How fast do you trade?" Foreground="{StaticResource TextColor}"
                                    FontSize="13" FontWeight="Bold" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="SpeedScalp" Content="Scalp" GroupName="SpeedGroup"
@@ -197,7 +199,7 @@
                 <!-- Question 3 -->
                 <Border Grid.Row="3" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,16">
                     <StackPanel>
-                        <TextBlock Text="3) How careful are you with risk?" Foreground="{StaticResource TextPrimary}"
+                        <TextBlock Text="3) How careful are you with risk?" Foreground="{StaticResource TextColor}"
                                    FontSize="13" FontWeight="Bold" Margin="0,0,0,10"/>
                         <StackPanel Orientation="Horizontal">
                             <RadioButton x:Name="CautionCareful" Content="Careful" GroupName="CautionGroup"
