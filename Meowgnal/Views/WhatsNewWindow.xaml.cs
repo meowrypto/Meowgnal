@@ -47,6 +47,7 @@ public partial class WhatsNewWindow : Window
         AddItem("Watchlist, Signals and Paper Trading panels");
         AddItem("Strategy builder, backtest and journal");
         AddItem("Undo/Redo, copy/paste and object list for drawings");
+        AddItem("Indicator panel with 40+ technical and fundamental indicators");
     }
 
     private void AddHeader(string text)

@@ -52,6 +52,33 @@
             </Style.Triggers>
         </Style>
 
+        <Style x:Key="HexBox" TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource PanelBg}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource TextColor}"/>
+        </Style>
+        <Style x:Key="SwatchButton" TargetType="Button">
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="Margin" Value="2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                BorderBrush="{DynamicResource BorderColor}" BorderThickness="1" CornerRadius="4"/>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
         <Style x:Key="BaseButton" TargetType="Button">
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -75,54 +102,27 @@
             </Setter>
         </Style>
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
-            <Setter Property="Background" Value="{StaticResource AccentColor}"/>
+            <Setter Property="Background" Value="{DynamicResource AccentColor}"/>
             <Setter Property="Foreground" Value="White"/>
         </Style>
         <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource BaseButton}">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextColor}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
             <Setter Property="BorderThickness" Value="1"/>
-        </Style>
-        <Style x:Key="SwatchButton" TargetType="Button">
-            <Setter Property="Width" Value="22"/>
-            <Setter Property="Height" Value="22"/>
-            <Setter Property="Margin" Value="2"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="4"/>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentColor}"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-        <Style x:Key="HexBox" TargetType="TextBox">
-            <Setter Property="Background" Value="{StaticResource PanelBg}"/>
-            <Setter Property="Foreground" Value="{StaticResource TextColor}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource BorderColor}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,4"/>
-            <Setter Property="CaretBrush" Value="{StaticResource TextColor}"/>
         </Style>
     </Window.Resources>
 
-    <Border Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
+    <Border Background="{DynamicResource BackgroundBrush}" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
-            <!-- Custom title bar -->
-            <Border Grid.Row="0" Background="{StaticResource PanelBg}"
-                    BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1"
+            <!-- Custom title bar (repaints live because brushes are DynamicResource) -->
+            <Border Grid.Row="0" Background="{DynamicResource PanelBg}"
+                    BorderBrush="{DynamicResource BorderColor}" BorderThickness="0,0,0,1"
                     MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
@@ -134,12 +134,11 @@
                         <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}"
                                 Click="Close_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
-                    <TextBlock Text="Custom Theme" Foreground="{StaticResource TextColor}"
+                    <TextBlock Text="Custom Theme" Foreground="{DynamicResource TextColor}"
                                FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
                 </DockPanel>
             </Border>
 
-            <!-- Main content -->
             <Grid Grid.Row="1" Margin="20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -148,18 +147,17 @@
                 </Grid.RowDefinitions>
 
                 <StackPanel Grid.Row="0" Margin="0,0,0,12">
-                    <TextBlock Text="Custom Theme" FontSize="18" FontWeight="Bold" Foreground="{StaticResource TextColor}"/>
-                    <TextBlock Text="Click a swatch or type a hex code, then Save and apply."
-                               Foreground="{StaticResource TextMuted}" FontSize="12" Margin="0,4,0,0"/>
+                    <TextBlock Text="Custom Theme" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource TextColor}"/>
+                    <TextBlock Text="Changes preview instantly. Save to keep them."
+                               Foreground="{DynamicResource TextMuted}" FontSize="12" Margin="0,4,0,0"/>
                 </StackPanel>
 
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <StackPanel>
-
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchBackground" Width="34" Height="24" RadiusX="4" RadiusY="4"
-                                       Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Background" Width="90" Foreground="{StaticResource TextColor}"
+                                       Stroke="{DynamicResource BorderColor}" StrokeThickness="1"/>
+                            <TextBlock Text="Background" Width="90" Foreground="{DynamicResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexBackground" Style="{StaticResource HexBox}" Width="90"
                                      Tag="bg" TextChanged="Hex_TextChanged"/>
@@ -168,8 +166,8 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchPanel" Width="34" Height="24" RadiusX="4" RadiusY="4"
-                                       Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Panels" Width="90" Foreground="{StaticResource TextColor}"
+                                       Stroke="{DynamicResource BorderColor}" StrokeThickness="1"/>
+                            <TextBlock Text="Panels" Width="90" Foreground="{DynamicResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexPanel" Style="{StaticResource HexBox}" Width="90"
                                      Tag="panel" TextChanged="Hex_TextChanged"/>
@@ -178,8 +176,8 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchBorder" Width="34" Height="24" RadiusX="4" RadiusY="4"
-                                       Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Borders" Width="90" Foreground="{StaticResource TextColor}"
+                                       Stroke="{DynamicResource BorderColor}" StrokeThickness="1"/>
+                            <TextBlock Text="Borders" Width="90" Foreground="{DynamicResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexBorder" Style="{StaticResource HexBox}" Width="90"
                                      Tag="border" TextChanged="Hex_TextChanged"/>
@@ -188,8 +186,8 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchText" Width="34" Height="24" RadiusX="4" RadiusY="4"
-                                       Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Text" Width="90" Foreground="{StaticResource TextColor}"
+                                       Stroke="{DynamicResource BorderColor}" StrokeThickness="1"/>
+                            <TextBlock Text="Text" Width="90" Foreground="{DynamicResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexText" Style="{StaticResource HexBox}" Width="90"
                                      Tag="text" TextChanged="Hex_TextChanged"/>
@@ -198,14 +196,13 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Rectangle x:Name="SwatchAccent" Width="34" Height="24" RadiusX="4" RadiusY="4"
-                                       Stroke="{StaticResource BorderColor}" StrokeThickness="1"/>
-                            <TextBlock Text="Accent" Width="90" Foreground="{StaticResource TextColor}"
+                                       Stroke="{DynamicResource BorderColor}" StrokeThickness="1"/>
+                            <TextBlock Text="Accent" Width="90" Foreground="{DynamicResource TextColor}"
                                        VerticalAlignment="Center" Margin="10,0,0,0"/>
                             <TextBox x:Name="HexAccent" Style="{StaticResource HexBox}" Width="90"
                                      Tag="accent" TextChanged="Hex_TextChanged"/>
                         </StackPanel>
                         <WrapPanel x:Name="PaletteAccent" Margin="0,0,0,12"/>
-
                     </StackPanel>
                 </ScrollViewer>
 

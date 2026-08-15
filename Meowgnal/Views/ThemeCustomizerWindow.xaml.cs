@@ -4,7 +4,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
-using Meowgnal.Models;
 using Meowgnal.Services;
 
 namespace Meowgnal.Views;
@@ -19,22 +18,25 @@ public partial class ThemeCustomizerWindow : Window
         "#4CAF50", "#795548"
     };
 
-    private readonly AppSettings _settings = SettingsStorageService.Load();
     private string _bg;
     private string _panel;
     private string _border;
     private string _text;
     private string _accent;
 
+    // True while we programmatically fill a hex box (prevents live re-apply).
+    private bool _syncing;
+
     public ThemeCustomizerWindow()
     {
         InitializeComponent();
 
-        _bg = _settings.CustomBackground;
-        _panel = _settings.CustomPanel;
-        _border = _settings.CustomBorder;
-        _text = _settings.CustomTextPrimary;
-        _accent = _settings.CustomAccent;
+        var s = SettingsStorageService.Load();
+        _bg = s.CustomBackground;
+        _panel = s.CustomPanel;
+        _border = s.CustomBorder;
+        _text = s.CustomTextPrimary;
+        _accent = s.CustomAccent;
 
         BuildPalette(PaletteBackground, "bg");
         BuildPalette(PalettePanel, "panel");
@@ -42,7 +44,15 @@ public partial class ThemeCustomizerWindow : Window
         BuildPalette(PaletteText, "text");
         BuildPalette(PaletteAccent, "accent");
 
+        // Paint ONLY this window's preview swatches — never the live app.
         RefreshAll();
+
+        // If the user closes without saving, revert any live preview changes.
+        Closing += (_, _) =>
+        {
+            if (DialogResult != true)
+                ThemeService.ApplyTheme(SettingsStorageService.Load());
+        };
     }
 
     #region Custom title bar
@@ -102,14 +112,15 @@ public partial class ThemeCustomizerWindow : Window
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
         var parts = tag.Split('|');
-        if (parts.Length == 2) SetColor(parts[0], parts[1]);
+        if (parts.Length == 2) SetColor(parts[0], parts[1], true);
     }
 
     private void Hex_TextChanged(object sender, TextChangedEventArgs e)
     {
+        if (_syncing) return;
         if (sender is not TextBox box || box.Tag is not string key) return;
         var hex = box.Text?.Trim() ?? "";
-        if (IsValidHex(hex)) SetColor(key, hex);
+        if (IsValidHex(hex)) SetColor(key, hex, true);
     }
 
     private static bool IsValidHex(string s)
@@ -122,21 +133,34 @@ public partial class ThemeCustomizerWindow : Window
         return true;
     }
 
-    private void SetColor(string key, string hex)
+    // live=false: only paint this window's swatches (safe on open).
+    // live=true:  also repaint the whole app (only after a real user click).
+    private void SetColor(string key, string hex, bool live)
     {
         switch (key)
         {
-            case "bg": _bg = hex; SwatchBackground.Fill = Brush(hex); Sync(HexBackground, hex); break;
-            case "panel": _panel = hex; SwatchPanel.Fill = Brush(hex); Sync(HexPanel, hex); break;
-            case "border": _border = hex; SwatchBorder.Fill = Brush(hex); Sync(HexBorder, hex); break;
-            case "text": _text = hex; SwatchText.Fill = Brush(hex); Sync(HexText, hex); break;
-            case "accent": _accent = hex; SwatchAccent.Fill = Brush(hex); Sync(HexAccent, hex); break;
+            case "bg": _bg = hex; SwatchBackground.Fill = Brush(hex); Sync(HexBackground, hex); if (live) ApplyLive("ColorBackground", hex); break;
+            case "panel": _panel = hex; SwatchPanel.Fill = Brush(hex); Sync(HexPanel, hex); if (live) ApplyLive("ColorPanel", hex); break;
+            case "border": _border = hex; SwatchBorder.Fill = Brush(hex); Sync(HexBorder, hex); if (live) ApplyLive("ColorBorder", hex); break;
+            case "text": _text = hex; SwatchText.Fill = Brush(hex); Sync(HexText, hex); if (live) ApplyLive("ColorTextPrimary", hex); break;
+            case "accent": _accent = hex; SwatchAccent.Fill = Brush(hex); Sync(HexAccent, hex); if (live) ApplyLive("ColorAccent", hex); break;
         }
     }
 
-    private static void Sync(TextBox box, string hex)
+    private static void ApplyLive(string resourceKey, string hex)
     {
-        if (!box.IsFocused && box.Text != hex) box.Text = hex;
+        try { Application.Current.Resources[resourceKey] = (Color)ColorConverter.ConvertFromString(hex); }
+        catch { }
+    }
+
+    private void Sync(TextBox box, string hex)
+    {
+        if (!box.IsFocused && box.Text != hex)
+        {
+            _syncing = true;
+            box.Text = hex;
+            _syncing = false;
+        }
     }
 
     private static Brush Brush(string hex) =>
@@ -144,11 +168,11 @@ public partial class ThemeCustomizerWindow : Window
 
     private void RefreshAll()
     {
-        SetColor("bg", _bg);
-        SetColor("panel", _panel);
-        SetColor("border", _border);
-        SetColor("text", _text);
-        SetColor("accent", _accent);
+        SetColor("bg", _bg, false);
+        SetColor("panel", _panel, false);
+        SetColor("border", _border, false);
+        SetColor("text", _text, false);
+        SetColor("accent", _accent, false);
     }
 
     private void Reset_Click(object sender, RoutedEventArgs e)
@@ -158,18 +182,24 @@ public partial class ThemeCustomizerWindow : Window
         _border = "#2A2E39";
         _text = "#D1D4DC";
         _accent = "#2962FF";
-        RefreshAll();
+
+        SetColor("bg", _bg, true);
+        SetColor("panel", _panel, true);
+        SetColor("border", _border, true);
+        SetColor("text", _text, true);
+        SetColor("accent", _accent, true);
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)
     {
-        _settings.CustomBackground = _bg;
-        _settings.CustomPanel = _panel;
-        _settings.CustomBorder = _border;
-        _settings.CustomTextPrimary = _text;
-        _settings.CustomAccent = _accent;
-        _settings.Theme = "custom";
-        SettingsStorageService.Save(_settings);
+        var s = SettingsStorageService.Load();
+        s.CustomBackground = _bg;
+        s.CustomPanel = _panel;
+        s.CustomBorder = _border;
+        s.CustomTextPrimary = _text;
+        s.CustomAccent = _accent;
+        s.Theme = "custom";
+        SettingsStorageService.Save(s);
 
         DialogResult = true;
         Close();

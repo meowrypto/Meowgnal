@@ -14,14 +14,14 @@
         <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
     </Window.Resources>
 
-    <Border CornerRadius="14" BorderBrush="{StaticResource BorderColor}" BorderThickness="1"
-            Background="{StaticResource BackgroundBrush}" ClipToBounds="True">
+    <Border CornerRadius="14" BorderBrush="{DynamicResource BorderColor}" BorderThickness="1"
+            Background="{DynamicResource BackgroundBrush}" ClipToBounds="True">
         <Grid>
             <!-- Illustrated winter cat scene -->
             <Image Source="pack://application:,,,/Assets/splash-cat.png" Stretch="UniformToFill"/>
 
             <!-- Brand info pill (follows the theme accent color) -->
-            <Border Background="{StaticResource AccentColor}" CornerRadius="0,120,120,0"
+            <Border Background="{DynamicResource AccentColor}" CornerRadius="0,120,120,0"
                     HorizontalAlignment="Left" VerticalAlignment="Top"
                     Margin="0,70,0,0" Padding="44,38" Width="440">
                 <StackPanel>
