@@ -39,6 +39,10 @@ public sealed class StrategyDefinition
 
     [JsonPropertyName("notifications")]
     public NotificationsConfig Notifications { get; set; } = new();
+
+    // Custom sort order for drag & drop in Strategy Manager (0 = first).
+    [JsonPropertyName("sortOrder")]
+    public int SortOrder { get; set; } = 0;
 }
 
 public sealed class IndicatorDefinition
