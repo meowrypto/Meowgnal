@@ -121,6 +121,9 @@
         let chartType = 'candles';
         let activeSeries = null;
 
+        // Series created by the indicator panel (cleared when new candles arrive)
+        let indicatorSeries = [];
+
         let lastPositions = [];
         let positionLines = [];
         let markersApi = null;
@@ -271,6 +274,73 @@
             })));
         }
 
+        // Removes all indicator series (called when new candles arrive)
+        function clearIndicators() {
+            for (const s of indicatorSeries) { try { chart.removeSeries(s); } catch (e) { } }
+            indicatorSeries = [];
+        }
+
+        // Draws indicator lines sent from the C# indicator panel
+        function addIndicatorToChart(msg) {
+            const times = rawData.map(c => c.time);
+            const IND_COLORS = {
+                sma: '#2962FF', ema: '#FF9800', rsi: '#9C27B0',
+                macd: '#2962FF', signal: '#FF9800', histogram: '#787B86',
+                atr: '#00BCD4', bbands: '#2962FF', stoch: '#9C27B0',
+                adx: '#FF5722', volsma: '#4CAF50', vwap: '#E91E63'
+            };
+
+            function toPoints(values) {
+                const pts = [];
+                for (let i = 0; i < values.length; i++) {
+                    if (values[i] !== null && values[i] !== undefined && !isNaN(values[i]))
+                        pts.push({ time: times[i], value: values[i] });
+                }
+                return pts;
+            }
+
+            // Oscillators draw in the bottom quarter on their own hidden scale
+            function bottomScale(id) {
+                chart.priceScale(id).applyOptions({ scaleMargins: { top: 0.75, bottom: 0 }, visible: false });
+            }
+
+            if (msg.indicator === 'bbands') {
+                const u = chart.addLineSeries({ color: IND_COLORS.bbands, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted });
+                const m = chart.addLineSeries({ color: IND_COLORS.bbands, lineWidth: 1 });
+                const l = chart.addLineSeries({ color: IND_COLORS.bbands, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted });
+                u.setData(toPoints(msg.upper));
+                m.setData(toPoints(msg.middle));
+                l.setData(toPoints(msg.lower));
+                indicatorSeries.push(u, m, l);
+            } else if (msg.indicator === 'macd') {
+                const h = chart.addHistogramSeries({ priceScaleId: 'macd', color: IND_COLORS.histogram });
+                const ml = chart.addLineSeries({ priceScaleId: 'macd', color: IND_COLORS.macd, lineWidth: 2 });
+                const sl = chart.addLineSeries({ priceScaleId: 'macd', color: IND_COLORS.signal, lineWidth: 1 });
+                h.setData(toPoints(msg.histogram).map(p => ({ time: p.time, value: p.value, color: p.value >= 0 ? COLORS.up : COLORS.down })));
+                ml.setData(toPoints(msg.macdLine));
+                sl.setData(toPoints(msg.signalLine));
+                bottomScale('macd');
+                indicatorSeries.push(h, ml, sl);
+            } else if (msg.indicator === 'stoch') {
+                const k = chart.addLineSeries({ priceScaleId: 'stoch', color: IND_COLORS.stoch, lineWidth: 2 });
+                const d = chart.addLineSeries({ priceScaleId: 'stoch', color: IND_COLORS.signal, lineWidth: 1 });
+                k.setData(toPoints(msg.k));
+                d.setData(toPoints(msg.d));
+                bottomScale('stoch');
+                indicatorSeries.push(k, d);
+            } else if (msg.indicator === 'rsi' || msg.indicator === 'adx' || msg.indicator === 'atr' || msg.indicator === 'volsma') {
+                const s = chart.addLineSeries({ priceScaleId: msg.indicator, color: IND_COLORS[msg.indicator], lineWidth: 2 });
+                s.setData(toPoints(msg.values));
+                bottomScale(msg.indicator);
+                indicatorSeries.push(s);
+            } else {
+                // sma / ema / vwap overlay on the main price scale
+                const s = chart.addLineSeries({ color: IND_COLORS[msg.indicator] || '#2962FF', lineWidth: 2 });
+                s.setData(toPoints(msg.values));
+                indicatorSeries.push(s);
+            }
+        }
+
         function snapToBarTime(t) {
             if (!rawData.length) return t;
             let lo = 0, hi = rawData.length - 1, ans = rawData[0].time;
@@ -310,7 +380,7 @@
                 if (p.liquidation > 0) positionLines.push(activeSeries.createPriceLine({ price: p.liquidation, color: COLORS.down, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted, axisLabelVisible: true, title: 'LIQ' }));
                 markers.push({ time: snapToBarTime(p.openTime), position: isLong ? 'belowBar' : 'aboveBar', color: isLong ? COLORS.up : COLORS.down, shape: isLong ? 'arrowUp' : 'arrowDown', text: label });
             }
-            markers.sort((a, b) => a.time - b.time);
+            markers.sort((a, b) => a.time < b.time ? -1 : 1);
             try {
                 if (typeof LightweightCharts.createSeriesMarkers === 'function') markersApi = LightweightCharts.createSeriesMarkers(activeSeries, markers);
                 else if (typeof activeSeries.setMarkers === 'function') activeSeries.setMarkers(markers);
@@ -889,7 +959,13 @@
                 const msg = e.data;
                 if (!msg || !msg.type) return;
 
+                if (msg.type === 'addIndicator') {
+                    addIndicatorToChart(msg);
+                    return;
+                }
+
                 if (msg.type === 'setCandles') {
+                    clearIndicators();
                     rawData = msg.data;
                     chart.applyOptions({ timeScale: { secondsVisible: msg.secondsVisible === true } });
                     renderWithCurrentType();

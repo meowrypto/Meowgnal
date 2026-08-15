@@ -157,6 +157,7 @@ public partial class MainWindow : Window
             await UpdateSymbolPreviewAsync();
         };
 
+        IndicatorPanelControl.IndicatorSelected += AddIndicatorToChart;
         Loaded += MainWindow_Loaded;
         PreviewKeyDown += UndoRedo_KeyDown;
     }
@@ -2794,25 +2795,79 @@ public partial class MainWindow : Window
     private void IndicatorButton_Click(object sender, RoutedEventArgs e)
     {
         IndicatorPopup.IsOpen = !IndicatorPopup.IsOpen;
-
-        // Wire up the event handler if not already done
-        if (IndicatorPanelControl is not null)
-        {
-            IndicatorPanelControl.IndicatorSelected -= AddIndicatorToChart;
-            IndicatorPanelControl.IndicatorSelected += AddIndicatorToChart;
-        }
     }
 
     // Adds the selected indicator to the chart with default settings.
-    // For now, shows a toast notification; later we'll wire it to chart.html.
-    private void AddIndicatorToChart(IndicatorInfo info)
+    private async void AddIndicatorToChart(IndicatorInfo info)
     {
-        NotificationService.ShowToast("Meowgnal", $"Added {info.Label} to chart (default period: {info.DefaultPeriod}).");
+        try
+        {
+            await _chartPageReady.Task;
+            if (ChartWebView.CoreWebView2 is null) return;
 
-        // Close the popup after selection
-        IndicatorPopup.IsOpen = false;
+            var bars = _currentBars;
+            if (bars.Count == 0)
+            {
+                NotificationService.ShowToast("Meowgnal", "No chart data available.");
+                return;
+            }
 
-        // TODO (next task): wire this to chart.html to actually display the indicator
+            var period = info.DefaultPeriod;
+            object? payload = null;
+
+            switch ((info.Type ?? "").ToLowerInvariant())
+            {
+                case "sma":
+                    payload = new { type = "addIndicator", indicator = "sma", period, values = IndicatorCalculator.SMA(bars, period).ToArray() };
+                    break;
+                case "ema":
+                    payload = new { type = "addIndicator", indicator = "ema", period, values = IndicatorCalculator.EMA(bars, period).ToArray() };
+                    break;
+                case "rsi":
+                    payload = new { type = "addIndicator", indicator = "rsi", period, values = IndicatorCalculator.RSI(bars, period).ToArray() };
+                    break;
+                case "macd":
+                    var macd = IndicatorCalculator.MACD(bars);
+                    payload = new { type = "addIndicator", indicator = "macd", macdLine = macd.MACD.ToArray(), signalLine = macd.Signal.ToArray(), histogram = macd.Histogram.ToArray() };
+                    break;
+                case "atr":
+                    payload = new { type = "addIndicator", indicator = "atr", period, values = IndicatorCalculator.ATR(bars, period).ToArray() };
+                    break;
+                case "bbands":
+                    var bb = IndicatorCalculator.BBANDS(bars);
+                    payload = new { type = "addIndicator", indicator = "bbands", upper = bb.Upper.ToArray(), middle = bb.Middle.ToArray(), lower = bb.Lower.ToArray() };
+                    break;
+                case "stoch":
+                    var stoch = IndicatorCalculator.STOCH(bars);
+                    payload = new { type = "addIndicator", indicator = "stoch", k = stoch.K.ToArray(), d = stoch.D.ToArray() };
+                    break;
+                case "adx":
+                    payload = new { type = "addIndicator", indicator = "adx", period, values = IndicatorCalculator.ADX(bars, period).ToArray() };
+                    break;
+                case "volsma":
+                    payload = new { type = "addIndicator", indicator = "volsma", period, values = IndicatorCalculator.VOLSMA(bars, period).ToArray() };
+                    break;
+                case "vwap":
+                    payload = new { type = "addIndicator", indicator = "vwap", values = IndicatorCalculator.VWAP(bars).ToArray() };
+                    break;
+            }
+
+            if (payload is not null)
+            {
+                // Allow NaN (warmup periods) to be serialized safely
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions
+                {
+                    NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
+                };
+                ChartWebView.CoreWebView2.PostWebMessageAsJson(System.Text.Json.JsonSerializer.Serialize(payload, jsonOptions));
+            }
+
+            IndicatorPopup.IsOpen = false;
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowToast("Meowgnal", $"Error adding indicator: {ex.Message}");
+        }
     }
 
     #endregion
