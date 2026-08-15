@@ -48,8 +48,11 @@ public partial class RiskOfRuinWindow : Window
 
     private void Input_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        // Guard against calls before InitializeComponent finishes
-        if (WinRateValueText is null) return;
+        // Guard: while the XAML is still loading, some controls don't exist yet.
+        if (WinRateSlider is null || RiskSlider is null ||
+            WinRateValueText is null || RiskValueText is null ||
+            RuinPercentText is null || RuinLabel is null || ExplanationText is null)
+            return;
         Recalculate();
     }
 
