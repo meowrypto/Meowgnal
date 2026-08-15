@@ -17,6 +17,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Drawing = Meowgnal.Models.Drawing;
 
@@ -389,6 +390,7 @@ public partial class MainWindow : Window
             border.MouseLeftButtonUp += Tab_Click;
 
             var sp = new StackPanel { Orientation = Orientation.Horizontal };
+            sp.Children.Add(MakeCoinBadge(tab.Symbol));
             sp.Children.Add(new TextBlock
             {
                 Text = tab.Symbol,
@@ -522,6 +524,48 @@ public partial class MainWindow : Window
     private void RightTabSignals_Click(object sender, RoutedEventArgs e) => SetRightTab("signals");
     private void RightTabPaper_Click(object sender, RoutedEventArgs e) => SetRightTab("paper");
 
+    // Real coin logo (same icons as CoinMarketCap) shown left of symbol names.
+    private ContentControl MakeCoinBadge(string symbol)
+    {
+        var coin = (symbol ?? "").Split('/')[0].ToUpperInvariant();
+        var host = new ContentControl
+        {
+            Width = 16,
+            Height = 16,
+            Margin = new Thickness(0, 0, 6, 0),
+            VerticalAlignment = VerticalAlignment.Center,
+            Content = new TextBlock { Text = "🪙", FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
+        };
+
+        if (CoinLogoService.TryGetCached(coin, out var cached))
+            host.Content = MakeLogoImage(cached);
+        else
+            _ = LoadLogoAsync(host, coin);
+
+        return host;
+    }
+
+    private static Image MakeLogoImage(BitmapImage source)
+    {
+        var img = new Image { Source = source, Width = 16, Height = 16 };
+        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.HighQuality);
+        return img;
+    }
+
+    private async Task LoadLogoAsync(ContentControl host, string coin)
+    {
+        try
+        {
+            var img = await CoinLogoService.LoadAsync(coin);
+            if (img is null) return;
+            host.Dispatcher.Invoke(() => host.Content = MakeLogoImage(img));
+        }
+        catch
+        {
+            // Keep the fallback badge when offline or unknown coin.
+        }
+    }
+
     private void RebuildWatchlistPanel()
     {
         WatchlistRowsPanel.Children.Clear();
@@ -548,14 +592,16 @@ public partial class MainWindow : Window
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
-            var sym = new TextBlock
+            var symPanel = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+            symPanel.Children.Add(MakeCoinBadge(item.Symbol));
+            symPanel.Children.Add(new TextBlock
             {
                 Text = item.Symbol,
                 Foreground = (Brush)FindResource("TextPrimary"),
                 FontSize = 12,
                 FontWeight = FontWeights.Bold,
                 VerticalAlignment = VerticalAlignment.Center,
-            };
+            });
             var last = new TextBlock
             {
                 Text = "—",
@@ -585,7 +631,7 @@ public partial class MainWindow : Window
             Grid.SetColumn(del, 3);
             del.MouseLeftButtonUp += RemoveSymbol_Click;
 
-            row.Children.Add(sym);
+            row.Children.Add(symPanel);
             row.Children.Add(last);
             row.Children.Add(chg);
             row.Children.Add(del);
