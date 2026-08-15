@@ -2792,76 +2792,91 @@ public partial class MainWindow : Window
 
     #region Indicator Panel
 
+    private readonly IndicatorSettingsFile _indicatorSettings = IndicatorSettingsStorageService.Load();
+
+    private static readonly System.Text.Json.JsonSerializerOptions _indicatorJsonOptions = new()
+    {
+        NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
+    };
+
     private void IndicatorButton_Click(object sender, RoutedEventArgs e)
     {
+        IndicatorPanelControl.RefreshActiveTypes(GetActiveIndicators(_chartSymbol).Select(a => a.Type));
         IndicatorPopup.IsOpen = !IndicatorPopup.IsOpen;
     }
 
-    // Adds the selected indicator to the chart with default settings.
-    private async void AddIndicatorToChart(IndicatorInfo info)
+    private List<ActiveIndicator> GetActiveIndicators(string symbol)
+    {
+        if (!_indicatorSettings.ActiveIndicators.TryGetValue(symbol, out var list))
+        {
+            list = new List<ActiveIndicator>();
+            _indicatorSettings.ActiveIndicators[symbol] = list;
+        }
+        return list;
+    }
+
+    // Builds the chart payload for one indicator type using current bars.
+    private object? BuildIndicatorPayload(string type, int period)
+    {
+        var bars = _currentBars;
+        switch (type)
+        {
+            case "sma": return new { type = "addIndicator", indicator = "sma", period, values = IndicatorCalculator.SMA(bars, period).ToArray() };
+            case "ema": return new { type = "addIndicator", indicator = "ema", period, values = IndicatorCalculator.EMA(bars, period).ToArray() };
+            case "rsi": return new { type = "addIndicator", indicator = "rsi", period, values = IndicatorCalculator.RSI(bars, period).ToArray() };
+            case "macd":
+                var macd = IndicatorCalculator.MACD(bars);
+                return new { type = "addIndicator", indicator = "macd", macdLine = macd.MACD.ToArray(), signalLine = macd.Signal.ToArray(), histogram = macd.Histogram.ToArray() };
+            case "atr": return new { type = "addIndicator", indicator = "atr", period, values = IndicatorCalculator.ATR(bars, period).ToArray() };
+            case "bbands":
+                var bb = IndicatorCalculator.BBANDS(bars);
+                return new { type = "addIndicator", indicator = "bbands", upper = bb.Upper.ToArray(), middle = bb.Middle.ToArray(), lower = bb.Lower.ToArray() };
+            case "stoch":
+                var st = IndicatorCalculator.STOCH(bars);
+                return new { type = "addIndicator", indicator = "stoch", k = st.K.ToArray(), d = st.D.ToArray() };
+            case "adx": return new { type = "addIndicator", indicator = "adx", period, values = IndicatorCalculator.ADX(bars, period).ToArray() };
+            case "volsma": return new { type = "addIndicator", indicator = "volsma", period, values = IndicatorCalculator.VOLSMA(bars, period).ToArray() };
+            case "vwap": return new { type = "addIndicator", indicator = "vwap", values = IndicatorCalculator.VWAP(bars).ToArray() };
+            default: return null;
+        }
+    }
+
+    // Redraws all saved indicators for the active symbol (also after data updates).
+    private async Task RefreshIndicatorsOnChartAsync()
     {
         try
         {
             await _chartPageReady.Task;
-            if (ChartWebView.CoreWebView2 is null) return;
+            if (ChartWebView.CoreWebView2 is null || _currentBars.Count == 0) return;
 
-            var bars = _currentBars;
-            if (bars.Count == 0)
+            ChartWebView.CoreWebView2.PostWebMessageAsJson(
+                System.Text.Json.JsonSerializer.Serialize(new { type = "clearIndicators" }, _indicatorJsonOptions));
+
+            foreach (var a in GetActiveIndicators(_chartSymbol).ToList())
             {
-                NotificationService.ShowToast("Meowgnal", "No chart data available.");
-                return;
+                var payload = BuildIndicatorPayload(a.Type, a.Period);
+                if (payload is not null)
+                    ChartWebView.CoreWebView2.PostWebMessageAsJson(
+                        System.Text.Json.JsonSerializer.Serialize(payload, _indicatorJsonOptions));
             }
+        }
+        catch { }
+    }
 
-            var period = info.DefaultPeriod;
-            object? payload = null;
+    // Clicking an indicator toggles it: adds if missing, removes if already on the chart.
+    private async void AddIndicatorToChart(IndicatorInfo info)
+    {
+        try
+        {
+            var typeKey = (info.Type ?? "").ToLowerInvariant();
+            var list = GetActiveIndicators(_chartSymbol);
+            var existing = list.FirstOrDefault(a => a.Type == typeKey);
+            if (existing is not null) list.Remove(existing);
+            else list.Add(new ActiveIndicator { Type = typeKey, Period = info.DefaultPeriod });
+            IndicatorSettingsStorageService.Save(_indicatorSettings);
 
-            switch ((info.Type ?? "").ToLowerInvariant())
-            {
-                case "sma":
-                    payload = new { type = "addIndicator", indicator = "sma", period, values = IndicatorCalculator.SMA(bars, period).ToArray() };
-                    break;
-                case "ema":
-                    payload = new { type = "addIndicator", indicator = "ema", period, values = IndicatorCalculator.EMA(bars, period).ToArray() };
-                    break;
-                case "rsi":
-                    payload = new { type = "addIndicator", indicator = "rsi", period, values = IndicatorCalculator.RSI(bars, period).ToArray() };
-                    break;
-                case "macd":
-                    var macd = IndicatorCalculator.MACD(bars);
-                    payload = new { type = "addIndicator", indicator = "macd", macdLine = macd.MACD.ToArray(), signalLine = macd.Signal.ToArray(), histogram = macd.Histogram.ToArray() };
-                    break;
-                case "atr":
-                    payload = new { type = "addIndicator", indicator = "atr", period, values = IndicatorCalculator.ATR(bars, period).ToArray() };
-                    break;
-                case "bbands":
-                    var bb = IndicatorCalculator.BBANDS(bars);
-                    payload = new { type = "addIndicator", indicator = "bbands", upper = bb.Upper.ToArray(), middle = bb.Middle.ToArray(), lower = bb.Lower.ToArray() };
-                    break;
-                case "stoch":
-                    var stoch = IndicatorCalculator.STOCH(bars);
-                    payload = new { type = "addIndicator", indicator = "stoch", k = stoch.K.ToArray(), d = stoch.D.ToArray() };
-                    break;
-                case "adx":
-                    payload = new { type = "addIndicator", indicator = "adx", period, values = IndicatorCalculator.ADX(bars, period).ToArray() };
-                    break;
-                case "volsma":
-                    payload = new { type = "addIndicator", indicator = "volsma", period, values = IndicatorCalculator.VOLSMA(bars, period).ToArray() };
-                    break;
-                case "vwap":
-                    payload = new { type = "addIndicator", indicator = "vwap", values = IndicatorCalculator.VWAP(bars).ToArray() };
-                    break;
-            }
-
-            if (payload is not null)
-            {
-                // Allow NaN (warmup periods) to be serialized safely
-                var jsonOptions = new System.Text.Json.JsonSerializerOptions
-                {
-                    NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
-                };
-                ChartWebView.CoreWebView2.PostWebMessageAsJson(System.Text.Json.JsonSerializer.Serialize(payload, jsonOptions));
-            }
-
+            IndicatorPanelControl.RefreshActiveTypes(list.Select(a => a.Type));
+            await RefreshIndicatorsOnChartAsync();
             IndicatorPopup.IsOpen = false;
         }
         catch (Exception ex)
@@ -3097,9 +3112,10 @@ public partial class MainWindow : Window
         var prev = bars.Count > 1 ? bars[^2] : last;
         SetOhlcHeader(last.Open, last.High, last.Low, last.Close, prev.Open, prev.High, prev.Low, prev.Close);
 
-        await SendCandlesToChartAsync(bars);
-        _ = SendPositionsToChartAsync();
-        _ = SendDrawingsToChartAsync();
+    await SendCandlesToChartAsync(bars);
+    await RefreshIndicatorsOnChartAsync();
+    _ = SendPositionsToChartAsync();
+    _ = SendDrawingsToChartAsync();
         _ = SendThemeToChartAsync();
     }
 

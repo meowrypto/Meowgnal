@@ -6,11 +6,11 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Meowgnal.Models;
 using Meowgnal.Services;
 
 namespace Meowgnal.Views;
 
-// One row in the indicator panel (favorite state is in-memory only for now).
 public sealed class IndicatorRowViewModel : INotifyPropertyChanged
 {
     public IndicatorInfo Info { get; }
@@ -28,7 +28,21 @@ public sealed class IndicatorRowViewModel : INotifyPropertyChanged
         }
     }
 
+    private bool _isActive;
+    public bool IsActive
+    {
+        get => _isActive;
+        set
+        {
+            if (_isActive == value) return;
+            _isActive = value;
+            OnPropertyChanged(nameof(IsActive));
+            OnPropertyChanged(nameof(ActiveIcon));
+        }
+    }
+
     public string FavIcon => IsFavorite ? "⭐" : "☆";
+    public string ActiveIcon => IsActive ? "✓" : "";
     public string Title => Info.Label;
     public string Description => Info.Description;
 
@@ -41,8 +55,7 @@ public sealed class IndicatorRowViewModel : INotifyPropertyChanged
 
 public partial class IndicatorPanel : UserControl
 {
-    // In-memory only; real persistence is a separate task.
-    private readonly HashSet<string> _favorites = new();
+    private readonly IndicatorSettingsFile _settings = IndicatorSettingsStorageService.Load();
 
     private readonly List<IndicatorRowViewModel> _all =
         IndicatorRegistry.All.Select(i => new IndicatorRowViewModel(i)).ToList();
@@ -50,7 +63,6 @@ public partial class IndicatorPanel : UserControl
     private readonly ObservableCollection<IndicatorRowViewModel> _favoriteRows = new();
     private readonly ObservableCollection<IndicatorRowViewModel> _technicalRows = new();
 
-    // Raised when the user clicks an indicator name; MainWindow adds it to the chart.
     public event Action<IndicatorInfo>? IndicatorSelected;
 
     public IndicatorPanel()
@@ -58,12 +70,23 @@ public partial class IndicatorPanel : UserControl
         InitializeComponent();
         FavoritesList.ItemsSource = _favoriteRows;
         TechnicalList.ItemsSource = _technicalRows;
+
+        foreach (var vm in _all)
+            vm.IsFavorite = _settings.FavoriteIndicatorTypes.Contains(vm.Info.Type);
+
         ApplyFilter();
+    }
+
+    // Shows a check mark next to indicators currently on the chart.
+    public void RefreshActiveTypes(IEnumerable<string> activeTypes)
+    {
+        var set = new HashSet<string>(activeTypes);
+        foreach (var vm in _all)
+            vm.IsActive = set.Contains((vm.Info.Type ?? "").ToLowerInvariant());
     }
 
     private void SearchBox_TextChanged(object sender, TextChangedEventArgs e) => ApplyFilter();
 
-    // Rebuilds both lists based on the search text and favorite state.
     private void ApplyFilter()
     {
         var q = (SearchBox.Text ?? "").Trim().ToLowerInvariant();
@@ -90,8 +113,9 @@ public partial class IndicatorPanel : UserControl
         if (sender is not Button btn || btn.Tag is not IndicatorRowViewModel vm) return;
 
         vm.IsFavorite = !vm.IsFavorite;
-        if (vm.IsFavorite) _favorites.Add(vm.Info.Type);
-        else _favorites.Remove(vm.Info.Type);
+        if (vm.IsFavorite) _settings.FavoriteIndicatorTypes.Add(vm.Info.Type);
+        else _settings.FavoriteIndicatorTypes.Remove(vm.Info.Type);
+        IndicatorSettingsStorageService.Save(_settings);
 
         ApplyFilter();
     }

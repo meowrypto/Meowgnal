@@ -964,6 +964,11 @@
                     return;
                 }
 
+                if (msg.type === 'clearIndicators') {
+                    clearIndicators();
+                    return;
+                }
+
                 if (msg.type === 'setCandles') {
                     clearIndicators();
                     rawData = msg.data;
