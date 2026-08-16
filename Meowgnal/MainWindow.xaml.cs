@@ -74,6 +74,12 @@ public partial class MainWindow : Window
     private PriceAlertsFile _alerts = new();
     private readonly Dictionary<string, bool?> _drawingAlertWasAbove = new();
 
+    // Replay mode state
+    private bool _replayMode;
+    private List<Bar> _replayBars = new();
+    private int _replayShown;
+    private readonly DispatcherTimer _replayTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+
     private static readonly SolidColorBrush UpBrush = new(Color.FromRgb(0x08, 0x99, 0x81));
     private static readonly SolidColorBrush DownBrush = new(Color.FromRgb(0xF2, 0x36, 0x45));
 
@@ -96,11 +102,6 @@ public partial class MainWindow : Window
     private string _chartDataSource = "binance";
     private string _chartType = "candles";
     private List<Bar> _currentBars = new();
-    // Replay mode state
-    private bool _replayMode;
-    private List<Bar> _replayBars = new();
-    private int _replayShown;
-    private readonly DispatcherTimer _replayTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _isFullscreen;
     private WindowState _prevState;
     private WindowStyle _prevStyle;
@@ -1138,19 +1139,26 @@ public partial class MainWindow : Window
             ? (side == PositionSide.Long ? entry * (1m + tpPct / 100m) : entry * (1m - tpPct / 100m))
             : 0m;
 
-        // Pre-Hunt Checklist: ask before opening the paper position.
-        var checklistPrompt = new ChecklistPromptWindow(settings.DefaultChecklist) { Owner = this };
-        if (checklistPrompt.ShowDialog() != true) return;
-        var checklistResult = checklistPrompt.Result.Result;
-
-        var existingPos = _paperAccount.OpenPositions.FirstOrDefault(p => p.Symbol == symbol);
-
-        if (existingPos is not null)
+        // Pre-Hunt Checklist: pause the watch timer while the modal dialog is open
+        // to avoid race conditions on the OpenPositions collection.
+        _watchTimer.Stop();
+        ChecklistResult checklistResult = new();
+        try
         {
-            PaperTradingEngine.Close(_paperAccount, existingPos, entry, CloseReason.Manual, settings.PaperTakerFeePercent);
-            CheckDailySuspension(settings);
+            var checklistPrompt = new ChecklistPromptWindow(settings.DefaultChecklist) { Owner = this };
+            if (checklistPrompt.ShowDialog() != true)
+            {
+                _watchTimer.Start();
+                return;
+            }
+            checklistResult = checklistPrompt.Result.Result!;
+        }
+        finally
+        {
+            _watchTimer.Start();
         }
 
+        // Multiple open positions on the same symbol are allowed (like real exchanges).
         var result = PaperTradingEngine.TryOpen(
             _paperAccount, settings, symbol, dataSource, side, entry, leverage,
             slPrice, tpPrice, trailing, trailDist, trailAct, marginUsdt, strategyId: null);
@@ -1161,8 +1169,6 @@ public partial class MainWindow : Window
         }
 
         result.Position!.ChecklistResult = checklistResult;
-        SavePaperAccount();
-
         SavePaperAccount();
         OpenPositionPopup.IsOpen = false;
         RebuildPaperPanel();
@@ -1212,14 +1218,17 @@ public partial class MainWindow : Window
         var settings = SettingsStorageService.Load();
         PaperTradingEngine.CheckDailyReset(_paperAccount);
 
-        if (_paperAccount.OpenPositions.Count == 0)
+        // Snapshot the positions list up front to avoid "collection modified" crashes
+        // if a trade is closed or opened elsewhere while we iterate.
+        var positions = _paperAccount.OpenPositions.ToList();
+        if (positions.Count == 0)
         {
             UpdatePaperSummary(new Dictionary<string, decimal>());
             return;
         }
 
         var prices = new Dictionary<string, decimal>();
-        foreach (var group in _paperAccount.OpenPositions.GroupBy(p => p.DataSource).ToList())
+        foreach (var group in positions.GroupBy(p => p.DataSource).ToList())
         {
             try
             {
@@ -1237,11 +1246,11 @@ public partial class MainWindow : Window
 
         var highs = new Dictionary<string, decimal>();
         var lows = new Dictionary<string, decimal>();
-        foreach (var symbol in _paperAccount.OpenPositions.Select(p => p.Symbol).Distinct())
+        foreach (var symbol in positions.Select(p => p.Symbol).Distinct())
         {
             try
             {
-                var src = _paperAccount.OpenPositions.First(p => p.Symbol == symbol).DataSource;
+                var src = positions.First(p => p.Symbol == symbol).DataSource;
                 IDataProvider provider = src == "hyperliquid"
                     ? new HyperliquidDataProvider()
                     : new BinanceDataProvider();
@@ -1258,7 +1267,7 @@ public partial class MainWindow : Window
         }
 
         var closedTrades = new List<PaperTrade>();
-        foreach (var pos in _paperAccount.OpenPositions.ToList())
+        foreach (var pos in positions)
         {
             if (!prices.TryGetValue(pos.Symbol, out var last)) continue;
             PaperTradingEngine.UpdateTrailing(pos, last);
@@ -1272,7 +1281,7 @@ public partial class MainWindow : Window
         if (!_paperAccount.IsSuspendedUntilTomorrow &&
             PaperTradingEngine.DailyLossLimitBreached(_paperAccount, settings))
         {
-            foreach (var pos in _paperAccount.OpenPositions.ToList())
+            foreach (var pos in positions)
             {
                 if (prices.TryGetValue(pos.Symbol, out var px))
                     closedTrades.Add(PaperTradingEngine.Close(_paperAccount, pos, px, CloseReason.RiskRule, settings.PaperTakerFeePercent));
@@ -1461,18 +1470,21 @@ public partial class MainWindow : Window
                     _paperAccount.OpenPositions.Count(p => p.StrategyId == f.Strategy.StrategyId) >= settings.PortfolioMaxPositionsPerStrategy)
                     continue;
 
-                // Pre-Hunt Checklist: even auto trades must pass the discipline gate.
-                var checklist = f.Strategy.CustomChecklist ?? settings.DefaultChecklist;
-                var prompt = new ChecklistPromptWindow(checklist) { Owner = this };
-                if (prompt.ShowDialog() != true) continue;
-                var checklistResult = prompt.Result.Result;
-
-                var slPrice = settings.PaperDefaultStopLossPercent > 0
-                    ? price * (1m - settings.PaperDefaultStopLossPercent / 100m)
-                    : 0m;
-                var tpPrice = settings.PaperDefaultTakeProfitPercent > 0
-                    ? price * (1m + settings.PaperDefaultTakeProfitPercent / 100m)
-                    : 0m;
+                // Pre-Hunt Checklist: pause the watch timer while the modal dialog is open.
+                _watchTimer.Stop();
+                ChecklistResult? checklistResult = null;
+                try
+                {
+                    var checklist = f.Strategy.CustomChecklist ?? settings.DefaultChecklist;
+                    var checklistPrompt = new ChecklistPromptWindow(checklist) { Owner = this };
+                    if (checklistPrompt.ShowDialog() == true)
+                        checklistResult = checklistPrompt.Result.Result;
+                }
+                finally
+                {
+                    _watchTimer.Start();
+                }
+                if (checklistResult is null) continue;
 
                 // Build entry autopsy: real indicator values at the signal bar.
                 var barsForSnapshot = await provider.GetHistoricalCandlesAsync(symbol, f.Strategy.Timeframe, limit: 50);
@@ -1486,6 +1498,13 @@ public partial class MainWindow : Window
                         f.Strategy.EntryRules.Conditions, lastIdx, barsForSnapshot, series);
                     entryExplanation = StrategyDescriptionService.DescribeTradeEntry(f.Strategy, entrySnapshot);
                 }
+
+                var slPrice = settings.PaperDefaultStopLossPercent > 0
+                    ? price * (1m - settings.PaperDefaultStopLossPercent / 100m)
+                    : 0m;
+                var tpPrice = settings.PaperDefaultTakeProfitPercent > 0
+                    ? price * (1m + settings.PaperDefaultTakeProfitPercent / 100m)
+                    : 0m;
 
                 var result = PaperTradingEngine.TryOpen(
                     _paperAccount, settings, symbol, f.Strategy.DataSource, PositionSide.Long, price,
@@ -2933,266 +2952,6 @@ public partial class MainWindow : Window
 
     #endregion
 
-    #region Replay Mode
-
-    private async void ReplayButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (_replayMode)
-        {
-            await ExitReplayModeAsync();
-            return;
-        }
-        await EnterReplayModeAsync();
-    }
-
-    private async Task EnterReplayModeAsync()
-    {
-        try
-        {
-            IDataProvider provider = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
-            var bars = await provider.GetHistoricalCandlesAsync(_chartSymbol, _chartTimeframe, limit: 1000);
-            if (bars.Count < 100)
-            {
-                NotificationService.ShowToast("Meowgnal", "Not enough history for replay on this symbol/timeframe.");
-                return;
-            }
-
-            _replayBars = bars;
-            _replayMode = true;
-            ReplayBar.Visibility = Visibility.Visible;
-            ReplayButton.Background = (Brush)FindResource("Accent");
-
-            // Replay is candle-reading practice: force candle view and hide indicators
-            ApplyChartType("candles");
-            _ = SendChartTypeAsync("candles");
-            _ = SendClearIndicatorsAsync();
-
-            ReplayDatePicker.DisplayDateStart = bars[0].Timestamp;
-            ReplayDatePicker.DisplayDateEnd = bars[^1].Timestamp;
-            ReplayDatePicker.SelectedDate = bars[(int)(bars.Count * 0.6)].Timestamp;
-
-            UpdateReplayProgress();
-            ResetReplaySession();
-        }
-        catch (Exception ex)
-        {
-            NotificationService.ShowToast("Meowgnal", $"Replay failed to load: {ex.Message}");
-        }
-    }
-
-    private async Task ExitReplayModeAsync()
-    {
-        ForceExitReplayUi();
-        await LoadChartAsync();
-    }
-
-    private void ForceExitReplayUi()
-    {
-        if (_guessTotal > 0)
-            NotificationService.ShowToast("Meowgnal — Replay Summary",
-                $"Session finished: {_guessCorrect}/{_guessTotal} correct guesses ({(double)_guessCorrect / _guessTotal * 100:N0}%).");
-
-        _replayMode = false;
-        StopReplayPlayback();
-        ReplayBar.Visibility = Visibility.Collapsed;
-        ReplayButton.Background = Brushes.Transparent;
-        _replayBars = new List<Bar>();
-        ResetReplaySession();
-    }
-
-    private void ReplayDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (!_replayMode) return;
-        StopReplayPlayback();
-        ResetReplayToDate();
-    }
-
-    private void ResetReplayToDate()
-    {
-        if (_replayBars.Count == 0) return;
-        var start = ReplayDatePicker.SelectedDate ?? _replayBars[(int)(_replayBars.Count * 0.6)].Timestamp;
-        var idx = _replayBars.FindIndex(b => b.Timestamp >= start);
-        if (idx < 30) idx = Math.Min(30, _replayBars.Count);
-        _replayShown = idx;
-        _ = SendCandlesToChartAsync(_replayBars.Take(idx).ToList());
-        UpdateReplayProgress();
-    }
-
-    private void ReplayReset_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_replayMode) return;
-        StopReplayPlayback();
-        ResetReplayToDate();
-    }
-
-    private void ReplayStep_Click(object sender, RoutedEventArgs e) => ReplayStep(1);
-
-    private void ReplayStep(int count)
-    {
-        if (!_replayMode || _replayBars.Count == 0) return;
-        for (var i = 0; i < count && _replayShown < _replayBars.Count; i++)
-        {
-            _ = SendAppendCandleAsync(_replayBars[_replayShown]);
-            _replayShown++;
-        }
-        UpdateReplayProgress();
-        if (_replayShown >= _replayBars.Count) StopReplayPlayback();
-    }
-
-    private void ReplayPlay_Click(object sender, RoutedEventArgs e)
-    {
-        if (_replayTimer.IsEnabled) StopReplayPlayback();
-        else StartReplayPlayback();
-    }
-
-    private void StartReplayPlayback()
-    {
-        if (!_replayMode || _replayShown >= _replayBars.Count) return;
-        _replayTimer.Start();
-        ReplayPlayButton.Content = "⏸ Pause";
-    }
-
-    private void StopReplayPlayback()
-    {
-        _replayTimer.Stop();
-        ReplayPlayButton.Content = "▶ Play";
-    }
-
-    private void ReplaySpeedCombo_Changed(object sender, SelectionChangedEventArgs e)
-    {
-        if (ReplaySpeedCombo.SelectedItem is ComboBoxItem ci && ci.Tag is string tag && int.TryParse(tag, out var ms))
-            _replayTimer.Interval = TimeSpan.FromMilliseconds(ms);
-    }
-    private void BlindModeCheck_Changed(object sender, RoutedEventArgs e)
-    {
-        if (BlindModeCheck is null) return;
-        _ = SendBlindModeAsync(BlindModeCheck.IsChecked == true);
-    }
-
-    private async Task SendBlindModeAsync(bool blind)
-    {
-        try { await _chartPageReady.Task; } catch { return; }
-        if (ChartWebView.CoreWebView2 is null) return;
-        ChartWebView.CoreWebView2.PostWebMessageAsJson(
-            JsonSerializer.Serialize(new { type = "setBlindMode", blind }));
-    }
-
-    private sealed class ReplayGuess
-    {
-        public string Choice { get; set; } = "";
-        public int BarIndex { get; set; }
-        public decimal EntryPrice { get; set; }
-    }
-
-    private ReplayGuess? _pendingGuess;
-    private int _guessCorrect;
-    private int _guessTotal;
-
-    private void ReplayGuessButton_Click(object sender, RoutedEventArgs e)
-    {
-        if (!_replayMode || _replayShown <= 0) return;
-        GuessPopup.IsOpen = !GuessPopup.IsOpen;
-    }
-
-    private void GuessLong_Click(object sender, RoutedEventArgs e) => StartGuess("long");
-    private void GuessShort_Click(object sender, RoutedEventArgs e) => StartGuess("short");
-    private void GuessSkip_Click(object sender, RoutedEventArgs e) => StartGuess("skip");
-
-    // Records the guess, jumps 10 candles forward, then evaluates the outcome.
-    private void StartGuess(string choice)
-    {
-        GuessPopup.IsOpen = false;
-        if (!_replayMode || _replayShown <= 0) return;
-        StopReplayPlayback();
-
-        _pendingGuess = new ReplayGuess
-        {
-            Choice = choice,
-            BarIndex = _replayShown - 1,
-            EntryPrice = _replayBars[_replayShown - 1].Close
-        };
-
-        ReplayStep(10);
-        ResolvePendingGuess();
-    }
-
-    private void ResolvePendingGuess()
-    {
-        if (_pendingGuess is null || _replayBars.Count == 0) return;
-        var guess = _pendingGuess;
-        _pendingGuess = null;
-
-        var exit = _replayBars[_replayShown - 1].Close;
-        var longPct = guess.EntryPrice != 0 ? (exit - guess.EntryPrice) / guess.EntryPrice * 100m : 0m;
-        var shortPct = -longPct;
-
-        string resultText;
-        if (guess.Choice == "skip")
-        {
-            _guessTotal++;
-            resultText = $"⏭ Skipped — Long would be {longPct:+0.00;-0.00}%, Short {shortPct:+0.00;-0.00}%";
-        }
-        else
-        {
-            var pct = guess.Choice == "long" ? longPct : shortPct;
-            var correct = pct > 0;
-            _guessTotal++;
-            if (correct) _guessCorrect++;
-            resultText = $"{(guess.Choice == "long" ? "🟢 Long" : "🔴 Short")}: {pct:+0.00;-0.00}% — {(correct ? "correct ✅" : "wrong ❌")}";
-        }
-
-        UpdateSessionText();
-        NotificationService.ShowToast("Meowgnal — Replay", resultText);
-    }
-
-    private void ResetReplaySession()
-    {
-        _pendingGuess = null;
-        _guessCorrect = 0;
-        _guessTotal = 0;
-        UpdateSessionText();
-    }
-
-    private void UpdateSessionText()
-    {
-        ReplaySessionText.Text = _guessTotal == 0
-            ? "Session: no guesses yet"
-            : $"Session: {_guessCorrect}/{_guessTotal} correct ({(double)_guessCorrect / _guessTotal * 100:N0}%)";
-    }
-    private void UpdateReplayProgress()
-    {
-        ReplayProgressText.Text = $"Replay: {_replayShown}/{_replayBars.Count} candles";
-    }
-
-    private async Task SendAppendCandleAsync(Bar b)
-    {
-        try { await _chartPageReady.Task; } catch { return; }
-        if (ChartWebView.CoreWebView2 is null) return;
-        var payload = new
-        {
-            type = "appendCandle",
-            candle = new
-            {
-                time = new DateTimeOffset(b.Timestamp).ToUnixTimeSeconds(),
-                open = b.Open,
-                high = b.High,
-                low = b.Low,
-                close = b.Close,
-                volume = b.Volume
-            }
-        };
-        ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
-    }
-
-    private async Task SendClearIndicatorsAsync()
-    {
-        try { await _chartPageReady.Task; } catch { return; }
-        if (ChartWebView.CoreWebView2 is null) return;
-        ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "clearIndicators" }));
-    }
-
-    #endregion
-
     private void ChartTypeButton_Click(object sender, RoutedEventArgs e) =>
         ChartTypePopup.IsOpen = !ChartTypePopup.IsOpen;
 
@@ -3279,15 +3038,6 @@ public partial class MainWindow : Window
             if (ChartWebView.CoreWebView2 is not null)
             {
                 await ChartWebView.CoreWebView2.ExecuteScriptAsync("pasteCopiedDrawing();");
-                e.Handled = true;
-            }
-        }
-        else if (e.Key == Key.Y)
-        {
-            var restored = _undoManager.Redo(_drawingsFile.Drawings);
-            if (restored is not null)
-            {
-                await RestoreSnapshotAsync(restored);
                 e.Handled = true;
             }
         }
@@ -3644,4 +3394,266 @@ public partial class MainWindow : Window
         }
         return found;
     }
+
+    #region Replay Mode
+
+    private async void ReplayButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_replayMode)
+        {
+            await ExitReplayModeAsync();
+            return;
+        }
+        await EnterReplayModeAsync();
+    }
+
+    private async Task EnterReplayModeAsync()
+    {
+        try
+        {
+            IDataProvider provider = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
+            var bars = await provider.GetHistoricalCandlesAsync(_chartSymbol, _chartTimeframe, limit: 1000);
+            if (bars.Count < 100)
+            {
+                NotificationService.ShowToast("Meowgnal", "Not enough history for replay on this symbol/timeframe.");
+                return;
+            }
+
+            _replayBars = bars;
+            _replayMode = true;
+            ReplayBar.Visibility = Visibility.Visible;
+            ReplayButton.Background = (Brush)FindResource("Accent");
+
+            // Replay is candle-reading practice: force candle view and hide indicators
+            ApplyChartType("candles");
+            _ = SendChartTypeAsync("candles");
+            _ = SendClearIndicatorsAsync();
+
+            ReplayDatePicker.DisplayDateStart = bars[0].Timestamp;
+            ReplayDatePicker.DisplayDateEnd = bars[^1].Timestamp;
+            ReplayDatePicker.SelectedDate = bars[(int)(bars.Count * 0.6)].Timestamp;
+
+            UpdateReplayProgress();
+            ResetReplaySession();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowToast("Meowgnal", $"Replay failed to load: {ex.Message}");
+        }
+    }
+
+    private async Task ExitReplayModeAsync()
+    {
+        ForceExitReplayUi();
+        await LoadChartAsync();
+    }
+
+    private void ForceExitReplayUi()
+    {
+        if (_guessTotal > 0)
+            NotificationService.ShowToast("Meowgnal — Replay Summary",
+                $"Session finished: {_guessCorrect}/{_guessTotal} correct guesses ({(double)_guessCorrect / _guessTotal * 100:N0}%).");
+
+        _replayMode = false;
+        StopReplayPlayback();
+        ReplayBar.Visibility = Visibility.Collapsed;
+        ReplayButton.Background = Brushes.Transparent;
+        _replayBars = new List<Bar>();
+        ResetReplaySession();
+    }
+
+    private void ReplayDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_replayMode) return;
+        StopReplayPlayback();
+        ResetReplayToDate();
+    }
+
+    private void ResetReplayToDate()
+    {
+        if (_replayBars.Count == 0) return;
+        var start = ReplayDatePicker.SelectedDate ?? _replayBars[(int)(_replayBars.Count * 0.6)].Timestamp;
+        var idx = _replayBars.FindIndex(b => b.Timestamp >= start);
+        if (idx < 30) idx = Math.Min(30, _replayBars.Count);
+        _replayShown = idx;
+        _ = SendCandlesToChartAsync(_replayBars.Take(idx).ToList());
+        UpdateReplayProgress();
+    }
+
+    private void ReplayReset_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_replayMode) return;
+        StopReplayPlayback();
+        ResetReplayToDate();
+    }
+
+    private void ReplayStep_Click(object sender, RoutedEventArgs e) => ReplayStep(1);
+
+    private void ReplayStep(int count)
+    {
+        if (!_replayMode || _replayBars.Count == 0) return;
+        for (var i = 0; i < count && _replayShown < _replayBars.Count; i++)
+        {
+            _ = SendAppendCandleAsync(_replayBars[_replayShown]);
+            _replayShown++;
+        }
+        UpdateReplayProgress();
+        if (_replayShown >= _replayBars.Count) StopReplayPlayback();
+    }
+
+    private void ReplayPlay_Click(object sender, RoutedEventArgs e)
+    {
+        if (_replayTimer.IsEnabled) StopReplayPlayback();
+        else StartReplayPlayback();
+    }
+
+    private void StartReplayPlayback()
+    {
+        if (!_replayMode || _replayShown >= _replayBars.Count) return;
+        _replayTimer.Start();
+        ReplayPlayButton.Content = "⏸ Pause";
+    }
+
+    private void StopReplayPlayback()
+    {
+        _replayTimer.Stop();
+        ReplayPlayButton.Content = "▶ Play";
+    }
+
+    private void ReplaySpeedCombo_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ReplaySpeedCombo.SelectedItem is ComboBoxItem ci && ci.Tag is string tag && int.TryParse(tag, out var ms))
+            _replayTimer.Interval = TimeSpan.FromMilliseconds(ms);
+    }
+
+    private void UpdateReplayProgress()
+    {
+        ReplayProgressText.Text = $"Replay: {_replayShown}/{_replayBars.Count} candles";
+    }
+
+    private async Task SendAppendCandleAsync(Bar b)
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        var payload = new
+        {
+            type = "appendCandle",
+            candle = new
+            {
+                time = new DateTimeOffset(b.Timestamp).ToUnixTimeSeconds(),
+                open = b.Open,
+                high = b.High,
+                low = b.Low,
+                close = b.Close,
+                volume = b.Volume
+            }
+        };
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
+    }
+
+    private async Task SendClearIndicatorsAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "clearIndicators" }));
+    }
+
+    private void BlindModeCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (BlindModeCheck is null) return;
+        _ = SendBlindModeAsync(BlindModeCheck.IsChecked == true);
+    }
+
+    private async Task SendBlindModeAsync(bool blind)
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setBlindMode", blind }));
+    }
+
+    private sealed class ReplayGuess
+    {
+        public string Choice { get; set; } = "";
+        public int BarIndex { get; set; }
+        public decimal EntryPrice { get; set; }
+    }
+
+    private ReplayGuess? _pendingGuess;
+    private int _guessCorrect;
+    private int _guessTotal;
+
+    private void ReplayGuessButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_replayMode || _replayShown <= 0) return;
+        GuessPopup.IsOpen = !GuessPopup.IsOpen;
+    }
+
+    private void GuessLong_Click(object sender, RoutedEventArgs e) => StartGuess("long");
+    private void GuessShort_Click(object sender, RoutedEventArgs e) => StartGuess("short");
+    private void GuessSkip_Click(object sender, RoutedEventArgs e) => StartGuess("skip");
+
+    // Records the guess, jumps 10 candles forward, then evaluates the outcome.
+    private void StartGuess(string choice)
+    {
+        GuessPopup.IsOpen = false;
+        if (!_replayMode || _replayShown <= 0) return;
+        StopReplayPlayback();
+
+        _pendingGuess = new ReplayGuess
+        {
+            Choice = choice,
+            BarIndex = _replayShown - 1,
+            EntryPrice = _replayBars[_replayShown - 1].Close
+        };
+
+        ReplayStep(10);
+        ResolvePendingGuess();
+    }
+
+    private void ResolvePendingGuess()
+    {
+        if (_pendingGuess is null || _replayBars.Count == 0) return;
+        var guess = _pendingGuess;
+        _pendingGuess = null;
+
+        var exit = _replayBars[_replayShown - 1].Close;
+        var longPct = guess.EntryPrice != 0 ? (exit - guess.EntryPrice) / guess.EntryPrice * 100m : 0m;
+        var shortPct = -longPct;
+
+        string resultText;
+        if (guess.Choice == "skip")
+        {
+            _guessTotal++;
+            resultText = $"⏭ Skipped — Long would be {longPct:+0.00;-0.00}%, Short {shortPct:+0.00;-0.00}%";
+        }
+        else
+        {
+            var pct = guess.Choice == "long" ? longPct : shortPct;
+            var correct = pct > 0;
+            _guessTotal++;
+            if (correct) _guessCorrect++;
+            resultText = $"{(guess.Choice == "long" ? "🟢 Long" : "🔴 Short")}: {pct:+0.00;-0.00}% — {(correct ? "correct ✅" : "wrong ❌")}";
+        }
+
+        UpdateSessionText();
+        NotificationService.ShowToast("Meowgnal — Replay", resultText);
+    }
+
+    private void ResetReplaySession()
+    {
+        _pendingGuess = null;
+        _guessCorrect = 0;
+        _guessTotal = 0;
+        UpdateSessionText();
+    }
+
+    private void UpdateSessionText()
+    {
+        ReplaySessionText.Text = _guessTotal == 0
+            ? "Session: no guesses yet"
+            : $"Session: {_guessCorrect}/{_guessTotal} correct ({(double)_guessCorrect / _guessTotal * 100:N0}%)";
+    }
+
+    #endregion
 }

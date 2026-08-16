@@ -139,6 +139,12 @@ public partial class JournalWindow : Window
         MessageBox.Show("Trade updated successfully.", "Saved", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
+    private void DisciplineReport_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new DisciplineReportWindow { Owner = this };
+        win.ShowDialog();
+    }
+
     private void Delete_Click(object sender, RoutedEventArgs e)
     {
         if (_selectedEntry is null) return;
