@@ -363,6 +363,8 @@
                         <StackPanel Orientation="Horizontal">
                             <Button Content="Save strategy" Style="{StaticResource PrimaryButton}" Padding="16,8" FontSize="13"
                                     Click="SaveStrategy_Click"/>
+                            <Button x:Name="ChecklistButton" Content="🐾 Checklist: Default" Style="{StaticResource TertiaryButton}"
+                                    Padding="12,6" Margin="10,0,0,0" Click="CustomizeChecklist_Click"/>
                             <TextBlock x:Name="StatusText" Foreground="{StaticResource TextMuted}" Margin="16,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>

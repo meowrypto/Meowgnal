@@ -1138,7 +1138,13 @@ public partial class MainWindow : Window
             ? (side == PositionSide.Long ? entry * (1m + tpPct / 100m) : entry * (1m - tpPct / 100m))
             : 0m;
 
+        // Pre-Hunt Checklist: ask before opening the paper position.
+        var checklistPrompt = new ChecklistPromptWindow(settings.DefaultChecklist) { Owner = this };
+        if (checklistPrompt.ShowDialog() != true) return;
+        var checklistResult = checklistPrompt.Result.Result;
+
         var existingPos = _paperAccount.OpenPositions.FirstOrDefault(p => p.Symbol == symbol);
+
         if (existingPos is not null)
         {
             PaperTradingEngine.Close(_paperAccount, existingPos, entry, CloseReason.Manual, settings.PaperTakerFeePercent);
@@ -1153,6 +1159,9 @@ public partial class MainWindow : Window
             NotificationService.ShowToast("Meowgnal", result.Error);
             return;
         }
+
+        result.Position!.ChecklistResult = checklistResult;
+        SavePaperAccount();
 
         SavePaperAccount();
         OpenPositionPopup.IsOpen = false;
@@ -1452,6 +1461,12 @@ public partial class MainWindow : Window
                     _paperAccount.OpenPositions.Count(p => p.StrategyId == f.Strategy.StrategyId) >= settings.PortfolioMaxPositionsPerStrategy)
                     continue;
 
+                // Pre-Hunt Checklist: even auto trades must pass the discipline gate.
+                var checklist = f.Strategy.CustomChecklist ?? settings.DefaultChecklist;
+                var prompt = new ChecklistPromptWindow(checklist) { Owner = this };
+                if (prompt.ShowDialog() != true) continue;
+                var checklistResult = prompt.Result.Result;
+
                 var slPrice = settings.PaperDefaultStopLossPercent > 0
                     ? price * (1m - settings.PaperDefaultStopLossPercent / 100m)
                     : 0m;
@@ -1480,6 +1495,7 @@ public partial class MainWindow : Window
                     entrySnapshot: entrySnapshot, entryExplanation: entryExplanation);
                 if (result.Ok)
                 {
+                    result.Position!.ChecklistResult = checklistResult;
                     changed = true;
                     NotificationService.ShowToast("Meowgnal — auto trade",
                         $"AUTO LONG {symbol} @ {FormatPrice(price)} (margin {result.Position!.Margin:N2} USDT) by {f.Strategy.Name}");

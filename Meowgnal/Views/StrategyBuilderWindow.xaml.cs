@@ -51,8 +51,6 @@ public sealed class ModeOption
     public string Label { get; set; } = "";
 }
 
-// Represents either a leaf condition or a group of conditions in the UI tree.
-
 public partial class StrategyBuilderWindow : Window
 {
     public const string NumberToken = "__num__";
@@ -67,6 +65,7 @@ public partial class StrategyBuilderWindow : Window
     private bool _isCopy;
     private readonly DispatcherTimer _descTimer;
     private BacktestResult? _lastTestResult;
+    private List<ChecklistItem>? _customChecklist;
 
     public ObservableCollection<RegistryOption> RegistryOptions { get; } = new();
     public ICollectionView GroupedRegistry { get; private set; } = null!;
@@ -82,8 +81,6 @@ public partial class StrategyBuilderWindow : Window
         BuildRegistryOptions();
         InitializeComponent();
         DataContext = this;
-
-        
 
         OpOptions.Add(new OpOption { Key = "crossesAbove", Label = "crosses above" });
         OpOptions.Add(new OpOption { Key = "crossesBelow", Label = "crosses below" });
@@ -207,6 +204,10 @@ public partial class StrategyBuilderWindow : Window
         TargetValueBox.Text = prefill.RiskManagement?.Target?.Value.ToString() ?? "2";
         RiskPercentBox.Text = prefill.RiskManagement?.PositionSizing?.RiskPercentPerTrade.ToString() ?? "1";
 
+        // Load custom checklist if this strategy has one.
+        _customChecklist = prefill.CustomChecklist;
+        if (_customChecklist is not null) ChecklistButton.Content = "🐾 Checklist: Custom";
+
         RefreshTokens();
         UpdateDescription();
     }
@@ -265,7 +266,6 @@ public partial class StrategyBuilderWindow : Window
     #endregion
 
     // Recursively loads a RuleGroup into ConditionNodeViewModel tree.
-    // Loads the root RuleGroup (EntryRules or ExitRules) into a view model.
     private static ConditionNodeViewModel LoadRootGroup(RuleGroup group, int depth)
     {
         var vm = new ConditionNodeViewModel(true)
@@ -279,7 +279,6 @@ public partial class StrategyBuilderWindow : Window
         return vm;
     }
 
-    // Loads a nested ConditionGroup into a view model.
     private static ConditionNodeViewModel LoadConditionGroup(ConditionGroup group, ConditionNodeViewModel parent, int depth)
     {
         var vm = new ConditionNodeViewModel(true)
@@ -294,7 +293,6 @@ public partial class StrategyBuilderWindow : Window
         return vm;
     }
 
-    // Helper: loads child nodes (leaf or group) into a parent view model.
     private static void LoadChildrenInto(ConditionNodeViewModel parent, List<ConditionNode>? nodes, int depth)
     {
         if (nodes is null) return;
@@ -321,6 +319,7 @@ public partial class StrategyBuilderWindow : Window
             }
         }
     }
+
     private static int ToInt(object? value, int fallback) => value switch
     {
         int i => i,
@@ -366,12 +365,11 @@ public partial class StrategyBuilderWindow : Window
                 {
                     RiskPercentPerTrade = double.TryParse(RiskPercentBox.Text, out var rv) ? rv : 1
                 }
-            }
+            },
+            CustomChecklist = _customChecklist
         };
     }
 
-    // Recursively builds a RuleGroup from ConditionNodeViewModel tree.
-    // Builds the root RuleGroup (EntryRules or ExitRules) from the view model.
     private static RuleGroup BuildRootGroup(ConditionNodeViewModel? vm)
     {
         if (vm is null)
@@ -394,7 +392,6 @@ public partial class StrategyBuilderWindow : Window
         };
     }
 
-    // Builds a nested ConditionGroup from the view model.
     private static ConditionGroup BuildConditionGroup(ConditionNodeViewModel vm)
     {
         return new ConditionGroup
@@ -405,7 +402,6 @@ public partial class StrategyBuilderWindow : Window
         };
     }
 
-    // Helper: builds the list of ConditionNode (leaf or group) from a view model.
     private static List<ConditionNode> BuildConditions(ConditionNodeViewModel vm)
     {
         var conditions = new List<ConditionNode>();
@@ -438,6 +434,7 @@ public partial class StrategyBuilderWindow : Window
 
         return conditions;
     }
+
     private void UpdateDescription()
     {
         if (DescriptionText is null) return;
@@ -517,7 +514,7 @@ public partial class StrategyBuilderWindow : Window
 
     private void IndicatorType_Changed(object sender, SelectionChangedEventArgs e)
     {
-        if (e.RemovedItems.Count == 0) return; // Ignore initial selection during window load
+        if (e.RemovedItems.Count == 0) return;
         if (sender is not ComboBox combo || combo.DataContext is not IndicatorRow row) return;
         var info = IndicatorRegistry.All.FirstOrDefault(i => i.Type == row.Type);
         if (info is null) return;
@@ -527,7 +524,6 @@ public partial class StrategyBuilderWindow : Window
         UpdateDescription();
     }
 
-    // Adds a new leaf condition to the specified parent group.
     private void AddCondition_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not ConditionNodeViewModel parent) return;
@@ -535,7 +531,6 @@ public partial class StrategyBuilderWindow : Window
         UpdateDescription();
     }
 
-    // Adds a new nested group to the specified parent group (max depth = 3).
     private void AddGroup_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not ConditionNodeViewModel parent) return;
@@ -552,11 +547,10 @@ public partial class StrategyBuilderWindow : Window
         UpdateDescription();
     }
 
-    // Removes a condition or group from its parent.
     private void RemoveNode_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not ConditionNodeViewModel node) return;
-        if (node.Parent is null) return; // Root cannot be removed
+        if (node.Parent is null) return;
 
         node.Parent.Children.Remove(node);
         UpdateDescription();
@@ -642,29 +636,6 @@ public partial class StrategyBuilderWindow : Window
         win.ShowDialog();
     }
 
-    #endregion
-
-    private void SaveStrategy_Click(object sender, RoutedEventArgs e)
-    {
-        var strategy = BuildStrategyFromUi();
-
-        if (_editing is not null) strategy.StrategyId = _editing.StrategyId;
-        else strategy.StrategyId = Guid.NewGuid().ToString("N");
-
-        if (_isCopy && !strategy.Name.EndsWith("(Copy)")) strategy.Name += " (Copy)";
-
-        var existing = StrategyStorageService.LoadAll();
-        var baseName = strategy.Name;
-        var counter = 1;
-        while (existing.Any(s => s.StrategyId != strategy.StrategyId && string.Equals(s.Name, strategy.Name, StringComparison.OrdinalIgnoreCase)))
-        {
-            counter++;
-            strategy.Name = $"{baseName} ({counter})";
-        }
-
-        StrategyStorageService.Save(strategy);
-        StatusText.Text = _editing is not null ? $"Updated '{strategy.Name}'" : $"Saved as '{strategy.Name}'";
-    }
     private void UpdateTestSampleWarning(BacktestResult result)
     {
         var n = result.Trades.Count;
@@ -687,10 +658,46 @@ public partial class StrategyBuilderWindow : Window
                 break;
         }
     }
+
     private void RiskOfRuin_Click(object sender, RoutedEventArgs e)
     {
         var strategy = BuildStrategyFromUi();
         var win = new RiskOfRuinWindow(_lastTestResult, strategy) { Owner = this };
         win.ShowDialog();
+    }
+
+    private void CustomizeChecklist_Click(object sender, RoutedEventArgs e)
+    {
+        var source = _customChecklist ?? SettingsStorageService.Load().DefaultChecklist;
+        var win = new ChecklistEditorWindow(source) { Owner = this };
+        if (win.ShowDialog() == true)
+        {
+            _customChecklist = win.EditedList;
+            ChecklistButton.Content = "🐾 Checklist: Custom";
+        }
+    }
+
+    #endregion
+
+    private void SaveStrategy_Click(object sender, RoutedEventArgs e)
+    {
+        var strategy = BuildStrategyFromUi();
+
+        if (_editing is not null) strategy.StrategyId = _editing.StrategyId;
+        else strategy.StrategyId = Guid.NewGuid().ToString("N");
+
+        if (_isCopy && !strategy.Name.EndsWith("(Copy)")) strategy.Name += " (Copy)";
+
+        var existing = StrategyStorageService.LoadAll();
+        var baseName = strategy.Name;
+        var counter = 1;
+        while (existing.Any(s => s.StrategyId != strategy.StrategyId && string.Equals(s.Name, strategy.Name, StringComparison.OrdinalIgnoreCase)))
+        {
+            counter++;
+            strategy.Name = $"{baseName} ({counter})";
+        }
+
+        StrategyStorageService.Save(strategy);
+        StatusText.Text = _editing is not null ? $"Updated '{strategy.Name}'" : $"Saved as '{strategy.Name}'";
     }
 }

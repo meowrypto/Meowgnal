@@ -43,6 +43,10 @@ public sealed class StrategyDefinition
     // Custom sort order for drag & drop in Strategy Manager (0 = first).
     [JsonPropertyName("sortOrder")]
     public int SortOrder { get; set; } = 0;
+
+    // Pre-Hunt Checklist: null means "use the global default from AppSettings".
+    [JsonPropertyName("customChecklist")]
+    public List<ChecklistItem>? CustomChecklist { get; set; }
 }
 
 public sealed class IndicatorDefinition
@@ -119,7 +123,5 @@ public sealed class NotificationsConfig
 {
     [JsonPropertyName("channels")]
     public List<string> Channels { get; set; } = new() { "toast", "sound" };
-    // Pre-Hunt Checklist: null means "use the global default from AppSettings".
-    // When non-null, this strategy uses its own customized list.
-    public List<ChecklistItem>? CustomChecklist { get; set; }
+    
 }

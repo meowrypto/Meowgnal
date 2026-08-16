@@ -234,7 +234,8 @@ public static class PaperTradingEngine
             StrategyId = position.StrategyId,
             IndicatorSnapshotAtEntry = position.IndicatorSnapshotAtEntry ?? new Dictionary<string, decimal>(),
             EntryExplanation = position.EntryExplanation ?? "",
-            ExitExplanation = exitExplanation
+            ExitExplanation = exitExplanation,
+            ChecklistResult = position.ChecklistResult
         };
 
         account.TradeHistory.Insert(0, trade);

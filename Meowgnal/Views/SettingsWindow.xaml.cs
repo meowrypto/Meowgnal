@@ -120,7 +120,8 @@ public partial class SettingsWindow : Window
         PanelAccuracy.Visibility = NavAccuracy.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelPaperTrading.Visibility = NavPaperTrading.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
         PanelNotifications.Visibility = NavNotifications.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-        
+        PanelChecklist.Visibility = NavChecklist.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
     }
 
     private void TestNotificationButton_Click(object sender, RoutedEventArgs e)
@@ -180,6 +181,13 @@ public partial class SettingsWindow : Window
         };
         PaperAccountStorageService.Save(account);
         NotificationService.ShowToast("Meowgnal", "Paper account has been reset. Restart the app to see the new balance.");
+    }
+
+    private void EditDefaultChecklist_Click(object sender, RoutedEventArgs e)
+    {
+        var win = new ChecklistEditorWindow(_settings.DefaultChecklist) { Owner = this };
+        if (win.ShowDialog() == true)
+            _settings.DefaultChecklist = win.EditedList;
     }
 
     private void SaveAndClose()

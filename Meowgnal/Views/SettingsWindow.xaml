@@ -231,6 +231,7 @@
                         <RadioButton x:Name="NavAccuracy" Content="Accuracy filters" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                         <RadioButton x:Name="NavPaperTrading" Content="Paper trading" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                         <RadioButton x:Name="NavNotifications" Content="Notifications" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
+                        <RadioButton x:Name="NavChecklist" Content="Pre-Hunt Checklist" GroupName="Nav" Style="{StaticResource NavItem}" Checked="Nav_Checked"/>
                     </StackPanel>
                 </Border>
 
@@ -405,6 +406,12 @@
                                 <Button x:Name="TestTelegramButton" Content="Send test message" HorizontalAlignment="Left" Click="TestTelegramButton_Click" Margin="0,0,10,0"/>
                                 <TextBlock x:Name="TelegramStatusText" Foreground="{StaticResource TextMuted}" VerticalAlignment="Center" FontSize="11"/>
                             </StackPanel>
+                        </StackPanel>
+                        <StackPanel x:Name="PanelChecklist" Visibility="Collapsed">
+                            <TextBlock Text="🐾 Pre-Hunt Checklist" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,6"/>
+                            <TextBlock Text="These discipline questions are asked before every paper trade. A strategy can override this list with its own custom checklist in the Strategy Builder."
+                                       Foreground="{StaticResource TextMuted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                            <Button Content="✏️ Edit default checklist" HorizontalAlignment="Left" Click="EditDefaultChecklist_Click"/>
                         </StackPanel>
                     </Grid>
                 </ScrollViewer>
