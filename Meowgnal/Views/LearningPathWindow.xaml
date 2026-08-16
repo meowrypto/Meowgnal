@@ -1,0 +1,68 @@
+﻿<Window x:Class="Meowgnal.Views.LearningPathWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🎓 Learning Path"
+        WindowStyle="None" ResizeMode="NoResize" AllowsTransparency="True"
+        Background="{DynamicResource BackgroundBrush}"
+        WindowStartupLocation="CenterOwner"
+        Width="460" Height="340">
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="32" GlassFrameThickness="0" ResizeBorderThickness="0"/>
+    </WindowChrome.WindowChrome>
+
+    <Border BorderBrush="{DynamicResource BorderLine}" BorderThickness="1" CornerRadius="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="32"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Title bar -->
+            <Border Grid.Row="0" Background="{DynamicResource BgPanel}"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid>
+                    <TextBlock Text="🎓 Learning Path" Foreground="{DynamicResource TextPrimary}"
+                               FontSize="13" FontWeight="Bold" VerticalAlignment="Center" Margin="14,0"/>
+                    <Button Content="✕" Width="40" Height="28" HorizontalAlignment="Right"
+                            Click="Close_Click" Background="Transparent" BorderThickness="0"
+                            Foreground="{DynamicResource TextMuted}" Cursor="Hand"
+                            WindowChrome.IsHitTestVisibleInChrome="True"/>
+                </Grid>
+            </Border>
+
+            <!-- Progress -->
+            <StackPanel Grid.Row="1" Margin="20,16,20,0">
+                <TextBlock x:Name="ProgressText" Text="Step 1 of 4"
+                           Foreground="{DynamicResource TextMuted}" FontSize="11" Margin="0,0,0,6"/>
+                <ProgressBar x:Name="ProgressBar" Height="6" Minimum="1" Maximum="4"
+                             Value="1" Foreground="{DynamicResource Accent}"
+                             Background="{DynamicResource BorderLine}" BorderThickness="0"/>
+            </StackPanel>
+
+            <!-- Step content -->
+            <StackPanel Grid.Row="2" Margin="20,16,20,0">
+                <TextBlock x:Name="StepTitle" Text="" Foreground="{DynamicResource TextPrimary}"
+                           FontSize="16" FontWeight="Bold" Margin="0,0,0,8"/>
+                <TextBlock x:Name="StepDescription" Text="" Foreground="{DynamicResource TextSecondary}"
+                           FontSize="12" TextWrapping="Wrap" LineHeight="18"/>
+            </StackPanel>
+
+            <!-- Buttons -->
+            <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="20,16,20,16"
+                        HorizontalAlignment="Right">
+                <Button x:Name="SkipButton" Content="Skip guide" Click="Skip_Click"
+                        Background="Transparent" BorderThickness="1"
+                        BorderBrush="{DynamicResource BorderLine}"
+                        Foreground="{DynamicResource TextMuted}" Padding="14,8"
+                        FontSize="12" Cursor="Hand" Margin="0,0,8,0"/>
+                <Button x:Name="GoButton" Content="Go" Click="GoButton_Click"
+                        Background="{DynamicResource Accent}" BorderThickness="0"
+                        Foreground="White" Padding="20,8" FontSize="12"
+                        FontWeight="SemiBold" Cursor="Hand"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

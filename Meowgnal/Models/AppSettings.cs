@@ -71,7 +71,9 @@ public sealed class AppSettings
     public string ProfileAvatar { get; set; } = "🐱";
     public bool IsGuest { get; set; } = true;
     public DateTime DemoStartDate { get; set; } = DateTime.MinValue;
-    // Pre-Hunt Checklist: the default questions applied to strategies without a custom list.
     public List<ChecklistItem> DefaultChecklist { get; set; } = DefaultChecklists.GetDefault();
+
+    // Learning path: 0 = not started, 1-3 = in progress, 4 = completed
+    public int LearningPathStepCompleted { get; set; } = 0;
 
 }

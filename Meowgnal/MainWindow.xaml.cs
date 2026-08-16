@@ -218,6 +218,7 @@ public partial class MainWindow : Window
         AutoTradeCheck.IsChecked = SettingsStorageService.Load().PaperAutoTradeEnabled;
 
         await LoadDashboardAsync();
+        UpdateLearningPathBanner();
         StartSignalMonitor();
     }
 
@@ -306,7 +307,7 @@ public partial class MainWindow : Window
         new IndicatorAcademyWindow { Owner = this }.ShowDialog();
     }
 
-   
+
 
     private void MenuSignOut_Click(object sender, RoutedEventArgs e)
     {
@@ -321,6 +322,24 @@ public partial class MainWindow : Window
             Application.Current.Shutdown();
         }
     }
+
+    #region Learning Path
+
+    private void UpdateLearningPathBanner()
+    {
+        var settings = SettingsStorageService.Load();
+        LearningPathBanner.Visibility = settings.LearningPathStepCompleted < 4
+            ? Visibility.Visible
+            : Visibility.Collapsed;
+    }
+
+    private void LearningPathBanner_Click(object sender, MouseButtonEventArgs e)
+    {
+        var win = new Views.LearningPathWindow { Owner = this };
+        win.Show();
+    }
+
+    #endregion
 
     private void ApplyAndSaveTheme(string theme)
     {

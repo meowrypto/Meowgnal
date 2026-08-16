@@ -871,26 +871,45 @@
                         </Border>
                     </Grid>
 
-                    <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,8">
-                        <Border Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
-                            <StackPanel>
-                                <TextBlock Text="Active strategies" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
-                                <TextBlock x:Name="ActiveStrategiesText" Text="0" Foreground="{DynamicResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
+                    <Grid Grid.Row="4" Margin="10,8">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal">
+                            <Border Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="Active strategies" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="ActiveStrategiesText" Text="0" Foreground="{DynamicResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
+                                <StackPanel>
+                                    <TextBlock Text="Win rate (backtest)" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="WinRateText" Text="—" Foreground="{DynamicResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8">
+                                <StackPanel>
+                                    <TextBlock Text="Signals found" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
+                                    <TextBlock x:Name="SignalCountText" Text="—" Foreground="{DynamicResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Learning path banner: shown only when user hasn't completed all 4 steps -->
+                        <Border x:Name="LearningPathBanner" Grid.Row="1" Visibility="Collapsed"
+                                Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8"
+                                Margin="0,8,0,0" Cursor="Hand" MouseLeftButtonUp="LearningPathBanner_Click">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🎓" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="New here? Start the guided walkthrough"
+                                           Foreground="{DynamicResource Accent}" FontSize="12"
+                                           VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
-                        <Border Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
-                            <StackPanel>
-                                <TextBlock Text="Win rate (backtest)" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
-                                <TextBlock x:Name="WinRateText" Text="—" Foreground="{DynamicResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
-                            </StackPanel>
-                        </Border>
-                        <Border Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8">
-                            <StackPanel>
-                                <TextBlock Text="Signals found" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
-                                <TextBlock x:Name="SignalCountText" Text="—" Foreground="{DynamicResource TextPrimary}" FontSize="16" FontWeight="Medium"/>
-                            </StackPanel>
-                        </Border>
-                    </StackPanel>
+                    </Grid>
 
                     <Border Grid.Row="5" Background="{DynamicResource BgPanel}"
                             BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,1,0,0" Padding="10,4">
