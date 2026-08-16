@@ -65,6 +65,9 @@ public sealed class AppSettings
     // Phase 27 — Hide all drawings toggle (eye button)
     public bool DrawingsHidden { get; set; }
 
+    // Cursor tools: show an OHLC tooltip while the mouse button is held down.
+    public bool LongPressTooltipEnabled { get; set; }
+
     // Profile & onboarding
     public bool FirstRunCompleted { get; set; } = false;
     public string ProfileName { get; set; } = "";

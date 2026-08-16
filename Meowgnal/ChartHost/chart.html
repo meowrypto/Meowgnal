@@ -155,10 +155,34 @@
             padding: 6px 10px;
             color: #D1D4DC;
             font-size: 11px;
-            font-family: Trebuchet MS,sans-serif;
+            font-family: Trebuchet MS, sans-serif;
             pointer-events: none;
             max-width: 250px;
         }
+
+        #longPressTooltip {
+            position: fixed;
+            display: none;
+            z-index: 120;
+            background: rgba(30, 34, 45, 0.95);
+            border: 1px solid #2A2E39;
+            border-radius: 6px;
+            padding: 8px 10px;
+            color: #D1D4DC;
+            font-size: 11px;
+            font-family: Trebuchet MS, sans-serif;
+            pointer-events: none;
+            line-height: 1.6;
+        }
+
+            #longPressTooltip .lp-time {
+                color: #787B86;
+                margin-bottom: 2px;
+            }
+
+            #longPressTooltip span {
+                color: #787B86;
+            }
 
         #indSettings {
             position: fixed;
@@ -242,8 +266,9 @@
         })();
     </script>
     <div id="chartContainer"><div id="paneMain"><div id="overlayLabels"></div></div></div>
-    <div id="ctxMenu"></div>
+    <    <div id="ctxMenu"></div>
     <div id="hoverTooltip"></div>
+    <div id="longPressTooltip"></div>
     <input id="textInput" />
     <div id="indSettings">
         <div class="is-box">
@@ -1343,6 +1368,106 @@
         renderWithCurrentType();
         chart.timeScale().subscribeVisibleTimeRangeChange(renderCustomDrawings);
 
+        // ---------- Cursor modes (TradingView-style Cursors menu) ----------
+        let longPressEnabled = false;
+        let lastHoverCandle = null;
+        let lpTimer = null;
+        let lpStart = null;
+        let lpLast = null;
+        const lpTooltip = document.getElementById('longPressTooltip');
+
+        function svgCursor(svg, hx, hy, fallback) {
+            return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '") ' + hx + ' ' + hy + ', ' + fallback;
+        }
+
+        const CUSTOM_CURSORS = {
+            dot: svgCursor("<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14'><circle cx='7' cy='7' r='3' fill='#2962FF' stroke='#FFFFFF' stroke-width='1.5'/></svg>", 7, 7, 'crosshair'),
+            demonstration: svgCursor("<svg xmlns='http://www.w3.org/2000/svg' width='30' height='30'><path d='M8 3 L8 24 L13 19 L17 27 L21 25 L17 17 L24 16 Z' fill='#FFFFFF' stroke='#000000' stroke-width='2'/></svg>", 8, 3, 'default'),
+            magic: svgCursor("<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26'><path d='M5 3 L5 19 L9 15 L12 21 L15 19 L12 13 L17 12 Z' fill='#FFD700' stroke='#7A5900' stroke-width='1.5'/><path d='M19 3 L19.9 5.6 L22.5 6.5 L19.9 7.4 L19 10 L18.1 7.4 L15.5 6.5 L18.1 5.6 Z' fill='#FFD700'/></svg>", 5, 3, 'default'),
+            eraser: svgCursor("<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22'><rect x='3' y='9' width='14' height='8' rx='2' transform='rotate(-30 10 13)' fill='#FFB0B0' stroke='#F23645' stroke-width='1.5'/></svg>", 11, 11, 'pointer')
+        };
+
+        // Switches pointer appearance + crosshair behavior for each Cursors menu mode.
+        function applyCursorMode(mode) {
+            cursorMode = mode;
+            if (mode === 'eraser') {
+                drawingMode = 'eraser';
+                paneMain.style.cursor = CUSTOM_CURSORS.eraser;
+                return;
+            }
+            drawingMode = null;
+            if (mode === 'dot') {
+                chart.applyOptions({ crosshair: { mode: LightweightCharts.CrosshairMode.Normal, vertLine: { visible: false }, horzLine: { visible: false } } });
+                paneMain.style.cursor = CUSTOM_CURSORS.dot;
+            } else if (mode === 'arrow') {
+                chart.applyOptions({ crosshair: { mode: LightweightCharts.CrosshairMode.Hidden } });
+                paneMain.style.cursor = 'default';
+            } else if (mode === 'demonstration') {
+                chart.applyOptions({ crosshair: { mode: LightweightCharts.CrosshairMode.Hidden } });
+                paneMain.style.cursor = CUSTOM_CURSORS.demonstration;
+            } else if (mode === 'magic') {
+                chart.applyOptions({ crosshair: { mode: LightweightCharts.CrosshairMode.Normal } });
+                paneMain.style.cursor = CUSTOM_CURSORS.magic;
+            } else {
+                chart.applyOptions({ crosshair: { mode: LightweightCharts.CrosshairMode.Normal, vertLine: { visible: true }, horzLine: { visible: true } } });
+                paneMain.style.cursor = 'crosshair';
+            }
+        }
+
+        // ---------- Long-press OHLC tooltip ----------
+        function setLongPressTooltipEnabled(on) {
+            longPressEnabled = on;
+            if (!on) hideLongPressTooltip();
+        }
+
+        function hideLongPressTooltip() {
+            lpTooltip.style.display = 'none';
+        }
+
+        function positionLongPressTooltip(x, y) {
+            const w = lpTooltip.offsetWidth, h = lpTooltip.offsetHeight;
+            lpTooltip.style.left = Math.min(x + 14, window.innerWidth - w - 8) + 'px';
+            lpTooltip.style.top = Math.min(y + 14, window.innerHeight - h - 8) + 'px';
+        }
+
+        function showLongPressTooltip(x, y) {
+            if (!lastHoverCandle) return;
+            const c = lastHoverCandle;
+            lpTooltip.innerHTML =
+                '<div class="lp-time">' + new Date(c.time * 1000).toUTCString().slice(0, 22) + ' UTC</div>' +
+                '<div><span>O </span>' + c.open.toFixed(2) + '</div>' +
+                '<div><span>H </span>' + c.high.toFixed(2) + '</div>' +
+                '<div><span>L </span>' + c.low.toFixed(2) + '</div>' +
+                '<div><span>C </span>' + c.close.toFixed(2) + '</div>';
+            lpTooltip.style.display = 'block';
+            positionLongPressTooltip(x, y);
+        }
+
+        paneMain.addEventListener('mousedown', e => {
+            if (!longPressEnabled || e.button !== 0 || drawingMode) return;
+            lpStart = { x: e.clientX, y: e.clientY };
+            lpLast = { x: e.clientX, y: e.clientY };
+            clearTimeout(lpTimer);
+            lpTimer = setTimeout(() => showLongPressTooltip(lpLast.x, lpLast.y), 450);
+        });
+
+        window.addEventListener('mousemove', e => {
+            if (!lpStart) return;
+            lpLast = { x: e.clientX, y: e.clientY };
+            if (Math.abs(e.clientX - lpStart.x) > 8 || Math.abs(e.clientY - lpStart.y) > 8) {
+                clearTimeout(lpTimer);
+                hideLongPressTooltip();
+            } else if (lpTooltip.style.display === 'block') {
+                positionLongPressTooltip(e.clientX, e.clientY);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            clearTimeout(lpTimer);
+            lpStart = null;
+            hideLongPressTooltip();
+        });
+
         // ---------- Web messages ----------
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.addEventListener('message', function (e) {
@@ -1751,15 +1876,18 @@
             if (!window.chrome || !window.chrome.webview) return;
             if (isDragging) return;
             if (!param || !param.time) {
+                lastHoverCandle = null;
                 window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
                 return;
             }
             let hovered = displayData.find(d => d.time === param.time);
             if (!hovered || hovered.open === undefined) hovered = rawData.find(d => d.time === param.time);
             if (!hovered || hovered.open === undefined) {
+                lastHoverCandle = null;
                 window.chrome.webview.postMessage(JSON.stringify({ type: 'crosshair', hasData: false }));
                 return;
             }
+            lastHoverCandle = hovered;
             const ohlcList = (displayData.length > 0 && displayData[0].open !== undefined) ? displayData : rawData;
             const idx = ohlcList.findIndex(d => d.time === hovered.time);
             const prev = idx > 0 ? ohlcList[idx - 1] : hovered;

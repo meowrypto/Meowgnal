@@ -69,6 +69,7 @@ public partial class MainWindow : Window
     private DrawingsFile _drawingsFile = new();
     private readonly DrawingUndoManager _undoManager = new();
     private string? _activeDrawingMode = null;
+    private string _activeCursorMode = "cross";
 
     // Price alerts state
     private PriceAlertsFile _alerts = new();
@@ -134,6 +135,8 @@ public partial class MainWindow : Window
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
         ApplyChartType("candles");
         SetActiveTool(null);
+        UpdateCursorButtonIcon();
+        LongPressTooltipToggle.IsChecked = SettingsStorageService.Load().LongPressTooltipEnabled;
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
         ApplyClockSettings();
@@ -2482,6 +2485,7 @@ public partial class MainWindow : Window
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
         LinePopup.IsOpen = false; ChannelPopup.IsOpen = false; FibPopup.IsOpen = false; GannPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        if (!CursorPopup.IsOpen) RefreshCursorMenuHighlight();
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
 
@@ -2566,6 +2570,27 @@ public partial class MainWindow : Window
         BrushPopup.IsOpen = false;
         AnnotPopup.IsOpen = false;
 
+        // Cursor tools (TradingView-style Cursors menu): switch the pointer mode,
+        // do not activate a drawing tool.
+        var cursorMap = new Dictionary<string, string>
+        {
+            ["cur_cross"] = "cross",
+            ["cur_dot"] = "dot",
+            ["cur_arrow"] = "arrow",
+            ["cur_demo"] = "demonstration",
+            ["cur_magic"] = "magic",
+            ["cur_eraser"] = "eraser",
+        };
+        if (cursorMap.TryGetValue(tag, out var cursorModeName))
+        {
+            _activeCursorMode = cursorModeName;
+            UpdateCursorButtonIcon();
+            RefreshCursorMenuHighlight();
+            SetActiveTool(null);
+            await SendCursorModeToChartAsync(cursorModeName);
+            return;
+        }
+
         // Highlight the group button that owns this tool
         var group = tag switch
         {
@@ -2584,6 +2609,11 @@ public partial class MainWindow : Window
 
         var mode = tag == "cursor" ? "none" : tag;
         SetActiveTool(tag == "cursor" ? null : group);
+        if (_activeCursorMode != "cross")
+        {
+            _activeCursorMode = "cross";
+            UpdateCursorButtonIcon();
+        }
         await SendDrawingModeToChartAsync(mode);
     }
 
@@ -2601,6 +2631,66 @@ public partial class MainWindow : Window
         if (ChartWebView.CoreWebView2 is null) return;
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
             JsonSerializer.Serialize(new { type = "setDrawingMode", mode, color = _drawingsFile.DefaultColor }));
+    }
+
+    private async Task SendCursorModeToChartAsync(string mode)
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setCursorMode", mode }));
+    }
+
+    private async Task SendLongPressTooltipAsync(bool enabled)
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setLongPressTooltip", enabled }));
+    }
+
+    private async void LongPressTooltip_Click(object sender, RoutedEventArgs e)
+    {
+        var on = LongPressTooltipToggle.IsChecked == true;
+        var settings = SettingsStorageService.Load();
+        settings.LongPressTooltipEnabled = on;
+        SettingsStorageService.Save(settings);
+        await SendLongPressTooltipAsync(on);
+    }
+
+    // The main Cursors button shows the icon of the currently active sub-mode.
+    private void UpdateCursorButtonIcon()
+    {
+        var key = _activeCursorMode switch
+        {
+            "dot" => "Icon_dot",
+            "arrow" => "Icon_cursor",
+            "demonstration" => "Icon_demo",
+            "magic" => "Icon_magic",
+            "eraser" => "Icon_eraser",
+            _ => "Icon_cross",
+        };
+        CursorGroupIcon.Content = FindResource(key);
+    }
+
+    // Highlights the active item inside the Cursors popup.
+    private void RefreshCursorMenuHighlight()
+    {
+        var items = new (Button Btn, string Mode)[]
+        {
+            (CursorCrossItem, "cross"),
+            (CursorDotItem, "dot"),
+            (CursorArrowItem, "arrow"),
+            (CursorDemoItem, "demonstration"),
+            (CursorMagicItem, "magic"),
+            (CursorEraserItem, "eraser"),
+        };
+        foreach (var (btn, mode) in items)
+        {
+            var active = mode == _activeCursorMode;
+            btn.Background = active ? (Brush)FindResource("BgPanel") : Brushes.Transparent;
+            btn.Foreground = active ? (Brush)FindResource("Accent") : (Brush)FindResource("TextSecondary");
+        }
     }
 
     private async Task SendDrawingsToChartAsync()
@@ -3417,6 +3507,8 @@ public partial class MainWindow : Window
         _ = SendPositionsToChartAsync();
         _ = SendDrawingsToChartAsync();
         _ = SendThemeToChartAsync();
+        _ = SendCursorModeToChartAsync(_activeCursorMode);
+        _ = SendLongPressTooltipAsync(SettingsStorageService.Load().LongPressTooltipEnabled);
     }
 
     private async Task SendCandlesToChartAsync(List<Bar> bars)

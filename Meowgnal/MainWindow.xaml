@@ -60,6 +60,28 @@
         <Canvas x:Key="Icon_cursor" x:Shared="False" Width="18" Height="18">
             <Path Data="M5,2 L5,15 L8.5,11.5 L11,16.5 L13,15.5 L10.5,10.5 L15,10.5 Z" Fill="#B2B5BE"/>
         </Canvas>
+        <Canvas x:Key="Icon_cross" x:Shared="False" Width="18" Height="18">
+            <Line X1="9" Y1="1" X2="9" Y2="6" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Line X1="9" Y1="12" X2="9" Y2="17" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Line X1="1" Y1="9" X2="6" Y2="9" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Line X1="12" Y1="9" X2="17" Y2="9" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Ellipse Canvas.Left="7" Canvas.Top="7" Width="4" Height="4" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+        </Canvas>
+        <Canvas x:Key="Icon_dot" x:Shared="False" Width="18" Height="18">
+            <Ellipse Canvas.Left="6" Canvas.Top="6" Width="6" Height="6" Fill="#2962FF" Stroke="#FFFFFF" StrokeThickness="1"/>
+        </Canvas>
+        <Canvas x:Key="Icon_demo" x:Shared="False" Width="18" Height="18">
+            <Ellipse Canvas.Left="1" Canvas.Top="1" Width="16" Height="16" Stroke="#2962FF" StrokeThickness="1.5"/>
+            <Path Data="M6,4 L6,14 L9,11 L11,15.5 L13,14.5 L11,10 L14,9.5 Z" Fill="#FFFFFF" Stroke="#000000" StrokeThickness="1"/>
+        </Canvas>
+        <Canvas x:Key="Icon_magic" x:Shared="False" Width="18" Height="18">
+            <Path Data="M5,3 L5,15 L8,12 L10,16.5 L12,15.5 L10,11 L13,10.5 Z" Fill="#FFD700" Stroke="#7A5900" StrokeThickness="1"/>
+            <Path Data="M14,2 L14.8,4.2 L17,5 L14.8,5.8 L14,8 L13.2,5.8 L11,5 L13.2,4.2 Z" Fill="#FFD700"/>
+        </Canvas>
+        <Canvas x:Key="Icon_eraser" x:Shared="False" Width="18" Height="18">
+            <Path Data="M3,12 L9,6 L14,11 L9,16 L5,16 Z" Fill="#FFB0B0" Stroke="#F23645" StrokeThickness="1.5"/>
+            <Line X1="7" Y1="8" X2="12" Y2="13" Stroke="#F23645" StrokeThickness="1"/>
+        </Canvas>
         <Canvas x:Key="Icon_hline" x:Shared="False" Width="18" Height="18">
             <Line X1="1" Y1="9" X2="17" Y2="9" Stroke="#B2B5BE" StrokeThickness="1.5"/>
             <Ellipse Canvas.Left="7" Canvas.Top="7" Width="4" Height="4" Fill="#B2B5BE"/>
@@ -321,26 +343,54 @@
                         BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
                     <StackPanel VerticalAlignment="Top" Margin="0,8,0,0">
                         <Button x:Name="CursorGroupButton" Style="{StaticResource RailButton}"
-                                Click="CursorGroup_Click" ToolTip="Cursor tools">
-                            <ContentControl Content="{StaticResource Icon_cursor}" Width="18" Height="18"/>
+        Click="CursorGroup_Click" ToolTip="Cursor tools">
+                            <ContentControl x:Name="CursorGroupIcon" Content="{StaticResource Icon_cross}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="CursorPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=CursorGroupButton}">
+       Placement="Right" PlacementTarget="{Binding ElementName=CursorGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+            BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="cursor" Click="ToolButton_Click">
-                                        <TextBlock Text="Cross" VerticalAlignment="Center"/>
+                                    <Button x:Name="CursorCrossItem" Style="{StaticResource TvButtonLeft}" Tag="cur_cross" Click="ToolButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_cross}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Cross" VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="dot" Click="ToolButton_Click">
-                                        <TextBlock Text="Dot" VerticalAlignment="Center"/>
+                                    <Button x:Name="CursorDotItem" Style="{StaticResource TvButtonLeft}" Tag="cur_dot" Click="ToolButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_dot}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Dot" VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrow" Click="ToolButton_Click">
-                                        <TextBlock Text="Arrow" VerticalAlignment="Center"/>
+                                    <Button x:Name="CursorArrowItem" Style="{StaticResource TvButtonLeft}" Tag="cur_arrow" Click="ToolButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_cursor}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Arrow" VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="eraser" Click="ToolButton_Click">
-                                        <TextBlock Text="Eraser (click a drawing)" VerticalAlignment="Center"/>
+                                    <Button x:Name="CursorDemoItem" Style="{StaticResource TvButtonLeft}" Tag="cur_demo" Click="ToolButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_demo}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Demonstration" VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </Button>
+                                    <Button x:Name="CursorMagicItem" Style="{StaticResource TvButtonLeft}" Tag="cur_magic" Click="ToolButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_magic}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Magic" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="CursorEraserItem" Style="{StaticResource TvButtonLeft}" Tag="cur_eraser" Click="ToolButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_eraser}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Eraser" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <CheckBox x:Name="LongPressTooltipToggle" Content="Values tooltip on long press"
+                      Foreground="{DynamicResource TextSecondary}" FontSize="12"
+                      Margin="8,4,4,4" Click="LongPressTooltip_Click"/>
                                 </StackPanel>
                             </Border>
                         </Popup>
