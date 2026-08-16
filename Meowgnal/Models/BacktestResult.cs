@@ -46,4 +46,16 @@ public sealed class BacktestResult
 
     // Statistical confidence: "low" (<30), "moderate" (30-99), "reliable" (100+)
     public string SampleSizeWarning { get; set; } = "reliable";
+
+    // Backtest results split by detected market regime (Bull / Bear / Sideways).
+    public sealed class RegimeBacktestResult
+    {
+        public BacktestResult Overall { get; set; } = new();
+        public BacktestResult BullMarket { get; set; } = new();
+        public BacktestResult BearMarket { get; set; } = new();
+        public BacktestResult SidewaysMarket { get; set; } = new();
+
+        // False when the bar range is too short to detect regimes reliably.
+        public bool HasRegimeData { get; set; }
+    }
 }

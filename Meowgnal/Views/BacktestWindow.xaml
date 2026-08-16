@@ -338,6 +338,38 @@
                             </Border>
                         </UniformGrid>
 
+                        <TextBlock x:Name="RegimeHeader" Text="Performance by Market Regime" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" Visibility="Collapsed"/>
+                        <UniformGrid x:Name="RegimeCards" Columns="3" Margin="0,0,0,8" Visibility="Collapsed">
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="🟢 Bull market" FontWeight="SemiBold" Foreground="{StaticResource Up}" FontSize="12"/>
+                                    <TextBlock x:Name="BullWinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="BullTradesText" Text="0 trades" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="BullReturnText" Text="—" FontSize="12" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="BullNoteText" Text="" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="🔴 Bear market" FontWeight="SemiBold" Foreground="{StaticResource DangerColor}" FontSize="12"/>
+                                    <TextBlock x:Name="BearWinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="BearTradesText" Text="0 trades" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="BearReturnText" Text="—" FontSize="12" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="BearNoteText" Text="" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                            <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="14,10">
+                                <StackPanel>
+                                    <TextBlock Text="⚪ Sideways market" FontWeight="SemiBold" Foreground="{StaticResource TextSecondary}" FontSize="12"/>
+                                    <TextBlock x:Name="SideWinRateText" Text="—" FontSize="16" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    <TextBlock x:Name="SideTradesText" Text="0 trades" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="SideReturnText" Text="—" FontSize="12" FontWeight="SemiBold" Margin="0,2,0,0"/>
+                                    <TextBlock x:Name="SideNoteText" Text="" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+                        <TextBlock x:Name="RegimeSummaryText" Foreground="{StaticResource TextMuted}" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,18" Visibility="Collapsed"/>
+
                         <TextBlock x:Name="OosHeader" Text="Out-of-Sample Results (Unseen Data)" FontWeight="SemiBold" FontSize="13" Margin="0,0,0,8" Visibility="Collapsed"/>
                         <UniformGrid x:Name="OosCards" Columns="5" Margin="0,0,0,18" Visibility="Collapsed">
                             <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="6" Padding="14,10" Margin="0,0,10,0" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">

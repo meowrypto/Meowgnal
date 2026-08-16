@@ -1,9 +1,11 @@
 ﻿using FacioQuo.Stock.Indicators;
 using Meowgnal.Models;
 using Meowgnal.Services;
+using Meowgnal.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static Meowgnal.Models.BacktestResult;
 using Bar = Meowgnal.Models.Bar;
 
 namespace Meowgnal.Engine;
@@ -150,6 +152,43 @@ public static class BacktestEngine
             MonthlyBreakdown = BuildMonthlyBreakdown(trades),
             SampleSizeWarning = ComputeSampleSizeWarning(trades.Count)
         };
+    }
+
+    // Runs the normal backtest, then splits its trades by the market regime
+    // that was active when each trade was entered.
+    public static RegimeBacktestResult RunByRegime(
+        StrategyDefinition strategy, IReadOnlyList<Bar> bars,
+        decimal startingBalance, decimal feePercent, decimal slippagePercent)
+    {
+        var overall = Run(strategy, bars, startingBalance, feePercent, slippagePercent);
+        var periods = MarketRegimeDetector.Detect(bars);
+
+        var result = new RegimeBacktestResult { Overall = overall, HasRegimeData = periods.Count > 0 };
+        if (!result.HasRegimeData) return result;
+
+        var bull = new List<BacktestTrade>();
+        var bear = new List<BacktestTrade>();
+        var sideways = new List<BacktestTrade>();
+
+        foreach (var trade in overall.Trades)
+        {
+            switch (MarketRegimeDetector.RegimeAt(periods, trade.EntryTime))
+            {
+                case MarketRegimeDetector.Bull: bull.Add(trade); break;
+                case MarketRegimeDetector.Bear: bear.Add(trade); break;
+                default: sideways.Add(trade); break;
+            }
+        }
+
+        // Self-check: the three buckets must cover all trades.
+        var bucketed = bull.Count + bear.Count + sideways.Count;
+        if (bucketed != overall.Trades.Count)
+            AppLogger.Error($"Regime bucket mismatch: {bucketed} bucketed vs {overall.Trades.Count} total trades.");
+
+        result.BullMarket = AggregateTrades(bull, startingBalance);
+        result.BearMarket = AggregateTrades(bear, startingBalance);
+        result.SidewaysMarket = AggregateTrades(sideways, startingBalance);
+        return result;
     }
 
     public static WalkForwardResult RunWalkForward(

@@ -1,19 +1,21 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Runtime.Versioning;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media;
-using LiveChartsCore;
+﻿using LiveChartsCore;
 using LiveChartsCore.Defaults;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
-using SkiaSharp;
 using Meowgnal.DataProviders;
 using Meowgnal.Engine;
 using Meowgnal.Models;
 using Meowgnal.Services;
+using SkiaSharp;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Runtime.Versioning;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
+using static Meowgnal.Models.BacktestResult;
 
 namespace Meowgnal.Views;
 
@@ -117,6 +119,7 @@ public partial class BacktestWindow : Window
             var wfResult = BacktestEngine.RunWalkForward(strategy, bars, balance, fee, slippage, windows, oosPercent);
 
             UpdateInSampleCards(wfResult.AggregateInSample);
+            HideRegimePanel();
 
             OosHeader.Visibility = Visibility.Visible;
             OosCards.Visibility = Visibility.Visible;
@@ -139,7 +142,8 @@ public partial class BacktestWindow : Window
         }
         else
         {
-            var result = BacktestEngine.Run(strategy, bars, balance, fee, slippage);
+            var regimeResult = BacktestEngine.RunByRegime(strategy, bars, balance, fee, slippage);
+            var result = regimeResult.Overall;
             _lastResult = result;
 
             OosHeader.Visibility = Visibility.Collapsed;
@@ -147,6 +151,7 @@ public partial class BacktestWindow : Window
             OverfitWarning.Visibility = Visibility.Collapsed;
 
             UpdateInSampleCards(result);
+            UpdateRegimePanel(regimeResult);
             RenderChart(result);
             TradesGrid.ItemsSource = new ObservableCollection<BacktestTrade>(result.Trades);
             MonthlyGrid.ItemsSource = new ObservableCollection<MonthlyPerformance>(result.MonthlyBreakdown);
@@ -198,6 +203,79 @@ public partial class BacktestWindow : Window
         }
     }
 
+
+    private void UpdateRegimePanel(RegimeBacktestResult r)
+    {
+        if (!r.HasRegimeData)
+        {
+            HideRegimePanel();
+            return;
+        }
+
+        RegimeHeader.Visibility = Visibility.Visible;
+        RegimeCards.Visibility = Visibility.Visible;
+        RegimeSummaryText.Visibility = Visibility.Visible;
+
+        FillRegimeCard(BullWinRateText, BullTradesText, BullReturnText, BullNoteText, r.BullMarket);
+        FillRegimeCard(BearWinRateText, BearTradesText, BearReturnText, BearNoteText, r.BearMarket);
+        FillRegimeCard(SideWinRateText, SideTradesText, SideReturnText, SideNoteText, r.SidewaysMarket);
+
+        RegimeSummaryText.Text = BuildRegimeSummary(r);
+    }
+
+    private void HideRegimePanel()
+    {
+        RegimeHeader.Visibility = Visibility.Collapsed;
+        RegimeCards.Visibility = Visibility.Collapsed;
+        RegimeSummaryText.Visibility = Visibility.Collapsed;
+    }
+
+    private void FillRegimeCard(TextBlock winRate, TextBlock trades, TextBlock ret, TextBlock note, BacktestResult r)
+    {
+        winRate.Text = $"{r.WinRatePercent:N1}%";
+        trades.Text = $"{r.Trades.Count} trades";
+
+        var retPct = r.StartingBalance > 0 ? (r.FinalBalance - r.StartingBalance) / r.StartingBalance * 100m : 0m;
+        ret.Text = $"{retPct:+0.0;-0.0;0.0}%";
+        ret.Foreground = retPct >= 0 ? (Brush)FindResource("Up") : (Brush)FindResource("Down");
+
+        // Reuses the sample-size warning computed by the engine (same as the main banner).
+        note.Text = r.SampleSizeWarning switch
+        {
+            "low" => $"⚠️ Only {r.Trades.Count} trades — not reliable",
+            "moderate" => $"⚡ {r.Trades.Count} trades — moderate confidence",
+            _ => "✅ Reliable sample"
+        };
+        note.Foreground = r.SampleSizeWarning switch
+        {
+            "low" => (Brush)FindResource("DangerColor"),
+            "moderate" => new SolidColorBrush(Color.FromRgb(0xF5, 0xB9, 0x42)),
+            _ => (Brush)FindResource("Up")
+        };
+    }
+
+    private static string BuildRegimeSummary(RegimeBacktestResult r)
+    {
+        var regimes = new List<(string Name, BacktestResult Data)>
+        {
+            ("Bull", r.BullMarket),
+            ("Bear", r.BearMarket),
+            ("Sideways", r.SidewaysMarket)
+        }.Where(x => x.Data.Trades.Count >= 10).ToList();
+
+        if (regimes.Count < 2)
+            return "Not enough trades in each market regime to compare stability — try a longer backtest period.";
+
+        var best = regimes.OrderByDescending(x => x.Data.WinRatePercent).First();
+        var worst = regimes.OrderBy(x => x.Data.WinRatePercent).First();
+
+        if (best.Data.WinRatePercent - worst.Data.WinRatePercent < 5)
+            return $"This strategy behaves similarly across market regimes ({best.Data.WinRatePercent:N0}% vs {worst.Data.WinRatePercent:N0}% win rate) — it looks stable.";
+
+        return $"This strategy performs well in {best.Name} markets ({best.Data.WinRatePercent:N0}% win rate) " +
+               $"but struggles in {worst.Name} conditions ({worst.Data.WinRatePercent:N0}% win rate) — " +
+               "consider this before relying on it during those periods.";
+    }
 
     private void UpdateOutOfSampleCards(BacktestResult result)
     {
