@@ -289,6 +289,16 @@
                 color: c.close >= c.open ? COLORS.volumeUp : COLORS.volumeDown
             })));
         }
+
+        // Blind Mode: hides time axis, last price label and right scale border,
+        // so the user can't read the exact date or current price — useful for
+        // practicing pattern recognition without spoilers.
+        function setBlindMode(blind) {
+            chart.timeScale().applyOptions({ visible: !blind });
+            if (activeSeries) activeSeries.applyOptions({ lastValueVisible: !blind });
+            chart.applyOptions({ rightPriceScale: { borderVisible: !blind } });
+        }
+
         // Replay Mode: appends a single candle without re-rendering the whole dataset.
         function appendCandle(c) {
             const range = chart.timeScale().getVisibleLogicalRange();
@@ -1024,6 +1034,11 @@
 
                 if (msg.type === 'clearIndicators') {
                     clearIndicators();
+                    return;
+                }
+
+                if (msg.type === 'setBlindMode') {
+                    setBlindMode(msg.blind === true);
                     return;
                 }
 

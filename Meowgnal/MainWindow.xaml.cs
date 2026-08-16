@@ -3041,7 +3041,19 @@ public partial class MainWindow : Window
         if (ReplaySpeedCombo.SelectedItem is ComboBoxItem ci && ci.Tag is string tag && int.TryParse(tag, out var ms))
             _replayTimer.Interval = TimeSpan.FromMilliseconds(ms);
     }
+    private void BlindModeCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        if (BlindModeCheck is null) return;
+        _ = SendBlindModeAsync(BlindModeCheck.IsChecked == true);
+    }
 
+    private async Task SendBlindModeAsync(bool blind)
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setBlindMode", blind }));
+    }
     private void UpdateReplayProgress()
     {
         ReplayProgressText.Text = $"Replay: {_replayShown}/{_replayBars.Count} candles";

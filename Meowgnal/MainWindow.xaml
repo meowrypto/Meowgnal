@@ -827,6 +827,9 @@
                                     <ComboBoxItem Content="Normal (1s)" Tag="1000" IsSelected="True"/>
                                     <ComboBoxItem Content="Fast (0.5s)" Tag="500"/>
                                 </ComboBox>
+                                <CheckBox x:Name="BlindModeCheck" Content="🙈 Blind Mode" VerticalAlignment="Center" Margin="0,0,16,0"
+                                          Foreground="{DynamicResource TextPrimary}"
+                                          Checked="BlindModeCheck_Changed" Unchecked="BlindModeCheck_Changed"/>
                                 <TextBlock x:Name="ReplayProgressText" Text="" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="12,0,0,0"/>
                             </StackPanel>
                         </Border>
