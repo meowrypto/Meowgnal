@@ -778,6 +778,12 @@
                                         <views:IndicatorPanel x:Name="IndicatorPanelControl"/>
                                     </Border>
                                 </Popup>
+                                <Button x:Name="ReplayButton" Style="{StaticResource TvButton}" Click="ReplayButton_Click" ToolTip="Replay Mode — practice without seeing the future">
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="⏯" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Replay Mode" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <Button x:Name="ScreenshotButton" Content="📷" ToolTip="Save chart screenshot" Style="{StaticResource TvButton}" Click="ScreenshotButton_Click"/>
@@ -790,6 +796,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,6,0,0">
@@ -802,8 +809,27 @@
                             <TextBlock Text="C" Foreground="{DynamicResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
                             <TextBlock x:Name="OhlcCloseText" Text="—" FontSize="11" Margin="3,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
-
                         <wv2:WebView2 Grid.Row="1" x:Name="ChartWebView"/>
+
+                        <Border Grid.Row="2" x:Name="ReplayBar" Visibility="Collapsed"
+                                Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                BorderThickness="0,1,0,0" Padding="10,6">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="Start:" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <DatePicker x:Name="ReplayDatePicker" Width="130" VerticalAlignment="Center" Margin="0,0,10,0"
+                                            SelectedDateChanged="ReplayDatePicker_SelectedDateChanged"/>
+                                <Button x:Name="ReplayResetButton" Content="⏮ Reset" Style="{StaticResource TvButton}" Click="ReplayReset_Click" Margin="0,0,6,0"/>
+                                <Button x:Name="ReplayPlayButton" Content="▶ Play" Style="{StaticResource TvButton}" Click="ReplayPlay_Click" Margin="0,0,6,0"/>
+                                <Button x:Name="ReplayStepButton" Content="⏭ Step" Style="{StaticResource TvButton}" Click="ReplayStep_Click" Margin="0,0,10,0"/>
+                                <TextBlock Text="Speed:" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <ComboBox x:Name="ReplaySpeedCombo" Width="110" VerticalAlignment="Center" SelectionChanged="ReplaySpeedCombo_Changed">
+                                    <ComboBoxItem Content="Slow (2s)" Tag="2000"/>
+                                    <ComboBoxItem Content="Normal (1s)" Tag="1000" IsSelected="True"/>
+                                    <ComboBoxItem Content="Fast (0.5s)" Tag="500"/>
+                                </ComboBox>
+                                <TextBlock x:Name="ReplayProgressText" Text="" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                            </StackPanel>
+                        </Border>
                     </Grid>
 
                     <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="10,8">

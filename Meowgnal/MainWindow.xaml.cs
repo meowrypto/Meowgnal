@@ -96,6 +96,11 @@ public partial class MainWindow : Window
     private string _chartDataSource = "binance";
     private string _chartType = "candles";
     private List<Bar> _currentBars = new();
+    // Replay mode state
+    private bool _replayMode;
+    private List<Bar> _replayBars = new();
+    private int _replayShown;
+    private readonly DispatcherTimer _replayTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _isFullscreen;
     private WindowState _prevState;
     private WindowStyle _prevStyle;
@@ -142,6 +147,7 @@ public partial class MainWindow : Window
             await UpdateSymbolPreviewAsync();
         };
         IndicatorPanelControl.IndicatorSelected += AddIndicatorToChart;
+        _replayTimer.Tick += (_, _) => ReplayStep(1);
         Loaded += MainWindow_Loaded;
         PreviewKeyDown += UndoRedo_KeyDown;
     }
@@ -468,6 +474,7 @@ public partial class MainWindow : Window
 
     private async Task ActivateTabAsync(ChartTab tab)
     {
+        if (_replayMode) ForceExitReplayUi();
         _activeTab = tab;
         _chartSymbol = tab.Symbol;
         _chartTimeframe = tab.Timeframe;
@@ -2158,6 +2165,7 @@ public partial class MainWindow : Window
     private async void TimeframeButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tf || tf == _chartTimeframe) return;
+        if (_replayMode) ForceExitReplayUi();
         _chartTimeframe = tf;
         if (_activeTab is not null) _activeTab.Timeframe = tf;
         RebuildTimeframeBar();
@@ -2278,6 +2286,7 @@ public partial class MainWindow : Window
         if (sender is not Button btn || btn.Tag is not string tf) return;
         TimeframePopup.IsOpen = false;
         if (tf == _chartTimeframe) return;
+        if (_replayMode) ForceExitReplayUi();
         _chartTimeframe = tf;
         if (_activeTab is not null) _activeTab.Timeframe = tf;
         RebuildTimeframeBar();
@@ -2904,6 +2913,165 @@ public partial class MainWindow : Window
         {
             NotificationService.ShowToast("Meowgnal", $"Error adding indicator: {ex.Message}");
         }
+    }
+
+    #endregion
+
+    #region Replay Mode
+
+    private async void ReplayButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_replayMode)
+        {
+            await ExitReplayModeAsync();
+            return;
+        }
+        await EnterReplayModeAsync();
+    }
+
+    private async Task EnterReplayModeAsync()
+    {
+        try
+        {
+            IDataProvider provider = _chartDataSource == "hyperliquid" ? new HyperliquidDataProvider() : new BinanceDataProvider();
+            var bars = await provider.GetHistoricalCandlesAsync(_chartSymbol, _chartTimeframe, limit: 1000);
+            if (bars.Count < 100)
+            {
+                NotificationService.ShowToast("Meowgnal", "Not enough history for replay on this symbol/timeframe.");
+                return;
+            }
+
+            _replayBars = bars;
+            _replayMode = true;
+            ReplayBar.Visibility = Visibility.Visible;
+            ReplayButton.Background = (Brush)FindResource("Accent");
+
+            // Replay is candle-reading practice: force candle view and hide indicators
+            ApplyChartType("candles");
+            _ = SendChartTypeAsync("candles");
+            _ = SendClearIndicatorsAsync();
+
+            ReplayDatePicker.DisplayDateStart = bars[0].Timestamp;
+            ReplayDatePicker.DisplayDateEnd = bars[^1].Timestamp;
+            ReplayDatePicker.SelectedDate = bars[(int)(bars.Count * 0.6)].Timestamp;
+
+            UpdateReplayProgress();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowToast("Meowgnal", $"Replay failed to load: {ex.Message}");
+        }
+    }
+
+    private async Task ExitReplayModeAsync()
+    {
+        ForceExitReplayUi();
+        await LoadChartAsync();
+    }
+
+    private void ForceExitReplayUi()
+    {
+        _replayMode = false;
+        StopReplayPlayback();
+        ReplayBar.Visibility = Visibility.Collapsed;
+        ReplayButton.Background = Brushes.Transparent;
+        _replayBars = new List<Bar>();
+    }
+
+    private void ReplayDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!_replayMode) return;
+        StopReplayPlayback();
+        ResetReplayToDate();
+    }
+
+    private void ResetReplayToDate()
+    {
+        if (_replayBars.Count == 0) return;
+        var start = ReplayDatePicker.SelectedDate ?? _replayBars[(int)(_replayBars.Count * 0.6)].Timestamp;
+        var idx = _replayBars.FindIndex(b => b.Timestamp >= start);
+        if (idx < 30) idx = Math.Min(30, _replayBars.Count);
+        _replayShown = idx;
+        _ = SendCandlesToChartAsync(_replayBars.Take(idx).ToList());
+        UpdateReplayProgress();
+    }
+
+    private void ReplayReset_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_replayMode) return;
+        StopReplayPlayback();
+        ResetReplayToDate();
+    }
+
+    private void ReplayStep_Click(object sender, RoutedEventArgs e) => ReplayStep(1);
+
+    private void ReplayStep(int count)
+    {
+        if (!_replayMode || _replayBars.Count == 0) return;
+        for (var i = 0; i < count && _replayShown < _replayBars.Count; i++)
+        {
+            _ = SendAppendCandleAsync(_replayBars[_replayShown]);
+            _replayShown++;
+        }
+        UpdateReplayProgress();
+        if (_replayShown >= _replayBars.Count) StopReplayPlayback();
+    }
+
+    private void ReplayPlay_Click(object sender, RoutedEventArgs e)
+    {
+        if (_replayTimer.IsEnabled) StopReplayPlayback();
+        else StartReplayPlayback();
+    }
+
+    private void StartReplayPlayback()
+    {
+        if (!_replayMode || _replayShown >= _replayBars.Count) return;
+        _replayTimer.Start();
+        ReplayPlayButton.Content = "⏸ Pause";
+    }
+
+    private void StopReplayPlayback()
+    {
+        _replayTimer.Stop();
+        ReplayPlayButton.Content = "▶ Play";
+    }
+
+    private void ReplaySpeedCombo_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (ReplaySpeedCombo.SelectedItem is ComboBoxItem ci && ci.Tag is string tag && int.TryParse(tag, out var ms))
+            _replayTimer.Interval = TimeSpan.FromMilliseconds(ms);
+    }
+
+    private void UpdateReplayProgress()
+    {
+        ReplayProgressText.Text = $"Replay: {_replayShown}/{_replayBars.Count} candles";
+    }
+
+    private async Task SendAppendCandleAsync(Bar b)
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        var payload = new
+        {
+            type = "appendCandle",
+            candle = new
+            {
+                time = new DateTimeOffset(b.Timestamp).ToUnixTimeSeconds(),
+                open = b.Open,
+                high = b.High,
+                low = b.Low,
+                close = b.Close,
+                volume = b.Volume
+            }
+        };
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(payload));
+    }
+
+    private async Task SendClearIndicatorsAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(JsonSerializer.Serialize(new { type = "clearIndicators" }));
     }
 
     #endregion

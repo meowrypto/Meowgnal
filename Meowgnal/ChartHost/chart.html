@@ -289,6 +289,23 @@
                 color: c.close >= c.open ? COLORS.volumeUp : COLORS.volumeDown
             })));
         }
+        // Replay Mode: appends a single candle without re-rendering the whole dataset.
+        function appendCandle(c) {
+            const range = chart.timeScale().getVisibleLogicalRange();
+            const totalBefore = rawData.length;
+            const following = range && range.to >= totalBefore - 1;
+
+            rawData.push(c);
+
+            if (activeSeries) {
+                if (chartType === 'line' || chartType === 'area') activeSeries.update({ time: c.time, value: c.close });
+                else activeSeries.update(c);
+            }
+            volumeSeries.update({ time: c.time, value: c.volume, color: c.close >= c.open ? COLORS.volumeUp : COLORS.volumeDown });
+
+            if (following) chart.timeScale().setVisibleLogicalRange({ from: range.from + 1, to: range.to + 1 });
+            renderCustomDrawings();
+        }
 
         // Removes all indicator series (called when new candles arrive)
         function clearIndicators() {
@@ -1007,6 +1024,11 @@
 
                 if (msg.type === 'clearIndicators') {
                     clearIndicators();
+                    return;
+                }
+
+                if (msg.type === 'appendCandle') {
+                    appendCandle(msg.candle);
                     return;
                 }
 
