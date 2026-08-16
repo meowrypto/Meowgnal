@@ -119,4 +119,7 @@ public sealed class NotificationsConfig
 {
     [JsonPropertyName("channels")]
     public List<string> Channels { get; set; } = new() { "toast", "sound" };
+    // Pre-Hunt Checklist: null means "use the global default from AppSettings".
+    // When non-null, this strategy uses its own customized list.
+    public List<ChecklistItem>? CustomChecklist { get; set; }
 }

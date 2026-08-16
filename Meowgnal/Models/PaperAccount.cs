@@ -34,6 +34,7 @@ public class PaperPosition
     public DateTime OpenTime { get; set; } = DateTime.UtcNow;
     public decimal EntryFee { get; set; }
     public string? StrategyId { get; set; }
+    public ChecklistResult? ChecklistResult { get; set; }
 
     // Trade autopsy: real indicator values + plain-English reason for opening.
     public Dictionary<string, decimal> IndicatorSnapshotAtEntry { get; set; } = new();
@@ -73,6 +74,7 @@ public class PaperTrade
     public DateTime OpenTime { get; set; }
     public DateTime CloseTime { get; set; }
     public string? StrategyId { get; set; }
+    public ChecklistResult? ChecklistResult { get; set; }
 
     // Trade autopsy: real indicator values + plain-English reasons.
     public Dictionary<string, decimal> IndicatorSnapshotAtEntry { get; set; } = new();

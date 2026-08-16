@@ -19,6 +19,7 @@ public class JournalEntry
     public DateTime OpenTime { get; set; }
     public DateTime CloseTime { get; set; }
     public string? StrategyId { get; set; }
+    public ChecklistResult? ChecklistResult { get; set; }
 
     // Trade autopsy: combined plain-English reason for entry + exit.
     public string TradeExplanation { get; set; } = "";
@@ -47,6 +48,7 @@ public class JournalEntry
             OpenTime = trade.OpenTime,
             CloseTime = trade.CloseTime,
             StrategyId = trade.StrategyId,
+            ChecklistResult = trade.ChecklistResult,
             TradeExplanation = BuildTradeExplanation(trade)
         };
     }
