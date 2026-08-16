@@ -1969,6 +1969,109 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (msgType == "removeIndicator")
+        {
+            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
+            var list = GetActiveIndicators(_chartSymbol);
+            var item = list.FirstOrDefault(x => x.Type == id);
+            if (item is not null)
+            {
+                list.Remove(item);
+                IndicatorSettingsStorageService.Save(_indicatorSettings);
+            }
+            IndicatorPanelControl.RefreshActiveTypes(list.Select(x => x.Type));
+            return;
+        }
+
+        if (msgType == "updateIndicator")
+        {
+            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
+            var period = root.TryGetProperty("period", out var pProp) ? pProp.GetInt32() : 14;
+            var color = root.TryGetProperty("color", out var cProp) ? cProp.GetString() : null;
+            var width = root.TryGetProperty("lineWidth", out var wProp) ? wProp.GetInt32() : 2;
+
+            var list = GetActiveIndicators(_chartSymbol);
+            var item = list.FirstOrDefault(x => x.Type == id);
+            if (item is not null)
+            {
+                item.Period = period;
+                item.Color = string.IsNullOrWhiteSpace(color) ? null : color;
+                item.LineWidth = width;
+                IndicatorSettingsStorageService.Save(_indicatorSettings);
+                _ = RefreshIndicatorsOnChartAsync();
+            }
+            return;
+        }
+
+        if (msgType == "reorderIndicators")
+        {
+            if (root.TryGetProperty("order", out var orderProp) && orderProp.ValueKind == JsonValueKind.Array)
+            {
+                var order = orderProp.EnumerateArray().Select(x => x.GetString() ?? "").ToList();
+                var list = GetActiveIndicators(_chartSymbol);
+                var reordered = order
+                    .Select(id => list.FirstOrDefault(x => x.Type == id))
+                    .Where(x => x is not null)
+                    .Cast<ActiveIndicator>()
+                    .ToList();
+                foreach (var item in list.Where(x => !order.Contains(x.Type)))
+                    reordered.Add(item);
+
+                list.Clear();
+                foreach (var x in reordered) list.Add(x);
+                IndicatorSettingsStorageService.Save(_indicatorSettings);
+            }
+            return;
+        }
+
+        if (msgType == "removeIndicator")
+        {
+            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
+            var list = GetActiveIndicators(_chartSymbol);
+            var item = list.FirstOrDefault(a => a.Type == id);
+            if (item is not null)
+            {
+                list.Remove(item);
+                IndicatorSettingsStorageService.Save(_indicatorSettings);
+                IndicatorPanelControl.RefreshActiveTypes(list.Select(a => a.Type));
+            }
+            return;
+        }
+
+        if (msgType == "updateIndicator")
+        {
+            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
+            var period = root.TryGetProperty("period", out var pProp) ? pProp.GetInt32() : 0;
+            var list = GetActiveIndicators(_chartSymbol);
+            var item = list.FirstOrDefault(a => a.Type == id);
+            if (item is not null && period > 0)
+            {
+                item.Period = period;
+                IndicatorSettingsStorageService.Save(_indicatorSettings);
+                _ = RefreshIndicatorsOnChartAsync();
+            }
+            return;
+        }
+
+        if (msgType == "reorderIndicators")
+        {
+            if (root.TryGetProperty("order", out var orderEl) && orderEl.ValueKind == JsonValueKind.Array)
+            {
+                var order = orderEl.EnumerateArray().Select(x => x.GetString() ?? "").ToList();
+                var list = GetActiveIndicators(_chartSymbol);
+                var sorted = order
+                    .Select(id => list.FirstOrDefault(a => a.Type == id))
+                    .Where(a => a is not null)
+                    .Cast<ActiveIndicator>()
+                    .ToList();
+                foreach (var a in list.Where(a => !order.Contains(a.Type))) sorted.Add(a);
+                list.Clear();
+                foreach (var a in sorted) list.Add(a);
+                IndicatorSettingsStorageService.Save(_indicatorSettings);
+            }
+            return;
+        }
+
         if (msgType != "crosshair") return;
         if (root.TryGetProperty("hasData", out var hasData) && hasData.GetBoolean())
         {
@@ -2840,65 +2943,179 @@ public partial class MainWindow : Window
         }
         return list;
     }
-
-    // Builds the chart payload for one indicator type using current bars.
-    private object? BuildIndicatorPayload(string type, int period)
-    {
-        var bars = _currentBars;
-        switch (type)
-        {
-            case "sma": return new { type = "addIndicator", indicator = "sma", period, values = IndicatorCalculator.SMA(bars, period).ToArray() };
-            case "ema": return new { type = "addIndicator", indicator = "ema", period, values = IndicatorCalculator.EMA(bars, period).ToArray() };
-            case "rsi": return new { type = "addIndicator", indicator = "rsi", period, values = IndicatorCalculator.RSI(bars, period).ToArray() };
-            case "macd":
-                var macd = IndicatorCalculator.MACD(bars);
-                return new { type = "addIndicator", indicator = "macd", macdLine = macd.MACD.ToArray(), signalLine = macd.Signal.ToArray(), histogram = macd.Histogram.ToArray() };
-            case "atr": return new { type = "addIndicator", indicator = "atr", period, values = IndicatorCalculator.ATR(bars, period).ToArray() };
-            case "bbands":
-                var bb = IndicatorCalculator.BBANDS(bars);
-                return new { type = "addIndicator", indicator = "bbands", upper = bb.Upper.ToArray(), middle = bb.Middle.ToArray(), lower = bb.Lower.ToArray() };
-            case "stoch":
-                var st = IndicatorCalculator.STOCH(bars);
-                return new { type = "addIndicator", indicator = "stoch", k = st.K.ToArray(), d = st.D.ToArray() };
-            case "adx": return new { type = "addIndicator", indicator = "adx", period, values = IndicatorCalculator.ADX(bars, period).ToArray() };
-            case "volsma": return new { type = "addIndicator", indicator = "volsma", period, values = IndicatorCalculator.VOLSMA(bars, period).ToArray() };
-            case "vwap": return new { type = "addIndicator", indicator = "vwap", values = IndicatorCalculator.VWAP(bars).ToArray() };
-            default: return BuildGenericPayload(type, period);
-        }
-    }
-
-    // Generic payload for indicators not hard-coded above (uses IndicatorEngine / FacioQuo).
-    private object? BuildGenericPayload(string type, int period)
+    // Unified payload builder: every indicator becomes id + displayMode + series list.
+    private object? BuildIndicatorPayload(string type, int period, string? customColor, int lineWidth)
     {
         var bars = _currentBars;
         if (bars.Count == 0) return null;
 
-        var def = new IndicatorDefinition
+        var tk = type.ToLowerInvariant();
+        var displayMode = IsOverlayIndicator(tk) ? "Overlay" : "Pane";
+        var color = string.IsNullOrWhiteSpace(customColor) ? DefaultIndicatorColor(tk) : customColor;
+        if (lineWidth < 1 || lineWidth > 4) lineWidth = 2;
+        GetPaneScale(tk, out var range, out var guides);
+
+        var series = new List<object>();
+
+        if (tk == "macd")
         {
-            Id = type.ToLowerInvariant(),
-            Type = type,
-            Params = new Dictionary<string, double> { ["period"] = period }
-        };
+            var m = IndicatorCalculator.MACD(bars);
+            series.Add(new { key = tk, name = "MACD", values = m.MACD.ToArray(), color, lineStyle = "" });
+            series.Add(new { key = tk + ".signal", name = "Signal", values = m.Signal.ToArray(), color = "#FF9800", lineStyle = "" });
+            series.Add(new { key = tk + ".hist", name = "Hist", values = m.Histogram.ToArray(), color = "#787B86", lineStyle = "", histogram = true });
+        }
+        else if (tk == "stoch")
+        {
+            var s = IndicatorCalculator.STOCH(bars);
+            series.Add(new { key = tk, name = "%K", values = s.K.ToArray(), color, lineStyle = "" });
+            series.Add(new { key = tk + ".d", name = "%D", values = s.D.ToArray(), color = "#FF9800", lineStyle = "" });
+        }
+        else
+        {
+            var def = new IndicatorDefinition
+            {
+                Id = tk,
+                Type = type,
+                DisplayMode = displayMode,
+                Params = new Dictionary<string, double> { ["period"] = period }
+            };
 
-        Dictionary<string, double?[]> multi;
-        try { multi = IndicatorEngine.CalculateMulti(bars, def); }
-        catch { return null; }
+            Dictionary<string, double?[]> multi;
+            try { multi = IndicatorEngine.CalculateMulti(bars, def); }
+            catch { return null; }
 
-        var series = multi
-            .OrderBy(kv => kv.Key)
-            .Select(kv => new { key = kv.Key, values = kv.Value })
-            .ToArray();
+            foreach (var kv in multi.OrderBy(k => k.Key))
+            {
+                var sub = kv.Key.Length > tk.Length ? kv.Key.Substring(tk.Length + 1) : "";
+                series.Add(new
+                {
+                    key = kv.Key,
+                    name = string.IsNullOrEmpty(sub) ? type.ToUpperInvariant() : sub,
+                    values = kv.Value,
+                    color = SubColor(tk, sub, color),
+                    lineStyle = SubStyle(tk, sub) ?? ""
+                });
+            }
+        }
 
         return new
         {
             type = "addIndicator",
-            indicator = type,
-            overlay = IsOverlayIndicator(type),
+            id = tk,
+            kind = tk,
+            displayMode,
+            label = IndicatorLabel(tk, period),
+            period,
+            color,
+            lineWidth,
+            fixedRange = range,
+            guideLines = guides,
             series
         };
     }
 
-    // Price-scale indicators draw on top of candles; everything else gets a bottom pane.
+    private static string IndicatorLabel(string tk, int period) => tk switch
+    {
+        "macd" => "MACD 12·26·9",
+        "sar" => "Parabolic SAR",
+        "vwap" => "VWAP",
+        "feargreed" => "Fear & Greed",
+        "btcdom" => "BTC Dominance",
+        "funding" => "Funding Rate",
+        "oi" => "Open Interest",
+        _ => $"{tk.ToUpperInvariant()} {period}"
+    };
+
+    private static string DefaultIndicatorColor(string tk) => tk switch
+    {
+        "ema" => "#FF9800",
+        "wma" => "#00BCD4",
+        "hma" => "#9C27B0",
+        "dema" => "#4CAF50",
+        "tema" => "#795548",
+        "kama" => "#E91E63",
+        "vwma" => "#3F51B5",
+        "vwap" => "#E91E63",
+        "bbands" => "#2962FF",
+        "keltner" => "#00BCD4",
+        "donchian" => "#FF9800",
+        "sar" => "#F23645",
+        "supertrend" => "#089981",
+        "rsi" => "#9C27B0",
+        "stoch" => "#9C27B0",
+        "stochrsi" => "#E91E63",
+        "cci" => "#00BCD4",
+        "williamsr" => "#FF9800",
+        "mfi" => "#4CAF50",
+        "roc" => "#3F51B5",
+        "trix" => "#795548",
+        "ultimate" => "#E91E63",
+        "ao" => "#089981",
+        "cmo" => "#00BCD4",
+        "connorsrsi" => "#9C27B0",
+        "macd" => "#2962FF",
+        "adx" => "#FF5722",
+        "atr" => "#00BCD4",
+        "stddev" => "#3F51B5",
+        "ulcer" => "#F23645",
+        "volsma" => "#4CAF50",
+        "obv" => "#4CAF50",
+        "cmf" => "#089981",
+        "forceindex" => "#FF9800",
+        "adl" => "#00BCD4",
+        "aroon" => "#089981",
+        "vortex" => "#089981",
+        "chop" => "#787B86",
+        "feargreed" => "#FF9800",
+        "btcdom" => "#F7A600",
+        "funding" => "#9C27B0",
+        "oi" => "#00BCD4",
+        _ => "#2962FF"
+    };
+
+    private static string SubColor(string tk, string sub, string primary) => (tk, sub) switch
+    {
+        ("ichimoku", "kijun") => "#FF9800",
+        ("ichimoku", "senkouA") => "#089981",
+        ("ichimoku", "senkouB") => "#F23645",
+        ("ichimoku", "chikou") => "#9C27B0",
+        ("aroon", "down") => "#F23645",
+        ("vortex", "minus") => "#F23645",
+        ("stoch", "d") => "#FF9800",
+        _ => primary
+    };
+
+    private static string? SubStyle(string tk, string sub) => (tk, sub) switch
+    {
+        ("bbands", "upper") or ("bbands", "lower") => "dotted",
+        ("keltner", "upper") or ("keltner", "lower") => "dotted",
+        ("donchian", "upper") or ("donchian", "lower") => "dotted",
+        _ => null
+    };
+
+    // Fixed Y ranges + horizontal guide levels for bounded oscillators.
+    private static void GetPaneScale(string tk, out double[]? range, out double[]? guides)
+    {
+        switch (tk)
+        {
+            case "rsi": range = new double[] { 0, 100 }; guides = new double[] { 30, 70 }; break;
+            case "stoch":
+            case "stochrsi":
+            case "mfi": range = new double[] { 0, 100 }; guides = new double[] { 20, 80 }; break;
+            case "ultimate": range = new double[] { 0, 100 }; guides = new double[] { 30, 70 }; break;
+            case "connorsrsi": range = new double[] { 0, 100 }; guides = new double[] { 10, 90 }; break;
+            case "williamsr": range = new double[] { -100, 0 }; guides = new double[] { -80, -20 }; break;
+            case "adx": range = new double[] { 0, 100 }; guides = new double[] { 25 }; break;
+            case "cmo": range = new double[] { -100, 100 }; guides = null; break;
+            case "chop": range = new double[] { 0, 100 }; guides = new double[] { 38.2, 61.8 }; break;
+            case "feargreed": range = new double[] { 0, 100 }; guides = new double[] { 25, 75 }; break;
+            case "cmf":
+            case "funding": range = null; guides = new double[] { 0 }; break;
+            default: range = null; guides = null; break;
+        }
+    }
+
+    // Price-scale indicators draw on top of candles; everything else gets its own pane.
     private static bool IsOverlayIndicator(string type)
     {
         switch (type)
@@ -2948,7 +3165,7 @@ public partial class MainWindow : Window
 
             foreach (var a in GetActiveIndicators(_chartSymbol).ToList())
             {
-                var payload = BuildIndicatorPayload(a.Type, a.Period);
+                var payload = BuildIndicatorPayload(a.Type, a.Period, a.Color, a.LineWidth);
                 if (payload is not null)
                     ChartWebView.CoreWebView2.PostWebMessageAsJson(
                         System.Text.Json.JsonSerializer.Serialize(payload, _indicatorJsonOptions));

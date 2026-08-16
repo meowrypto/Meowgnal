@@ -13,4 +13,8 @@ public class ActiveIndicator
 {
     public string Type { get; set; } = "";
     public int Period { get; set; }
+
+    // Optional user overrides chosen from the chart hover toolbar (gear icon).
+    public string? Color { get; set; }
+    public int LineWidth { get; set; } = 2;
 }

@@ -86,6 +86,7 @@ public static class ThemeService
         background = "#131722",
         grid = "#1E222D",
         border = "#2A2E39",
+        textPrimary = "#D1D4DC",
         textMuted = "#787B86",
         crosshair = "#758696",
         accent = "#2962FF",
@@ -100,6 +101,7 @@ public static class ThemeService
         background = "#FFFFFF",
         grid = "#F0F3FA",
         border = "#E0E3EB",
+        textPrimary = "#131722",
         textMuted = "#787B86",
         crosshair = "#758696",
         accent = "#2962FF",
@@ -114,8 +116,8 @@ public static class ThemeService
         background = s.CustomBackground,
         grid = s.CustomPanel,
         border = s.CustomBorder,
+        textPrimary = s.CustomTextPrimary,
         textMuted = s.CustomTextPrimary,
-        crosshair = "#758696",
         accent = s.CustomAccent,
         up = "#089981",
         down = "#F23645",
@@ -164,6 +166,7 @@ public sealed class ChartThemeColors
     public string background { get; set; } = "#131722";
     public string grid { get; set; } = "#1E222D";
     public string border { get; set; } = "#2A2E39";
+    public string textPrimary { get; set; } = "#D1D4DC";
     public string textMuted { get; set; } = "#787B86";
     public string crosshair { get; set; } = "#758696";
     public string accent { get; set; } = "#2962FF";

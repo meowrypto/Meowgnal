@@ -13,11 +13,92 @@
             background: #131722;
         }
 
-        #chart {
+        #chartContainer {
             width: 100%;
             height: 100%;
+            display: flex;
+            flex-direction: column;
             position: relative;
         }
+
+        #paneMain {
+            position: relative;
+            flex: 1 1 auto;
+            min-height: 120px;
+        }
+
+        .ind-pane {
+            position: relative;
+            flex: 0 0 120px;
+            border-top: 1px solid #2A2E39;
+        }
+
+        #overlayLabels {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .ind-label {
+            position: absolute;
+            top: 4px;
+            left: 8px;
+            z-index: 5;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: Trebuchet MS,sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            pointer-events: none;
+            padding: 2px 6px;
+        }
+
+            .ind-label .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+            }
+
+            .ind-label.dim {
+                opacity: .4;
+            }
+
+        .ind-toolbar {
+            position: absolute;
+            top: 4px;
+            right: 70px;
+            z-index: 7;
+            display: none;
+            align-items: center;
+            gap: 2px;
+            padding: 2px 4px;
+            border-radius: 8px;
+            background: rgba(128,128,128,.14);
+            border: none;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        #paneMain:hover .ind-toolbar, .ind-pane:hover .ind-toolbar {
+            display: flex;
+        }
+
+        .ind-toolbar button {
+            width: 26px;
+            height: 26px;
+            border: 0;
+            background: transparent;
+            border-radius: 6px;
+            font-size: 15px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+            .ind-toolbar button:hover {
+                background: rgba(128,128,128,.25);
+            }
 
         #ctxMenu {
             position: fixed;
@@ -27,9 +108,9 @@
             border-radius: 6px;
             padding: 4px;
             min-width: 220px;
-            font-family: Trebuchet MS, sans-serif;
+            font-family: Trebuchet MS,sans-serif;
             font-size: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+            box-shadow: 0 4px 16px rgba(0,0,0,.45);
         }
 
         .ctx-item {
@@ -59,7 +140,7 @@
             border-radius: 4px;
             padding: 4px 8px;
             width: 160px;
-            font-family: Trebuchet MS, sans-serif;
+            font-family: Trebuchet MS,sans-serif;
             font-size: 12px;
             outline: none;
         }
@@ -74,10 +155,72 @@
             padding: 6px 10px;
             color: #D1D4DC;
             font-size: 11px;
-            font-family: Trebuchet MS, sans-serif;
+            font-family: Trebuchet MS,sans-serif;
             pointer-events: none;
             max-width: 250px;
         }
+
+        #indSettings {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.4);
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .is-box {
+            background: #1E222D;
+            border: 1px solid #2A2E39;
+            border-radius: 8px;
+            padding: 16px;
+            min-width: 250px;
+            font-family: Trebuchet MS,sans-serif;
+            color: #D1D4DC;
+            font-size: 12px;
+        }
+
+            .is-box label {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin: 8px 0;
+                gap: 10px;
+            }
+
+            .is-box input, .is-box select {
+                background: #131722;
+                color: #D1D4DC;
+                border: 1px solid #2A2E39;
+                border-radius: 4px;
+                padding: 4px 6px;
+            }
+
+        .is-title {
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .is-btns {
+            display: flex;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+            .is-btns button {
+                background: #2962FF;
+                border: 0;
+                color: #fff;
+                border-radius: 4px;
+                padding: 5px 10px;
+                cursor: pointer;
+            }
+
+            .is-btns #isCancel {
+                background: #363A45;
+            }
     </style>
     <script src="lightweight-charts.standalone.production.js"></script>
 </head>
@@ -98,61 +241,164 @@
             } catch (e) { }
         })();
     </script>
-    <div id="chart"></div>
+    <div id="chartContainer"><div id="paneMain"><div id="overlayLabels"></div></div></div>
     <div id="ctxMenu"></div>
     <div id="hoverTooltip"></div>
     <input id="textInput" />
+    <div id="indSettings">
+        <div class="is-box">
+            <div class="is-title" id="isTitle">Indicator settings</div>
+            <label id="isPeriodRow">Period <input id="isPeriod" type="number" min="1" max="500" /></label>
+            <label>Color <input id="isColor" type="color" /></label>
+            <label>Line width <select id="isWidth"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
+            <div class="is-btns"><button id="isCancel">Cancel</button><button id="isSave">Save</button></div>
+        </div>
+    </div>
     <script>
         const COLORS = Object.assign({
-            background: '#131722', grid: '#1E222D', border: '#2A2E39',
-            textMuted: '#787B86', crosshair: '#758696', accent: '#2962FF',
-            up: '#089981', down: '#F23645',
-            volumeUp: 'rgba(8, 153, 129, 0.35)', volumeDown: 'rgba(242, 54, 69, 0.35)'
+            background: '#131722', grid: '#1E222D', border: '#2A2E39', textPrimary: '#D1D4DC',
+            textMuted: '#787B86', crosshair: '#758696', accent: '#2962FF', up: '#089981', down: '#F23645',
+            volumeUp: 'rgba(8,153,129,0.35)', volumeDown: 'rgba(242,54,69,0.35)'
         }, window.__INITIAL_COLORS__ || {});
+
         const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
         const FIB_EXTENSION_LEVELS = [1.272, 1.618, 2.618];
         const ALL_FIB_LEVELS = FIB_LEVELS.concat(FIB_EXTENSION_LEVELS);
 
-        const chart = LightweightCharts.createChart(document.getElementById('chart'), {
-            layout: {
-                background: { type: LightweightCharts.ColorType.Solid, color: COLORS.background },
-                textColor: COLORS.textMuted, fontSize: 11,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, Helvetica, Arial, sans-serif"
-            },
-            grid: { vertLines: { color: COLORS.grid }, horzLines: { color: COLORS.grid } },
-            rightPriceScale: { borderColor: COLORS.border },
-            timeScale: { borderColor: COLORS.border, timeVisible: true, secondsVisible: false },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-                vertLine: { color: COLORS.crosshair, labelBackgroundColor: COLORS.border },
-                horzLine: { color: COLORS.crosshair, labelBackgroundColor: COLORS.border }
-            }
-        });
+        const chartContainer = document.getElementById('chartContainer');
+        const paneMain = document.getElementById('paneMain');
+        const overlayLabels = document.getElementById('overlayLabels');
+        const hoverTooltip = document.getElementById('hoverTooltip');
 
+        function baseChartOptions() {
+            return {
+                autoSize: true,
+                layout: {
+                    background: { type: LightweightCharts.ColorType.Solid, color: COLORS.background },
+                    textColor: COLORS.textMuted, fontSize: 11,
+                    fontFamily: "-apple-system,BlinkMacSystemFont,'Trebuchet MS',Roboto,Ubuntu,Helvetica,Arial,sans-serif"
+                },
+                grid: { vertLines: { color: COLORS.grid }, horzLines: { color: COLORS.grid } },
+                rightPriceScale: { borderColor: COLORS.border },
+                timeScale: { borderColor: COLORS.border, timeVisible: true, secondsVisible: false },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                    vertLine: { color: COLORS.crosshair, labelBackgroundColor: COLORS.border },
+                    horzLine: { color: COLORS.crosshair, labelBackgroundColor: COLORS.border }
+                }
+            };
+        }
+
+        const chart = LightweightCharts.createChart(paneMain, baseChartOptions());
         const volumeSeries = chart.addHistogramSeries({ priceFormat: { type: 'volume' }, priceScaleId: '' });
         chart.priceScale('').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
 
+        // ---------- Multi-pane infrastructure (v4 has no addPane: synced stacked charts) ----------
+        const panes = [];
+        const indicatorState = new Map();
+        const overrides = {};
+        let syncingRange = false;
+        let syncingCrosshair = false;
+        let blindMode = false;
+        const primarySeriesByChart = new Map();
+        const valueByTimeByChart = new Map();
+
+        function allCharts() { return [chart].concat(panes.map(p => p.chart)); }
+
+        function attachRangeSync(c) {
+            c.timeScale().subscribeVisibleLogicalRangeChange(range => {
+                if (!range || syncingRange) return;
+                syncingRange = true;
+                allCharts().forEach(o => {
+                    if (o === c) return;
+                    const cur = o.timeScale().getVisibleLogicalRange();
+                    if (!cur || Math.abs(cur.from - range.from) > 1e-6 || Math.abs(cur.to - range.to) > 1e-6)
+                        o.timeScale().setVisibleLogicalRange(range);
+                });
+                syncingRange = false;
+            });
+        }
+
+        function attachCrosshairSync(c) {
+            c.subscribeCrosshairMove(param => {
+                if (syncingCrosshair) return;
+                syncingCrosshair = true;
+                try {
+                    allCharts().forEach(o => {
+                        if (o === c) return;
+                        const s = primarySeriesByChart.get(o);
+                        if (!s) return;
+                        if (param.time !== undefined) {
+                            const m = valueByTimeByChart.get(o);
+                            const v = m ? m.get(param.time) : undefined;
+                            if (v !== undefined) { try { o.setCrosshairPosition(v, param.time, s); } catch (e) { } }
+                            else { try { o.clearCrosshairPosition(); } catch (e) { } }
+                        } else { try { o.clearCrosshairPosition(); } catch (e) { } }
+                    });
+                } finally { syncingCrosshair = false; }
+            });
+        }
+        attachRangeSync(chart);
+        attachCrosshairSync(chart);
+
+        function setChartPrimary(c, series, points) {
+            primarySeriesByChart.set(c, series);
+            const m = new Map();
+            if (points) for (const p of points) if (p && p.value !== undefined && !isNaN(p.value)) m.set(p.time, p.value);
+            valueByTimeByChart.set(c, m);
+        }
+
+        function updateTimeScaleVisibility() {
+            const last = panes.length ? panes[panes.length - 1].chart : chart;
+            allCharts().forEach(c => c.applyOptions({ timeScale: { visible: c === last && !blindMode } }));
+            if (activeSeries) activeSeries.applyOptions({ lastValueVisible: !blindMode });
+            chart.applyOptions({ rightPriceScale: { borderVisible: !blindMode } });
+        }
+
+        function createPane(id) {
+            const div = document.createElement('div');
+            div.className = 'ind-pane';
+            div.id = 'pane-' + id;
+            div.style.borderTopColor = COLORS.border;
+            chartContainer.appendChild(div);
+            const pChart = LightweightCharts.createChart(div, baseChartOptions());
+            attachRangeSync(pChart);
+            attachCrosshairSync(pChart);
+            const pane = { id, div, chart: pChart };
+            panes.push(pane);
+            updateTimeScaleVisibility();
+            const r = chart.timeScale().getVisibleLogicalRange();
+            if (r) pChart.timeScale().setVisibleLogicalRange(r);
+            resizeCanvasSoon();
+            return pane;
+        }
+
+        function destroyPane(pane) {
+            primarySeriesByChart.delete(pane.chart);
+            valueByTimeByChart.delete(pane.chart);
+            try { pane.chart.remove(); } catch (e) { }
+            pane.div.remove();
+            const i = panes.indexOf(pane);
+            if (i >= 0) panes.splice(i, 1);
+            updateTimeScaleVisibility();
+            resizeCanvasSoon();
+        }
+
+        // ---------- Core state ----------
         let rawData = [];
         let displayData = [];
         let chartType = 'candles';
         let activeSeries = null;
-
-        // Series created by the indicator panel (cleared when new candles arrive)
-        let indicatorSeries = [];
-
         let lastPositions = [];
         let positionLines = [];
         let markersApi = null;
 
         let drawingMode = null;
-        let cursorMode = 'cross';
         let pendingPoints = [];
         let customDrawings = [];
         let defaultColor = '#2962FF';
-
         let selectedDrawingIds = new Set();
         let isCtrlPressed = false;
-
         let dragState = null;
         let isDragging = false;
         const HANDLE_SIZE = 10;
@@ -164,37 +410,30 @@
         drawCanvas.style.left = '0';
         drawCanvas.style.pointerEvents = 'none';
         drawCanvas.style.zIndex = '3';
-        document.getElementById('chart').appendChild(drawCanvas);
+        paneMain.appendChild(drawCanvas);
         const ctx = drawCanvas.getContext('2d');
 
-        const hoverTooltip = document.getElementById('hoverTooltip');
-
         function resizeCanvas() {
-            const el = document.getElementById('chart');
-            drawCanvas.width = el.clientWidth;
-            drawCanvas.height = el.clientHeight;
+            drawCanvas.width = paneMain.clientWidth;
+            drawCanvas.height = paneMain.clientHeight;
             renderCustomDrawings();
         }
-        function resizeChart() {
-            chart.applyOptions({ width: document.body.clientWidth, height: document.body.clientHeight });
-            resizeCanvas();
+        let resizeTimer = null;
+        function resizeCanvasSoon() {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(resizeCanvas, 60);
         }
-        window.addEventListener('resize', resizeChart);
+        window.addEventListener('resize', resizeCanvas);
 
         window.addEventListener('keydown', function (e) {
             if (e.key === 'Control') isCtrlPressed = true;
-            if (e.key === 'g' && isCtrlPressed && !e.shiftKey && selectedDrawingIds.size >= 2) {
-                const groupId = Date.now().toString(36);
-                post({ type: 'groupDrawings', ids: Array.from(selectedDrawingIds), groupId: groupId });
-            }
-            if (e.key === 'G' && isCtrlPressed && e.shiftKey && selectedDrawingIds.size > 0) {
+            if (e.key === 'g' && isCtrlPressed && !e.shiftKey && selectedDrawingIds.size >= 2)
+                post({ type: 'groupDrawings', ids: Array.from(selectedDrawingIds), groupId: Date.now().toString(36) });
+            if (e.key === 'G' && isCtrlPressed && e.shiftKey && selectedDrawingIds.size > 0)
                 post({ type: 'ungroupDrawings', ids: Array.from(selectedDrawingIds) });
-            }
         });
-
         window.addEventListener('keyup', function (e) {
             if (e.key === 'Control') isCtrlPressed = false;
-
             if (e.key === 'Delete' && selectedDrawingIds.size > 0) {
                 post({ type: 'deleteDrawings', ids: Array.from(selectedDrawingIds) });
                 selectedDrawingIds.clear();
@@ -202,19 +441,12 @@
                 return;
             }
             if (e.key === 'Escape') {
-                if (pendingPoints.length > 0) {
-                    pendingPoints = [];
-                    renderCustomDrawings();
-                    return;
-                }
-                if (selectedDrawingIds.size > 0) {
-                    selectedDrawingIds.clear();
-                    renderCustomDrawings();
-                }
+                if (pendingPoints.length > 0) { pendingPoints = []; renderCustomDrawings(); return; }
+                if (selectedDrawingIds.size > 0) { selectedDrawingIds.clear(); renderCustomDrawings(); }
             }
         });
 
-        resizeChart();
+        resizeCanvas();
 
         function post(m) {
             if (window.chrome && window.chrome.webview)
@@ -223,12 +455,8 @@
 
         function copySelectedDrawing() {
             if (selectedDrawingIds.size > 0) {
-                const firstId = Array.from(selectedDrawingIds)[0];
-                const src = customDrawings.find(d => d.id === firstId);
-                if (src) {
-                    clipboardDrawing = JSON.parse(JSON.stringify(src));
-                    post({ type: 'copyToast' });
-                }
+                const src = customDrawings.find(d => d.id === Array.from(selectedDrawingIds)[0]);
+                if (src) { clipboardDrawing = JSON.parse(JSON.stringify(src)); post({ type: 'copyToast' }); }
             }
         }
 
@@ -237,10 +465,7 @@
                 const copy = JSON.parse(JSON.stringify(clipboardDrawing));
                 copy.id = Date.now().toString(36) + Math.random().toString(36).substr(2);
                 const dt = rawData.length > 1 ? (rawData[1].time - rawData[0].time) : 3600;
-                for (const p of copy.points || []) {
-                    p.time = p.time + dt;
-                    p.price = p.price * 1.002;
-                }
+                for (const p of copy.points || []) { p.time = p.time + dt; p.price = p.price * 1.002; }
                 post({ type: 'pasteDrawing', drawing: copy });
             }
         }
@@ -254,7 +479,7 @@
         function createSeriesForType() {
             switch (chartType) {
                 case 'line': return chart.addLineSeries({ color: COLORS.accent, lineWidth: 2 });
-                case 'area': return chart.addAreaSeries({ lineColor: COLORS.accent, topColor: 'rgba(41, 98, 255, 0.35)', bottomColor: 'rgba(41, 98, 255, 0.03)', lineWidth: 2 });
+                case 'area': return chart.addAreaSeries({ lineColor: COLORS.accent, topColor: 'rgba(41,98,255,0.35)', bottomColor: 'rgba(41,98,255,0.03)', lineWidth: 2 });
                 case 'bars': return chart.addBarSeries({ upColor: COLORS.up, downColor: COLORS.down });
                 default: return chart.addCandlestickSeries({
                     upColor: COLORS.up, downColor: COLORS.down,
@@ -290,124 +515,310 @@
             })));
         }
 
-        // Blind Mode: hides time axis, last price label and right scale border,
-        // so the user can't read the exact date or current price — useful for
-        // practicing pattern recognition without spoilers.
-        function setBlindMode(blind) {
-            chart.timeScale().applyOptions({ visible: !blind });
-            if (activeSeries) activeSeries.applyOptions({ lastValueVisible: !blind });
-            chart.applyOptions({ rightPriceScale: { borderVisible: !blind } });
-        }
-
-        // Replay Mode: appends a single candle without re-rendering the whole dataset.
         function appendCandle(c) {
             const range = chart.timeScale().getVisibleLogicalRange();
             const totalBefore = rawData.length;
             const following = range && range.to >= totalBefore - 1;
-
             rawData.push(c);
-
+            const mm = valueByTimeByChart.get(chart);
+            if (mm) mm.set(c.time, c.close);
             if (activeSeries) {
                 if (chartType === 'line' || chartType === 'area') activeSeries.update({ time: c.time, value: c.close });
                 else activeSeries.update(c);
             }
             volumeSeries.update({ time: c.time, value: c.volume, color: c.close >= c.open ? COLORS.volumeUp : COLORS.volumeDown });
-
             if (following) chart.timeScale().setVisibleLogicalRange({ from: range.from + 1, to: range.to + 1 });
             renderCustomDrawings();
         }
 
-        // Removes all indicator series (called when new candles arrive)
-        function clearIndicators() {
-            for (const s of indicatorSeries) { try { chart.removeSeries(s); } catch (e) { } }
-            indicatorSeries = [];
+        // ---------- Indicator labels / toolbars / settings ----------
+        const OVERLAY_TYPES = new Set(['sma', 'ema', 'wma', 'hma', 'dema', 'tema', 'kama', 'vwma', 'vwap', 'bbands', 'keltner', 'donchian', 'sar', 'supertrend', 'ichimoku']);
+        const DEFAULT_COLORS = {
+            sma: '#2962FF', ema: '#FF9800', wma: '#00BCD4', hma: '#9C27B0', dema: '#4CAF50', tema: '#795548',
+            kama: '#E91E63', vwma: '#3F51B5', vwap: '#E91E63', bbands: '#2962FF', keltner: '#00BCD4',
+            donchian: '#FF9800', sar: '#F23645', supertrend: '#089981', ichimoku: '#2962FF',
+            rsi: '#9C27B0', stoch: '#9C27B0', stochrsi: '#E91E63', cci: '#00BCD4', williamsr: '#FF9800',
+            mfi: '#4CAF50', roc: '#3F51B5', trix: '#795548', ultimate: '#E91E63', ao: '#089981',
+            cmo: '#00BCD4', connorsrsi: '#9C27B0', macd: '#2962FF', adx: '#FF5722', atr: '#00BCD4',
+            stddev: '#3F51B5', ulcer: '#F23645', volsma: '#4CAF50', obv: '#4CAF50', cmf: '#089981',
+            forceindex: '#FF9800', adl: '#00BCD4', aroon: '#089981', vortex: '#089981', chop: '#787B86',
+            feargreed: '#FF9800', btcdom: '#F7A600', funding: '#9C27B0', oi: '#00BCD4'
+        };
+        const PANE_SCALES = {
+            rsi: { range: [0, 100], guides: [30, 70] }, stoch: { range: [0, 100], guides: [20, 80] },
+            stochrsi: { range: [0, 100], guides: [20, 80] }, mfi: { range: [0, 100], guides: [20, 80] },
+            williamsr: { range: [-100, 0], guides: [-80, -20] }, adx: { range: [0, 100], guides: [25] },
+            cmo: { range: [-100, 100], guides: null }, ultimate: { range: [0, 100], guides: [30, 70] },
+            connorsrsi: { range: [0, 100], guides: [10, 90] }, chop: { range: [0, 100], guides: [38.2, 61.8] },
+            feargreed: { range: [0, 100], guides: [25, 75] }, cmf: { range: null, guides: [0] }, funding: { range: null, guides: [0] }
+        };
+        const NO_PERIOD_KINDS = ['vwap', 'sar', 'obv', 'adl', 'ao', 'feargreed', 'btcdom', 'funding', 'oi'];
+
+        function makeLabel(state) {
+            const el = document.createElement('div');
+            el.className = 'ind-label';
+            const dot = document.createElement('span');
+            dot.className = 'dot';
+            dot.style.background = state.color;
+            const name = document.createElement('span');
+            name.textContent = state.label;
+            el.appendChild(dot); el.appendChild(name);
+            el.style.color = COLORS.textPrimary;
+            state.dotEl = dot;
+            return el;
         }
 
-        // Draws indicator lines sent from the C# indicator panel
-        function addIndicatorToChart(msg) {
-            const times = rawData.map(c => c.time);
+        function makeToolbar(state) {
+            const tb = document.createElement('div');
+            tb.className = 'ind-toolbar';
+            const mk = (icon, title, act) => {
+                const b = document.createElement('button');
+                b.textContent = icon; b.title = title; b.dataset.act = act;
+                b.style.color = COLORS.textPrimary;
+                tb.appendChild(b); return b;
+            };
+            state.eyeBtn = mk('\u{1F441}\uFE0E', 'Show / hide', 'eye');
+            mk('\u2699\uFE0E', 'Settings (period, color, width)', 'settings');
+            if (state.displayMode === 'Pane') mk('\u2191', 'Move pane up', 'up');
+            mk('\u{1F5D1}\uFE0E', 'Remove', 'remove');
+            tb.addEventListener('click', e => {
+                const b = e.target.closest('button');
+                if (!b) return;
+                e.stopPropagation();
+                const act = b.dataset.act;
+                if (act === 'eye') toggleVisibility(state);
+                else if (act === 'remove') removeIndicator(state);
+                else if (act === 'up') movePaneUp(state);
+                else if (act === 'settings') openSettings(state);
+            });
+            return tb;
+        }
 
-            // Generic multi-series payload (new indicators from IndicatorEngine)
-            if (msg.series) {
-                const colors = ['#2962FF', '#FF9800', '#9C27B0', '#089981', '#F23645', '#00BCD4'];
-                let ci = 0;
-                for (const s of msg.series) {
-                    const pts = [];
-                    for (let i = 0; i < s.values.length && i < times.length; i++) {
-                        const v = s.values[i];
-                        if (v !== null && v !== undefined && !isNaN(v)) pts.push({ time: times[i], value: v });
-                    }
-                    if (pts.length === 0) continue;
-                    const color = colors[ci++ % colors.length];
-                    const line = msg.overlay
-                        ? chart.addLineSeries({ color: color, lineWidth: 2 })
-                        : chart.addLineSeries({ priceScaleId: msg.indicator, color: color, lineWidth: 2 });
-                    line.setData(pts);
-                    indicatorSeries.push(line);
+        function toggleVisibility(st) {
+            st.visible = !st.visible;
+            st.seriesRecs.forEach(r => { if (!r.lock) r.series.applyOptions({ visible: st.visible }); });
+            if (st.labelEl) st.labelEl.classList.toggle('dim', !st.visible);
+            if (st.eyeBtn) st.eyeBtn.style.opacity = st.visible ? '1' : '.45';
+        }
+
+        function removeIndicatorVisual(st) {
+            if (st.pane) destroyPane(st.pane);
+            else st.seriesRecs.forEach(r => { try { chart.removeSeries(r.series); } catch (e) { } });
+            if (st.labelEl) st.labelEl.remove();
+            if (st.toolbarEl) st.toolbarEl.remove();
+            indicatorState.delete(st.id);
+            layoutOverlayLabels();
+            resizeCanvasSoon();
+        }
+
+        function removeIndicator(st) {
+            removeIndicatorVisual(st);
+            post({ type: 'removeIndicator', id: st.id });
+        }
+
+        function movePaneUp(st) {
+            if (!st.pane) return;
+            const idx = panes.indexOf(st.pane);
+            if (idx < 0) return;
+            const pane = panes.splice(idx, 1)[0];
+            if (idx === 0) panes.push(pane); else panes.splice(idx - 1, 0, pane);
+            panes.forEach(p => chartContainer.appendChild(p.div));
+            updateTimeScaleVisibility();
+            const r = chart.timeScale().getVisibleLogicalRange();
+            if (r) panes.forEach(p => p.chart.timeScale().setVisibleLogicalRange(r));
+            resizeCanvasSoon();
+            post({ type: 'reorderIndicators', order: panes.map(p => p.id) });
+        }
+
+        function layoutOverlayLabels() {
+            overlayLabels.querySelectorAll('.ind-label').forEach((el, i) => {
+                el.style.top = (4 + i * 22) + 'px';
+                el.style.left = '8px';
+            });
+        }
+
+        // Settings dialog
+        const indSettings = document.getElementById('indSettings');
+        const isTitle = document.getElementById('isTitle');
+        const isPeriodRow = document.getElementById('isPeriodRow');
+        const isPeriod = document.getElementById('isPeriod');
+        const isColor = document.getElementById('isColor');
+        const isWidth = document.getElementById('isWidth');
+        let settingsTarget = null;
+
+        function openSettings(st) {
+            settingsTarget = st;
+            isTitle.textContent = st.label;
+            isPeriodRow.style.display = NO_PERIOD_KINDS.indexOf(st.id) < 0 ? 'flex' : 'none';
+            isPeriod.value = st.period || 14;
+            isColor.value = /^#[0-9a-fA-F]{6}$/.test(st.color) ? st.color : '#2962FF';
+            isWidth.value = String(st.lineWidth || 2);
+            indSettings.style.display = 'flex';
+        }
+
+        document.getElementById('isCancel').onclick = () => { indSettings.style.display = 'none'; settingsTarget = null; };
+        document.getElementById('isSave').onclick = () => {
+            if (settingsTarget) {
+                const st = settingsTarget;
+                const newPeriod = parseInt(isPeriod.value, 10) || st.period;
+                st.color = isColor.value;
+                st.lineWidth = parseInt(isWidth.value, 10) || 2;
+                overrides[st.id] = { color: st.color, lineWidth: st.lineWidth };
+                st.seriesRecs.forEach(r => {
+                    if (r.lock) return;
+                    const opts = { lineWidth: st.lineWidth };
+                    if (!r.hist) opts.color = st.color;
+                    r.series.applyOptions(opts);
+                });
+                if (st.dotEl) st.dotEl.style.background = st.color;
+                if (newPeriod !== st.period) {
+                    st.period = newPeriod;
+                    post({ type: 'updateIndicator', id: st.id, period: newPeriod });
                 }
-                if (!msg.overlay) {
-                    chart.priceScale(msg.indicator).applyOptions({ scaleMargins: { top: 0.75, bottom: 0 }, visible: false });
-                }
-                return;
             }
-            const IND_COLORS = {
-                sma: '#2962FF', ema: '#FF9800', rsi: '#9C27B0',
-                macd: '#2962FF', signal: '#FF9800', histogram: '#787B86',
-                atr: '#00BCD4', bbands: '#2962FF', stoch: '#9C27B0',
-                adx: '#FF5722', volsma: '#4CAF50', vwap: '#E91E63'
+            indSettings.style.display = 'none';
+            settingsTarget = null;
+        };
+
+        // Normalize both old and new payload shapes into one format
+        function normalizeIndicatorMsg(msg) {
+            const id = (msg.id || msg.indicator || '').toLowerCase();
+            const series = [];
+            if (msg.series && msg.series.length) {
+                for (const s of msg.series)
+                    series.push({ key: s.key || id, values: s.values, color: s.color, lineStyle: s.lineStyle, histogram: !!s.histogram });
+            } else if (id === 'macd') {
+                series.push({ key: id, values: msg.macdLine, color: '#2962FF' });
+                series.push({ key: id + '.signal', values: msg.signalLine, color: '#FF9800' });
+                series.push({ key: id + '.hist', values: msg.histogram, color: '#787B86', histogram: true });
+            } else if (id === 'bbands') {
+                series.push({ key: id + '.upper', values: msg.upper, color: '#2962FF', lineStyle: 'dotted' });
+                series.push({ key: id + '.middle', values: msg.middle, color: '#2962FF' });
+                series.push({ key: id + '.lower', values: msg.lower, color: '#2962FF', lineStyle: 'dotted' });
+            } else if (id === 'stoch') {
+                series.push({ key: id, values: msg.k, color: '#9C27B0' });
+                series.push({ key: id + '.d', values: msg.d, color: '#FF9800' });
+            } else {
+                series.push({ key: id, values: msg.values, color: DEFAULT_COLORS[id] || '#2962FF' });
+            }
+            let displayMode = msg.displayMode;
+            if (!displayMode) {
+                if (msg.overlay === true) displayMode = 'Overlay';
+                else if (msg.overlay === false) displayMode = 'Pane';
+                else displayMode = OVERLAY_TYPES.has(id) ? 'Overlay' : 'Pane';
+            }
+            const scale = PANE_SCALES[id] || { range: null, guides: null };
+            const label = msg.label || (id === 'macd' ? 'MACD 12·26·9' : id.toUpperCase() + (msg.period ? ' ' + msg.period : ''));
+            return { id, series, displayMode, range: scale.range, guides: scale.guides, label, period: msg.period || 0 };
+        }
+
+        function addIndicatorToChart(msg) {
+            const n = normalizeIndicatorMsg(msg);
+            const old = indicatorState.get(n.id);
+            if (old) removeIndicatorVisual(old);
+
+            const ov = overrides[n.id] || {};
+            const baseColor = ov.color || (n.series[0] && n.series[0].color) || DEFAULT_COLORS[n.id] || '#2962FF';
+            const lineWidth = ov.lineWidth || 2;
+
+            const state = {
+                id: n.id, label: n.label, displayMode: n.displayMode, period: n.period,
+                color: baseColor, lineWidth: lineWidth, visible: true,
+                seriesRecs: [], pane: null, labelEl: null, toolbarEl: null, eyeBtn: null, dotEl: null
             };
 
-            function toPoints(values) {
+            let targetChart = chart;
+            if (n.displayMode === 'Pane') {
+                state.pane = createPane(n.id);
+                targetChart = state.pane.chart;
+                targetChart.priceScale('right').applyOptions({
+                    scaleMargins: n.range ? { top: 0.05, bottom: 0.05 } : { top: 0.1, bottom: 0.1 }
+                });
+            }
+
+            const times = rawData.map(c => c.time);
+
+            // Invisible constant lines lock the Y axis to a fixed range (e.g. RSI 0-100)
+            if (n.displayMode === 'Pane' && n.range && times.length > 1) {
+                [n.range[0], n.range[1]].forEach(v => {
+                    const lock = targetChart.addLineSeries({
+                        color: 'rgba(0,0,0,0)', lineWidth: 1,
+                        lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: false
+                    });
+                    lock.setData([{ time: times[0], value: v }, { time: times[times.length - 1], value: v }]);
+                    state.seriesRecs.push({ series: lock, lock: true });
+                });
+            }
+
+            let primarySeries = null;
+            let primaryPoints = null;
+            for (const s of n.series) {
+                const opts = {
+                    color: s.color || baseColor,
+                    lineWidth: lineWidth,
+                    lineStyle: s.lineStyle === 'dotted' ? LightweightCharts.LineStyle.Dotted : LightweightCharts.LineStyle.Solid,
+                    lastValueVisible: false, priceLineVisible: false, crosshairMarkerVisible: true
+                };
+                const ser = s.histogram ? targetChart.addHistogramSeries(opts) : targetChart.addLineSeries(opts);
                 const pts = [];
-                for (let i = 0; i < values.length; i++) {
-                    if (values[i] !== null && values[i] !== undefined && !isNaN(values[i]))
-                        pts.push({ time: times[i], value: values[i] });
+                for (let i = 0; i < s.values.length && i < times.length; i++) {
+                    const v = s.values[i];
+                    if (v === null || v === undefined || isNaN(v)) continue;
+                    const pt = { time: times[i], value: v };
+                    if (s.histogram) pt.color = v >= 0 ? COLORS.up : COLORS.down;
+                    pts.push(pt);
                 }
-                return pts;
+                ser.setData(pts);
+                state.seriesRecs.push({ series: ser, hist: !!s.histogram });
+                if (!primarySeries && !s.histogram) { primarySeries = ser; primaryPoints = pts; }
+            }
+            if (!primarySeries && state.seriesRecs.length > 0) {
+                primarySeries = state.seriesRecs[0].series;
+                primaryPoints = [];
             }
 
-            // Oscillators draw in the bottom quarter on their own hidden scale
-            function bottomScale(id) {
-                chart.priceScale(id).applyOptions({ scaleMargins: { top: 0.75, bottom: 0 }, visible: false });
+            // Horizontal guide lines (RSI 30/70, Stochastic 20/80, ...)
+            if (n.guides && primarySeries) {
+                n.guides.forEach(g => {
+                    primarySeries.createPriceLine({
+                        price: g, color: 'rgba(120,123,134,0.55)', lineWidth: 1,
+                        lineStyle: LightweightCharts.LineStyle.Dashed, axisLabelVisible: false, title: ''
+                    });
+                });
             }
 
-            if (msg.indicator === 'bbands') {
-                const u = chart.addLineSeries({ color: IND_COLORS.bbands, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted });
-                const m = chart.addLineSeries({ color: IND_COLORS.bbands, lineWidth: 1 });
-                const l = chart.addLineSeries({ color: IND_COLORS.bbands, lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dotted });
-                u.setData(toPoints(msg.upper));
-                m.setData(toPoints(msg.middle));
-                l.setData(toPoints(msg.lower));
-                indicatorSeries.push(u, m, l);
-            } else if (msg.indicator === 'macd') {
-                const h = chart.addHistogramSeries({ priceScaleId: 'macd', color: IND_COLORS.histogram });
-                const ml = chart.addLineSeries({ priceScaleId: 'macd', color: IND_COLORS.macd, lineWidth: 2 });
-                const sl = chart.addLineSeries({ priceScaleId: 'macd', color: IND_COLORS.signal, lineWidth: 1 });
-                h.setData(toPoints(msg.histogram).map(p => ({ time: p.time, value: p.value, color: p.value >= 0 ? COLORS.up : COLORS.down })));
-                ml.setData(toPoints(msg.macdLine));
-                sl.setData(toPoints(msg.signalLine));
-                bottomScale('macd');
-                indicatorSeries.push(h, ml, sl);
-            } else if (msg.indicator === 'stoch') {
-                const k = chart.addLineSeries({ priceScaleId: 'stoch', color: IND_COLORS.stoch, lineWidth: 2 });
-                const d = chart.addLineSeries({ priceScaleId: 'stoch', color: IND_COLORS.signal, lineWidth: 1 });
-                k.setData(toPoints(msg.k));
-                d.setData(toPoints(msg.d));
-                bottomScale('stoch');
-                indicatorSeries.push(k, d);
-            } else if (msg.indicator === 'rsi' || msg.indicator === 'adx' || msg.indicator === 'atr' || msg.indicator === 'volsma') {
-                const s = chart.addLineSeries({ priceScaleId: msg.indicator, color: IND_COLORS[msg.indicator], lineWidth: 2 });
-                s.setData(toPoints(msg.values));
-                bottomScale(msg.indicator);
-                indicatorSeries.push(s);
+            if (n.displayMode === 'Pane' && primarySeries)
+                setChartPrimary(targetChart, primarySeries, primaryPoints);
+
+            state.labelEl = makeLabel(state);
+            state.toolbarEl = makeToolbar(state);
+            if (n.displayMode === 'Pane') {
+                state.pane.div.appendChild(state.labelEl);
+                state.pane.div.appendChild(state.toolbarEl);
             } else {
-                // sma / ema / vwap overlay on the main price scale
-                const s = chart.addLineSeries({ color: IND_COLORS[msg.indicator] || '#2962FF', lineWidth: 2 });
-                s.setData(toPoints(msg.values));
-                indicatorSeries.push(s);
+                overlayLabels.appendChild(state.labelEl);
+                paneMain.appendChild(state.toolbarEl);
             }
+
+            indicatorState.set(n.id, state);
+            layoutOverlayLabels();
+            resizeCanvasSoon();
         }
 
+        function clearIndicators() {
+            Array.from(indicatorState.values()).forEach(st => {
+                if (st.pane) destroyPane(st.pane);
+                else st.seriesRecs.forEach(r => { try { chart.removeSeries(r.series); } catch (e) { } });
+                if (st.labelEl) st.labelEl.remove();
+                if (st.toolbarEl) st.toolbarEl.remove();
+            });
+            indicatorState.clear();
+            overlayLabels.innerHTML = '';
+            updateTimeScaleVisibility();
+            resizeCanvasSoon();
+        }
+
+        // ---------- Drawings engine ----------
         function snapToBarTime(t) {
             if (!rawData.length) return t;
             let lo = 0, hi = rawData.length - 1, ans = rawData[0].time;
@@ -415,7 +826,6 @@
             return ans;
         }
 
-        // Phase 32 — Snap price to nearest OHLC of the candle at given time
         function snapPriceToCandle(price, time) {
             const bar = rawData.find(c => c.time === time);
             if (!bar) return price;
@@ -434,7 +844,11 @@
         function applyPositions() {
             if (activeSeries !== null) for (const l of positionLines) { try { activeSeries.removePriceLine(l); } catch (e) { } }
             positionLines = [];
-            if (markersApi !== null) { try { markersApi.detach(); } catch (e) { } markersApi = null; }
+            if (markersApi !== null) {
+                try { if (typeof markersApi.detach === 'function') markersApi.detach(); } catch (e) { }
+                markersApi = null;
+            }
+            try { if (activeSeries && typeof activeSeries.setMarkers === 'function') activeSeries.setMarkers([]); } catch (e) { }
             if (activeSeries === null || !lastPositions || !lastPositions.length) return;
 
             const markers = [];
@@ -504,15 +918,8 @@
             const m = (x1 !== null && x2 !== null && x2 !== x1) ? (y2 - y1) / (x2 - x1) : null;
 
             switch (d.kind) {
-                case 'horizontalline':
-                    g.lines.push([0, y1, W, y1]);
-                    if (d.label) g.labels.push([d.label, 8, y1 - 5]);
-                    break;
-                case 'horizontalray': {
-                    const right = x2 === null || x2 >= x1;
-                    g.lines.push([right ? x1 : 0, y1, right ? W : x1, y1]);
-                    break;
-                }
+                case 'horizontalline': g.lines.push([0, y1, W, y1]); if (d.label) g.labels.push([d.label, 8, y1 - 5]); break;
+                case 'horizontalray': { const right = x2 === null || x2 >= x1; g.lines.push([right ? x1 : 0, y1, right ? W : x1, y1]); break; }
                 case 'verticalline': g.lines.push([x1, 0, x1, H]); break;
                 case 'crossline': g.lines.push([0, y1, W, y1], [x1, 0, x1, H]); break;
                 case 'trendline': g.lines.push([x1, y1, x2, y2]); break;
@@ -521,14 +928,12 @@
                 case 'infoline': {
                     g.lines.push([x1, y1, x2, y2]);
                     const chg = ((pts[1].price - pts[0].price) / pts[0].price) * 100;
-                    g.labels.push([(chg >= 0 ? '+' : '') + chg.toFixed(2) + '%', x2 + 6, y2 - 6]);
-                    break;
+                    g.labels.push([(chg >= 0 ? '+' : '') + chg.toFixed(2) + '%', x2 + 6, y2 - 6]); break;
                 }
                 case 'trendangle': {
                     g.lines.push([x1, y1, x2, y2]);
                     const ang = Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI;
-                    g.labels.push([ang.toFixed(1) + '°', x2 + 6, y2 - 6]);
-                    break;
+                    g.labels.push([ang.toFixed(1) + '°', x2 + 6, y2 - 6]); break;
                 }
                 case 'fibonacci': {
                     g.lines.push([x1, y1, x2, y2]);
@@ -544,24 +949,12 @@
                     if (m === null || x3 === null) break;
                     g.lines.push(slopeCoords(x1, y1, x2, y2, 'full'));
                     const yAt = x => y3 + m * (x - x3);
-                    g.lines.push([0, yAt(0), W, yAt(W)]);
-                    break;
+                    g.lines.push([0, yAt(0), W, yAt(W)]); break;
                 }
-                case 'flattopbottom':
-                    g.lines.push([0, y1, W, y1], [0, y3, W, y3]);
-                    break;
-                case 'disjointchannel':
-                    g.lines.push([x1, y1, x2, y2], [x3, y3, x4, y4]);
-                    break;
-                case 'regressiontrend': {
-                    const r = regressionSeg(pts[0].time, pts[1].time);
-                    if (r) g.lines.push(r);
-                    break;
-                }
-                case 'pitchfork':
-                case 'schiffpitchfork':
-                case 'modifiedschiffpitchfork':
-                case 'insidepitchfork': {
+                case 'flattopbottom': g.lines.push([0, y1, W, y1], [0, y3, W, y3]); break;
+                case 'disjointchannel': g.lines.push([x1, y1, x2, y2], [x3, y3, x4, y4]); break;
+                case 'regressiontrend': { const r = regressionSeg(pts[0].time, pts[1].time); if (r) g.lines.push(r); break; }
+                case 'pitchfork': case 'schiffpitchfork': case 'modifiedschiffpitchfork': case 'insidepitchfork': {
                     if (x3 === null) break;
                     let ax = x1, ay = y1;
                     if (d.kind === 'schiffpitchfork') { ax = (x1 + x2) / 2; ay = (y1 + y2) / 2; }
@@ -573,8 +966,7 @@
                     const yM = x => ay + mm * (x - ax);
                     const y2At = x => y2 + mm * (x - x2);
                     const y3At = x => y3 + mm * (x - x3);
-                    g.lines.push([0, yM(0), W, yM(W)], [0, y2At(0), W, y2At(W)], [0, y3At(0), W, y3At(W)]);
-                    break;
+                    g.lines.push([0, yM(0), W, yM(W)], [0, y2At(0), W, y2At(W)], [0, y3At(0), W, y3At(W)]); break;
                 }
                 case 'fibextension': {
                     const lo = Math.min(x1, x2);
@@ -596,20 +988,17 @@
                 }
                 case 'fibcircles': {
                     const dist = Math.hypot(x2 - x1, y2 - y1);
-                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.circles.push([x2, y2, dist * lvl]);
-                    break;
+                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.circles.push([x2, y2, dist * lvl]); break;
                 }
                 case 'fibspiral': {
                     const dist = Math.hypot(x2 - x1, y2 - y1);
                     const startAng = Math.atan2(y1 - y2, x1 - x2);
-                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x2, y2, dist * lvl, startAng, startAng + Math.PI]);
-                    break;
+                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x2, y2, dist * lvl, startAng, startAng + Math.PI]); break;
                 }
                 case 'fibarcs': {
                     const dist = Math.hypot(x2 - x1, y2 - y1);
                     const ang = Math.atan2(y2 - y1, x2 - x1);
-                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x1, y1, dist * lvl, ang - 0.6, ang + 0.6]);
-                    break;
+                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x1, y1, dist * lvl, ang - 0.6, ang + 0.6]); break;
                 }
                 case 'fibwedge': {
                     g.lines.push(slopeCoords(x1, y1, x2, y2, 'ray'));
@@ -622,24 +1011,15 @@
                     break;
                 }
                 case 'fibspeedfan': {
-                    for (const lvl of FIB_LEVELS) {
-                        const yy = y1 + (y2 - y1) * lvl;
-                        g.lines.push([x1, y1, x2, yy]);
-                    }
-                    break;
+                    for (const lvl of FIB_LEVELS) { const yy = y1 + (y2 - y1) * lvl; g.lines.push([x1, y1, x2, yy]); } break;
                 }
                 case 'pitchfan': {
-                    for (const lvl of FIB_LEVELS) {
-                        const yy = y1 + (y2 - y1) * lvl;
-                        g.lines.push(slopeCoords(x1, y1, x2, yy, 'ray'));
-                    }
-                    break;
+                    for (const lvl of FIB_LEVELS) { const yy = y1 + (y2 - y1) * lvl; g.lines.push(slopeCoords(x1, y1, x2, yy, 'ray')); } break;
                 }
                 case 'gannbox': {
                     g.lines.push([x1, y1, x2, y1], [x1, y2, x2, y2], [x1, y1, x1, y2], [x2, y1, x2, y2]);
                     for (const r of [0.25, 0.5, 0.75]) {
-                        const xx = x1 + (x2 - x1) * r;
-                        const yy = y1 + (y2 - y1) * r;
+                        const xx = x1 + (x2 - x1) * r, yy = y1 + (y2 - y1) * r;
                         g.dashed.push([xx, y1, xx, y2], [x1, yy, x2, yy]);
                     }
                     break;
@@ -657,123 +1037,73 @@
                 case 'gannfan': {
                     if (m === null) break;
                     const ratios = d.gannRatios || [0.25, 0.5, 1, 2, 4];
-                    for (const r of ratios) {
-                        const yAt = x => y1 + m * r * (x - x1);
-                        g.lines.push([x1, y1, W, yAt(W)]);
-                    }
+                    for (const r of ratios) { const yAt = x => y1 + m * r * (x - x1); g.lines.push([x1, y1, W, yAt(W)]); }
                     break;
                 }
                 case 'rectangle': {
-                    const xL = Math.min(x1, x2), xR = Math.max(x1, x2);
-                    const yT = Math.min(y1, y2), yB = Math.max(y1, y2);
-                    g.lines.push([xL, yT, xR, yT], [xR, yT, xR, yB], [xR, yB, xL, yB], [xL, yB, xL, yT]);
-                    break;
+                    const xL = Math.min(x1, x2), xR = Math.max(x1, x2), yT = Math.min(y1, y2), yB = Math.max(y1, y2);
+                    g.lines.push([xL, yT, xR, yT], [xR, yT, xR, yB], [xR, yB, xL, yB], [xL, yB, xL, yT]); break;
                 }
                 case 'rotatedrectangle': {
                     if (x3 === null || m === null) break;
                     const pm = -1 / m;
                     const dist = Math.abs((pm * (x3 - x2) - (y3 - y2)) / Math.hypot(pm, 1));
-                    const ux = (x2 - x1) / Math.hypot(x2 - x1, y2 - y1);
-                    const uy = (y2 - y1) / Math.hypot(x2 - x1, y2 - y1);
+                    const ux = (x2 - x1) / Math.hypot(x2 - x1, y2 - y1), uy = (y2 - y1) / Math.hypot(x2 - x1, y2 - y1);
                     const pxr = -uy, pyr = ux;
-                    const x2p = x2 + pxr * dist, y2p = y2 + pyr * dist;
-                    const x1p = x1 + pxr * dist, y1p = y1 + pyr * dist;
-                    g.lines.push([x1, y1, x2, y2], [x2, y2, x2p, y2p], [x2p, y2p, x1p, y1p], [x1p, y1p, x1, y1]);
-                    break;
+                    const x2p = x2 + pxr * dist, y2p = y2 + pyr * dist, x1p = x1 + pxr * dist, y1p = y1 + pyr * dist;
+                    g.lines.push([x1, y1, x2, y2], [x2, y2, x2p, y2p], [x2p, y2p, x1p, y1p], [x1p, y1p, x1, y1]); break;
                 }
-                case 'circle': {
-                    const r = Math.hypot(x2 - x1, y2 - y1);
-                    g.circles.push([x1, y1, r]);
-                    break;
-                }
+                case 'circle': { const r = Math.hypot(x2 - x1, y2 - y1); g.circles.push([x1, y1, r]); break; }
                 case 'ellipse': {
-                    const rx = Math.abs(x2 - x1);
-                    const ry = Math.abs(y2 - y1);
+                    const rx = Math.abs(x2 - x1), ry = Math.abs(y2 - y1);
                     const segs = 48;
                     const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
                     let pxp = cx + rx, pyp = cy;
                     for (let i = 1; i <= segs; i++) {
                         const a = (i / segs) * Math.PI * 2;
-                        const nx = cx + rx * Math.cos(a);
-                        const ny = cy + ry * Math.sin(a);
-                        g.lines.push([pxp, pyp, nx, ny]);
-                        pxp = nx; pyp = ny;
+                        const nx = cx + rx * Math.cos(a), ny = cy + ry * Math.sin(a);
+                        g.lines.push([pxp, pyp, nx, ny]); pxp = nx; pyp = ny;
                     }
                     break;
                 }
-                case 'triangle': {
-                    if (x3 === null) break;
-                    g.lines.push([x1, y1, x2, y2], [x2, y2, x3, y3], [x3, y3, x1, y1]);
-                    break;
-                }
+                case 'triangle': { if (x3 === null) break; g.lines.push([x1, y1, x2, y2], [x2, y2, x3, y3], [x3, y3, x1, y1]); break; }
                 case 'polyline': {
                     for (let i = 0; i < pts.length - 1; i++) {
                         const xa = px(pts[i].time), ya = py(pts[i].price);
                         const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
-                        if (xa !== null && ya !== null && xb !== null && yb !== null)
-                            g.lines.push([xa, ya, xb, yb]);
+                        if (xa !== null && ya !== null && xb !== null && yb !== null) g.lines.push([xa, ya, xb, yb]);
                     }
                     break;
                 }
                 case 'arc': {
                     if (x3 === null) break;
-                    const ang1 = Math.atan2(y2 - y1, x2 - x1);
-                    const ang2 = Math.atan2(y3 - y1, x3 - x1);
-                    const r = Math.hypot(x2 - x1, y2 - x1);
+                    const ang1 = Math.atan2(y2 - y1, x2 - x1), ang2 = Math.atan2(y3 - y1, x3 - x1);
+                    const r = Math.hypot(x2 - x1, y2 - y1);
                     let a1 = ang1, a2 = ang2;
                     if (a2 < a1) a2 += Math.PI * 2;
-                    g.arcs.push([x1, y1, r, a1, a2]);
-                    break;
+                    g.arcs.push([x1, y1, r, a1, a2]); break;
                 }
                 case 'arrow': {
                     g.lines.push([x1, y1, x2, y2]);
                     const ang = Math.atan2(y2 - y1, x2 - x1);
-                    g.glyphs.push({ t: 'arrowhead', x: x2, y: y2, a: ang, l: 10 });
-                    break;
+                    g.glyphs.push({ t: 'arrowhead', x: x2, y: y2, a: ang, l: 10 }); break;
                 }
-                case 'arrowmarkup':
-                    g.glyphs.push({ t: 'markup', x: x1, y: y1 });
-                    g.anchors.push([x1, y1, 14]);
-                    break;
-                case 'arrowmarkdown':
-                    g.glyphs.push({ t: 'markdown', x: x1, y: y1 });
-                    g.anchors.push([x1, y1, 14]);
-                    break;
-                case 'brush':
-                case 'highlighter': {
+                case 'arrowmarkup': g.glyphs.push({ t: 'markup', x: x1, y: y1 }); g.anchors.push([x1, y1, 14]); break;
+                case 'arrowmarkdown': g.glyphs.push({ t: 'markdown', x: x1, y: y1 }); g.anchors.push([x1, y1, 14]); break;
+                case 'brush': case 'highlighter': {
                     for (let i = 0; i < pts.length - 1; i++) {
                         const xa = px(pts[i].time), ya = py(pts[i].price);
                         const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
-                        if (xa !== null && ya !== null && xb !== null && yb !== null)
-                            g.lines.push([xa, ya, xb, yb]);
+                        if (xa !== null && ya !== null && xb !== null && yb !== null) g.lines.push([xa, ya, xb, yb]);
                     }
                     break;
                 }
-                case 'text':
-                    g.texts.push({ x: x1, y: y1, s: d.label || '', size: d.fontSize || 13, family: d.fontFamily || 'Trebuchet MS' });
-                    g.anchors.push([x1, y1, 24]);
-                    break;
-                case 'note':
-                    g.boxes.push({ x: x1, y: y1, s: d.label || '', size: d.fontSize || 11, family: d.fontFamily || 'Trebuchet MS' });
-                    g.anchors.push([x1, y1, 28]);
-                    break;
-                case 'pricelabel':
-                    g.boxes.push({ x: W - 4, y: y1, s: fmtPrice(pts[0].price), right: true, size: 11, family: 'Trebuchet MS' });
-                    g.dashed.push([x1, y1, W, y1]);
-                    g.anchors.push([W - 40, y1, 28]);
-                    break;
-                case 'pin':
-                    g.glyphs.push({ t: 'pin', x: x1, y: y1 });
-                    g.anchors.push([x1, y1, 14]);
-                    break;
-                case 'flag':
-                    g.glyphs.push({ t: 'flag', x: x1, y: y1 });
-                    g.anchors.push([x1, y1, 16]);
-                    break;
-                case 'sticker':
-                    g.texts.push({ x: x1, y: y1, s: d.label || '🐱', size: d.fontSize || 22, family: d.fontFamily || 'Trebuchet MS' });
-                    g.anchors.push([x1, y1, 16]);
-                    break;
+                case 'text': g.texts.push({ x: x1, y: y1, s: d.label || '', size: d.fontSize || 13, family: d.fontFamily || 'Trebuchet MS' }); g.anchors.push([x1, y1, 24]); break;
+                case 'note': g.boxes.push({ x: x1, y: y1, s: d.label || '', size: d.fontSize || 11, family: d.fontFamily || 'Trebuchet MS' }); g.anchors.push([x1, y1, 28]); break;
+                case 'pricelabel': g.boxes.push({ x: W - 4, y: y1, s: fmtPrice(pts[0].price), right: true, size: 11, family: 'Trebuchet MS' }); g.dashed.push([x1, y1, W, y1]); g.anchors.push([W - 40, y1, 28]); break;
+                case 'pin': g.glyphs.push({ t: 'pin', x: x1, y: y1 }); g.anchors.push([x1, y1, 14]); break;
+                case 'flag': g.glyphs.push({ t: 'flag', x: x1, y: y1 }); g.anchors.push([x1, y1, 16]); break;
+                case 'sticker': g.texts.push({ x: x1, y: y1, s: d.label || '🐱', size: d.fontSize || 22, family: 'Trebuchet MS' }); g.anchors.push([x1, y1, 16]); break;
             }
             return g;
         }
@@ -827,11 +1157,8 @@
         function hitTestHandle(d, x, y) {
             if (d.locked) return null;
             const handles = getHandles(d);
-            for (const h of handles) {
-                if (Math.abs(x - h.x) <= HANDLE_SIZE / 2 + 2 && Math.abs(y - h.y) <= HANDLE_SIZE / 2 + 2) {
-                    return h;
-                }
-            }
+            for (const h of handles)
+                if (Math.abs(x - h.x) <= HANDLE_SIZE / 2 + 2 && Math.abs(y - h.y) <= HANDLE_SIZE / 2 + 2) return h;
             return null;
         }
 
@@ -856,27 +1183,20 @@
             return false;
         }
 
-        // Phase 33 — Get kind label for tooltip
         function getKindLabel(kind) {
             const labels = {
-                'horizontalline': 'Horizontal Line', 'trendline': 'Trend Line', 'fibonacci': 'Fibonacci',
-                'ray': 'Ray', 'extendedline': 'Extended Line', 'horizontalray': 'Horizontal Ray',
-                'verticalline': 'Vertical Line', 'crossline': 'Cross Line', 'infoline': 'Info Line',
-                'trendangle': 'Trend Angle', 'parallelchannel': 'Parallel Channel',
-                'regressiontrend': 'Regression Trend', 'flattopbottom': 'Flat Top/Bottom',
-                'disjointchannel': 'Disjoint Channel', 'pitchfork': 'Pitchfork',
-                'schiffpitchfork': 'Schiff Pitchfork', 'modifiedschiffpitchfork': 'Modified Schiff',
-                'insidepitchfork': 'Inside Pitchfork', 'fibextension': 'Fib Extension',
-                'fibtimezone': 'Fib Time Zone', 'fibcircles': 'Fib Circles', 'fibspiral': 'Fib Spiral',
-                'fibarcs': 'Fib Arcs', 'fibwedge': 'Fib Wedge', 'fibspeedfan': 'Fib Speed Fan',
-                'pitchfan': 'Pitchfan', 'gannbox': 'Gann Box', 'gannsquare': 'Gann Square',
-                'gannfan': 'Gann Fan', 'rectangle': 'Rectangle', 'rotatedrectangle': 'Rotated Rectangle',
-                'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle',
-                'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
-                'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down',
-                'brush': 'Brush', 'highlighter': 'Highlighter', 'text': 'Text',
-                'note': 'Note', 'pricelabel': 'Price Label', 'pin': 'Pin',
-                'flag': 'Flag', 'sticker': 'Sticker'
+                'horizontalline': 'Horizontal Line', 'trendline': 'Trend Line', 'fibonacci': 'Fibonacci', 'ray': 'Ray',
+                'extendedline': 'Extended Line', 'horizontalray': 'Horizontal Ray', 'verticalline': 'Vertical Line',
+                'crossline': 'Cross Line', 'infoline': 'Info Line', 'trendangle': 'Trend Angle',
+                'parallelchannel': 'Parallel Channel', 'regressiontrend': 'Regression Trend', 'flattopbottom': 'Flat Top/Bottom',
+                'disjointchannel': 'Disjoint Channel', 'pitchfork': 'Pitchfork', 'schiffpitchfork': 'Schiff Pitchfork',
+                'modifiedschiffpitchfork': 'Modified Schiff', 'insidepitchfork': 'Inside Pitchfork', 'fibextension': 'Fib Extension',
+                'fibtimezone': 'Fib Time Zone', 'fibcircles': 'Fib Circles', 'fibspiral': 'Fib Spiral', 'fibarcs': 'Fib Arcs',
+                'fibwedge': 'Fib Wedge', 'fibspeedfan': 'Fib Speed Fan', 'pitchfan': 'Pitchfan', 'gannbox': 'Gann Box',
+                'gannsquare': 'Gann Square', 'gannfan': 'Gann Fan', 'rectangle': 'Rectangle', 'rotatedrectangle': 'Rotated Rectangle',
+                'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle', 'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
+                'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down', 'brush': 'Brush', 'highlighter': 'Highlighter',
+                'text': 'Text', 'note': 'Note', 'pricelabel': 'Price Label', 'pin': 'Pin', 'flag': 'Flag', 'sticker': 'Sticker'
             };
             return labels[kind] || kind;
         }
@@ -893,7 +1213,6 @@
                 }
             }
 
-            // Phase 33 — Sort drawings by zIndex for layering
             const sortedDrawings = [...customDrawings].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
 
             for (const d of sortedDrawings) {
@@ -902,10 +1221,7 @@
                 ctx.lineWidth = d.kind === 'highlighter' ? 10 : (d.lineWidth || 2);
                 const styleDash = d.lineStyle === 'dashed' ? [6, 6] : d.lineStyle === 'dotted' ? [2, 4] : [];
                 ctx.globalAlpha = d.kind === 'highlighter' ? 0.35 : 1;
-
-                // Phase 33 — Smooth brush/highlighter with round caps
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
+                ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
                 ctx.setLineDash(styleDash);
                 for (const L of g.lines) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
@@ -918,7 +1234,6 @@
                 ctx.font = '11px Trebuchet MS';
                 for (const t of g.labels) ctx.fillText(t[0], t[1], t[2]);
 
-                // Phase 33 — Render texts with custom font size and family
                 for (const t of g.texts) {
                     ctx.font = (t.size || 13) + 'px ' + (t.family || 'Trebuchet MS');
                     ctx.fillText(t.s, t.x, t.y);
@@ -957,17 +1272,13 @@
                 }
 
                 ctx.globalAlpha = 1; ctx.lineWidth = 2;
-                ctx.lineCap = 'butt';
-                ctx.lineJoin = 'miter';
+                ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
 
                 if (d.alert) {
                     const pts = d.points || [];
                     if (pts.length > 0) {
                         const alertY = py(pts[0].price);
-                        if (alertY !== null) {
-                            ctx.font = '14px Trebuchet MS';
-                            ctx.fillText('🔔', 10, alertY + 5);
-                        }
+                        if (alertY !== null) { ctx.font = '14px Trebuchet MS'; ctx.fillText('🔔', 10, alertY + 5); }
                     }
                 }
 
@@ -988,17 +1299,24 @@
         function applyTheme(c) {
             if (!c) return;
             COLORS.background = c.background; COLORS.grid = c.grid; COLORS.border = c.border;
+            if (c.textPrimary) COLORS.textPrimary = c.textPrimary;
             COLORS.textMuted = c.textMuted; COLORS.crosshair = c.crosshair; COLORS.accent = c.accent;
             COLORS.up = c.up; COLORS.down = c.down;
             COLORS.volumeUp = c.volumeUp; COLORS.volumeDown = c.volumeDown;
             try { localStorage.setItem('meowgnal.chart.colors', JSON.stringify(c)); } catch (e) { }
             document.body.style.background = c.background;
-            chart.applyOptions({
+            const opts = {
                 layout: { background: { type: LightweightCharts.ColorType.Solid, color: c.background }, textColor: c.textMuted },
                 grid: { vertLines: { color: c.grid }, horzLines: { color: c.grid } },
                 rightPriceScale: { borderColor: c.border },
                 timeScale: { borderColor: c.border },
                 crosshair: { vertLine: { color: c.crosshair, labelBackgroundColor: c.border }, horzLine: { color: c.crosshair, labelBackgroundColor: c.border } }
+            };
+            allCharts().forEach(ch => ch.applyOptions(opts));
+            panes.forEach(p => p.div.style.borderTopColor = c.border);
+            indicatorState.forEach(st => {
+                if (st.labelEl) st.labelEl.style.color = COLORS.textPrimary;
+                if (st.toolbarEl) st.toolbarEl.querySelectorAll('button').forEach(b => b.style.color = COLORS.textPrimary);
             });
             renderWithCurrentType();
         }
@@ -1012,9 +1330,12 @@
             activeSeries.setData(displayData);
             renderVolume();
 
+            setChartPrimary(chart, activeSeries, rawData.map(c => ({ time: c.time, value: c.close })));
+
             const total = displayData.length;
             if (total > 0) chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, total - 120), to: total + 4 });
 
+            updateTimeScaleVisibility();
             applyPositions();
             renderCustomDrawings();
         }
@@ -1022,30 +1343,16 @@
         renderWithCurrentType();
         chart.timeScale().subscribeVisibleTimeRangeChange(renderCustomDrawings);
 
+        // ---------- Web messages ----------
         if (window.chrome && window.chrome.webview) {
             window.chrome.webview.addEventListener('message', function (e) {
                 const msg = e.data;
                 if (!msg || !msg.type) return;
 
-                if (msg.type === 'addIndicator') {
-                    addIndicatorToChart(msg);
-                    return;
-                }
-
-                if (msg.type === 'clearIndicators') {
-                    clearIndicators();
-                    return;
-                }
-
-                if (msg.type === 'setBlindMode') {
-                    setBlindMode(msg.blind === true);
-                    return;
-                }
-
-                if (msg.type === 'appendCandle') {
-                    appendCandle(msg.candle);
-                    return;
-                }
+                if (msg.type === 'addIndicator') { addIndicatorToChart(msg); return; }
+                if (msg.type === 'clearIndicators') { clearIndicators(); return; }
+                if (msg.type === 'setBlindMode') { blindMode = msg.blind === true; updateTimeScaleVisibility(); return; }
+                if (msg.type === 'appendCandle') { appendCandle(msg.candle); return; }
 
                 if (msg.type === 'setCandles') {
                     clearIndicators();
@@ -1064,11 +1371,8 @@
                         if (!d.groupId) d.groupId = null;
                         if (d.zIndex === undefined) d.zIndex = 0;
                     }
-                    for (const id of Array.from(selectedDrawingIds)) {
-                        if (!customDrawings.some(d => d.id === id)) {
-                            selectedDrawingIds.delete(id);
-                        }
-                    }
+                    for (const id of Array.from(selectedDrawingIds))
+                        if (!customDrawings.some(d => d.id === id)) selectedDrawingIds.delete(id);
                     renderCustomDrawings();
                 } else if (msg.type === 'setTheme') {
                     applyTheme(msg.colors);
@@ -1077,25 +1381,24 @@
                     if (msg.color) defaultColor = msg.color;
                     const multiKinds = ['polyline', 'brush', 'highlighter'];
                     if (multiKinds.includes(drawingMode) && !multiKinds.includes(m) && pendingPoints.length >= 2) {
-                        const drawing = {
-                            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                            kind: drawingMode,
-                            color: defaultColor, label: '', alert: false,
-                            points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
-                        };
-                        post({ type: 'drawingCompleted', drawing: drawing });
+                        post({
+                            type: 'drawingCompleted', drawing: {
+                                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                                kind: drawingMode, color: defaultColor, label: '', alert: false,
+                                points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
+                            }
+                        });
                     }
-
                     if (m === 'cross' || m === 'dot' || m === 'arrow') {
-                        cursorMode = m; drawingMode = null;
+                        drawingMode = null;
                         chart.applyOptions({ crosshair: { mode: m === 'arrow' ? LightweightCharts.CrosshairMode.Hidden : LightweightCharts.CrosshairMode.Normal } });
-                        document.getElementById('chart').style.cursor = m === 'arrow' ? 'default' : 'crosshair';
+                        paneMain.style.cursor = m === 'arrow' ? 'default' : 'crosshair';
                     } else if (m === 'eraser') {
                         drawingMode = 'eraser';
-                        document.getElementById('chart').style.cursor = 'pointer';
+                        paneMain.style.cursor = 'pointer';
                     } else {
                         drawingMode = m === 'none' ? null : m;
-                        document.getElementById('chart').style.cursor = drawingMode ? 'crosshair' : 'default';
+                        paneMain.style.cursor = drawingMode ? 'crosshair' : 'default';
                     }
                     pendingPoints = [];
                     renderCustomDrawings();
@@ -1103,10 +1406,10 @@
             });
         }
 
-        if (window.chrome && window.chrome.webview) {
+        if (window.chrome && window.chrome.webview)
             window.chrome.webview.postMessage(JSON.stringify({ type: 'requestDrawings' }));
-        }
 
+        // ---------- Context menu ----------
         const ctxMenu = document.getElementById('ctxMenu');
         let ctxPrice = null;
         let ctxDrawingId = null;
@@ -1153,32 +1456,29 @@
             ctxMenu.style.top = Math.min(y, window.innerHeight - mh - 8) + 'px';
         }
 
-        document.getElementById('chart').addEventListener('contextmenu', function (e) {
+        const chartEl = paneMain;
+
+        chartEl.addEventListener('contextmenu', function (e) {
             e.preventDefault();
             const rect = e.currentTarget.getBoundingClientRect();
             let price = null;
             let drawingId = null;
             const mx = e.clientX - rect.left;
             const my = e.clientY - rect.top;
-
             if (activeSeries) {
                 const p = activeSeries.coordinateToPrice(my);
                 if (p !== null && p !== undefined && !isNaN(p)) price = p;
             }
-
             for (let i = customDrawings.length - 1; i >= 0; i--) {
-                if (!customDrawings[i].locked && hitTest(customDrawings[i], mx, my)) {
-                    drawingId = customDrawings[i].id;
-                    break;
-                }
+                if (!customDrawings[i].locked && hitTest(customDrawings[i], mx, my)) { drawingId = customDrawings[i].id; break; }
             }
-
             openCtxMenu(e.clientX, e.clientY, price, drawingId);
         });
         document.addEventListener('mousedown', function (e) {
             if (!ctxMenu.contains(e.target)) ctxMenu.style.display = 'none';
         });
 
+        // ---------- Text tools ----------
         const TEXT_TOOLS = ['text', 'note', 'sticker'];
         const textInput = document.getElementById('textInput');
         let pendingTextDraw = null;
@@ -1196,18 +1496,13 @@
             const draw = pendingTextDraw;
             pendingTextDraw = null;
             textInput.style.display = 'none';
-            if (!cancel) {
-                draw.label = textInput.value;
-                post({ type: 'drawingCompleted', drawing: draw });
-            }
+            if (!cancel) { draw.label = textInput.value; post({ type: 'drawingCompleted', drawing: draw }); }
         }
         textInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') finishTextInput(false);
             if (e.key === 'Escape') finishTextInput(true);
         });
         textInput.addEventListener('blur', function () { finishTextInput(false); });
-
-        const chartEl = document.getElementById('chart');
 
         chartEl.addEventListener('dblclick', function (e) {
             if (drawingMode) {
@@ -1218,14 +1513,14 @@
                 }
                 const multiKinds = ['polyline', 'brush', 'highlighter'];
                 if (multiKinds.includes(drawingMode) && pendingPoints.length >= 2) {
-                    const drawing = {
-                        id: Date.now().toString(36) + Math.random().toString(36).substr(2),
-                        kind: drawingMode,
-                        color: defaultColor, label: '', alert: false,
-                        points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
-                    };
+                    post({
+                        type: 'drawingCompleted', drawing: {
+                            id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                            kind: drawingMode, color: defaultColor, label: '', alert: false,
+                            points: pendingPoints.map(p => ({ time: p.time, price: p.price }))
+                        }
+                    });
                     pendingPoints = [];
-                    post({ type: 'drawingCompleted', drawing: drawing });
                     renderCustomDrawings();
                 }
                 return;
@@ -1234,7 +1529,6 @@
             const rect = chartEl.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-
             for (let i = customDrawings.length - 1; i >= 0; i--) {
                 const d = customDrawings[i];
                 if (!d.locked && hitTest(d, x, y)) {
@@ -1257,33 +1551,22 @@
             let clickedDrawing = null;
             for (let i = customDrawings.length - 1; i >= 0; i--) {
                 const d = customDrawings[i];
-                if (!d.locked && hitTest(d, x, y)) {
-                    clickedDrawing = d;
-                    break;
-                }
+                if (!d.locked && hitTest(d, x, y)) { clickedDrawing = d; break; }
             }
-
             if (!clickedDrawing) return;
 
             if (!selectedDrawingIds.has(clickedDrawing.id)) {
-                if (!isCtrlPressed) {
-                    selectedDrawingIds.clear();
-                }
+                if (!isCtrlPressed) selectedDrawingIds.clear();
                 selectedDrawingIds.add(clickedDrawing.id);
                 renderCustomDrawings();
             }
 
             const handle = hitTestHandle(clickedDrawing, x, y);
-
             if (handle) {
                 dragState = {
-                    drawingId: clickedDrawing.id,
-                    handleIndex: handle.index,
-                    priceOnly: !!handle.priceOnly,
-                    timeOnly: !!handle.timeOnly,
-                    committed: false,
-                    isBodyDrag: false,
-                    resizeInfo: handle.resizeInfo || null,
+                    drawingId: clickedDrawing.id, handleIndex: handle.index,
+                    priceOnly: !!handle.priceOnly, timeOnly: !!handle.timeOnly,
+                    committed: false, isBodyDrag: false, resizeInfo: handle.resizeInfo || null,
                     groupId: clickedDrawing.groupId,
                     originalPoints: clickedDrawing.groupId ? customDrawings.filter(d => d.groupId === clickedDrawing.groupId && d.id !== clickedDrawing.id).map(d => ({ id: d.id, points: JSON.parse(JSON.stringify(d.points)) })) : []
                 };
@@ -1291,16 +1574,9 @@
                 const startPrice = activeSeries ? activeSeries.coordinateToPrice(y) : null;
                 const startTime = chart.timeScale().coordinateToTime(x);
                 if (startPrice === null || startPrice === undefined || startTime === null || startTime === undefined) return;
-
                 dragState = {
-                    drawingId: clickedDrawing.id,
-                    handleIndex: null,
-                    priceOnly: false,
-                    timeOnly: false,
-                    committed: false,
-                    isBodyDrag: true,
-                    lastPrice: startPrice,
-                    lastTime: Math.round(startTime),
+                    drawingId: clickedDrawing.id, handleIndex: null, priceOnly: false, timeOnly: false,
+                    committed: false, isBodyDrag: true, lastPrice: startPrice, lastTime: Math.round(startTime),
                     groupId: clickedDrawing.groupId,
                     originalPoints: clickedDrawing.groupId ? customDrawings.filter(d => d.groupId === clickedDrawing.groupId && d.id !== clickedDrawing.id).map(d => ({ id: d.id, points: JSON.parse(JSON.stringify(d.points)) })) : []
                 };
@@ -1314,33 +1590,25 @@
 
         window.addEventListener('mousemove', function (e) {
             if (!dragState) {
-                // Phase 34 — Hover tooltip
                 const rect = chartEl.getBoundingClientRect();
                 const mx = e.clientX - rect.left;
                 const my = e.clientY - rect.top;
                 let hoveredDrawing = null;
                 if (!drawingMode && mx >= 0 && my >= 0 && mx <= rect.width && my <= rect.height) {
                     for (let i = customDrawings.length - 1; i >= 0; i--) {
-                        if (hitTest(customDrawings[i], mx, my)) {
-                            hoveredDrawing = customDrawings[i];
-                            break;
-                        }
+                        if (hitTest(customDrawings[i], mx, my)) { hoveredDrawing = customDrawings[i]; break; }
                     }
                 }
                 if (hoveredDrawing) {
                     const kindLabel = getKindLabel(hoveredDrawing.kind);
-                    const priceInfo = hoveredDrawing.points && hoveredDrawing.points.length > 0
-                        ? ' @ ' + fmtPrice(hoveredDrawing.points[0].price)
-                        : '';
+                    const priceInfo = hoveredDrawing.points && hoveredDrawing.points.length > 0 ? ' @ ' + fmtPrice(hoveredDrawing.points[0].price) : '';
                     const labelInfo = hoveredDrawing.label ? ' — ' + hoveredDrawing.label : '';
                     const groupInfo = hoveredDrawing.groupId ? ' [Grouped]' : '';
                     hoverTooltip.textContent = kindLabel + priceInfo + labelInfo + groupInfo;
                     hoverTooltip.style.display = 'block';
                     hoverTooltip.style.left = (e.clientX + 12) + 'px';
                     hoverTooltip.style.top = (e.clientY + 12) + 'px';
-                } else {
-                    hoverTooltip.style.display = 'none';
-                }
+                } else hoverTooltip.style.display = 'none';
                 return;
             }
 
@@ -1350,17 +1618,13 @@
             const d = customDrawings.find(d => d.id === dragState.drawingId);
             if (!d) { dragState = null; return; }
 
-            if (!dragState.committed) {
-                post({ type: 'captureSnapshot' });
-                dragState.committed = true;
-            }
+            if (!dragState.committed) { post({ type: 'captureSnapshot' }); dragState.committed = true; }
 
             const newPrice = activeSeries ? activeSeries.coordinateToPrice(y) : null;
             const newTime = chart.timeScale().coordinateToTime(x);
             if (newPrice === null || newPrice === undefined) return;
 
             const pts = d.points || [];
-
             if (dragState.resizeInfo) {
                 if (dragState.resizeInfo.timePoint !== undefined && pts[dragState.resizeInfo.timePoint]) {
                     if (newTime !== null && newTime !== undefined) pts[dragState.resizeInfo.timePoint].time = Math.round(newTime);
@@ -1371,33 +1635,21 @@
             } else if (dragState.isBodyDrag) {
                 const deltaPrice = newPrice - dragState.lastPrice;
                 const deltaTime = Math.round(newTime) - dragState.lastTime;
-
                 if (deltaPrice !== 0 || deltaTime !== 0) {
-                    for (const p of pts) {
-                        p.price = p.price + deltaPrice;
-                        p.time = p.time + deltaTime;
-                    }
+                    for (const p of pts) { p.price = p.price + deltaPrice; p.time = p.time + deltaTime; }
                     dragState.lastPrice = newPrice;
                     dragState.lastTime = Math.round(newTime);
                 }
-
                 if (dragState.groupId && dragState.originalPoints && dragState.originalPoints.length > 0) {
                     for (const member of dragState.originalPoints) {
                         const memberDrawing = customDrawings.find(dd => dd.id === member.id);
-                        if (memberDrawing) {
-                            for (const p of memberDrawing.points) {
-                                p.price = p.price + deltaPrice;
-                                p.time = p.time + deltaTime;
-                            }
-                        }
+                        if (memberDrawing) for (const p of memberDrawing.points) { p.price = p.price + deltaPrice; p.time = p.time + deltaTime; }
                     }
                 }
             } else {
                 if (pts[dragState.handleIndex]) {
                     if (!dragState.timeOnly) pts[dragState.handleIndex].price = newPrice;
-                    if (!dragState.priceOnly && newTime !== null && newTime !== undefined) {
-                        pts[dragState.handleIndex].time = Math.round(newTime);
-                    }
+                    if (!dragState.priceOnly && newTime !== null && newTime !== undefined) pts[dragState.handleIndex].time = Math.round(newTime);
                 }
             }
             renderCustomDrawings();
@@ -1410,21 +1662,14 @@
                 if (dragState.groupId) {
                     const groupDrawings = customDrawings.filter(dd => dd.groupId === dragState.groupId);
                     post({
-                        type: 'updateDrawings',
-                        drawings: groupDrawings.map(dd => ({
-                            id: dd.id,
-                            points: (dd.points || []).map(p => ({ time: p.time, price: p.price }))
+                        type: 'updateDrawings', drawings: groupDrawings.map(dd => ({
+                            id: dd.id, points: (dd.points || []).map(p => ({ time: p.time, price: p.price }))
                         }))
                     });
                 } else {
                     post({
-                        type: 'updateDrawing',
-                        drawing: {
-                            id: d.id,
-                            kind: d.kind,
-                            color: d.color,
-                            label: d.label || '',
-                            alert: !!d.alert,
+                        type: 'updateDrawing', drawing: {
+                            id: d.id, kind: d.kind, color: d.color, label: d.label || '', alert: !!d.alert,
                             points: (d.points || []).map(p => ({ time: p.time, price: p.price }))
                         }
                     });
@@ -1435,6 +1680,7 @@
             dragState = null;
         });
 
+        // ---------- Click / crosshair ----------
         const NEED = {
             horizontal: 1, verticalline: 1, crossline: 1,
             parallelchannel: 3, flattopbottom: 3,
@@ -1466,31 +1712,21 @@
                 for (let i = customDrawings.length - 1; i >= 0; i--) {
                     if (!customDrawings[i].locked && hitTest(customDrawings[i], x, y)) { found = customDrawings[i]; break; }
                 }
-
-                if (!isCtrlPressed) {
-                    selectedDrawingIds.clear();
-                }
-
+                if (!isCtrlPressed) selectedDrawingIds.clear();
                 if (found) {
-                    if (selectedDrawingIds.has(found.id)) {
-                        selectedDrawingIds.delete(found.id);
-                    } else {
-                        selectedDrawingIds.add(found.id);
-                    }
+                    if (selectedDrawingIds.has(found.id)) selectedDrawingIds.delete(found.id);
+                    else selectedDrawingIds.add(found.id);
                 }
-
                 renderCustomDrawings();
                 return;
             }
 
-            if (!drawingMode || !param.time) return;
+            if (!param.time) return;
             const price = activeSeries.coordinateToPrice(y);
             if (price === null || price === undefined) return;
 
-            // Phase 32 — Snap to nearest candle
             const snappedTime = snapToBarTime(param.time);
             const snappedPrice = snapPriceToCandle(price, snappedTime);
-
             pendingPoints.push({ time: snappedTime, price: snappedPrice });
 
             const need = NEED[drawingMode] || 2;
@@ -1501,20 +1737,14 @@
                     id: Date.now().toString(36) + Math.random().toString(36).substr(2),
                     kind: drawingMode,
                     color: TEXT_TOOLS.includes(drawingMode) ? '#000000' : defaultColor,
-                    label: '',
-                    alert: false,
+                    label: '', alert: false,
                     points: pendingPoints.slice(0, need).map(p => ({ time: p.time, price: p.price }))
                 };
-                if (TEXT_TOOLS.includes(drawingMode)) {
-                    openTextInput(x, y, drawing);
-                } else {
-                    post({ type: 'drawingCompleted', drawing: drawing });
-                }
+                if (TEXT_TOOLS.includes(drawingMode)) openTextInput(x, y, drawing);
+                else post({ type: 'drawingCompleted', drawing: drawing });
                 pendingPoints = [];
                 renderCustomDrawings();
-            } else {
-                renderCustomDrawings();
-            }
+            } else renderCustomDrawings();
         });
 
         chart.subscribeCrosshairMove(function (param) {

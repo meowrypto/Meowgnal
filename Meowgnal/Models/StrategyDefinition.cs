@@ -60,6 +60,10 @@ public sealed class IndicatorDefinition
 
     [JsonPropertyName("params")]
     public Dictionary<string, double> Params { get; set; } = new();
+
+    // "Overlay" = drawn on the price chart; "Pane" = own independent pane below the chart.
+    [JsonPropertyName("displayMode")]
+    public string DisplayMode { get; set; } = "Overlay";
 }
 
 public sealed class RuleGroup
