@@ -112,6 +112,17 @@
                         </StackPanel>
                     </Border>
 
+                    <Border Background="{StaticResource PanelBg}" CornerRadius="6" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <CheckBox x:Name="MonteCarloCheck" Content="Use Monte Carlo simulation (more accurate)"
+                                      Foreground="{StaticResource TextColor}"
+                                      Checked="MonteCarloCheck_Changed" Unchecked="MonteCarloCheck_Changed"/>
+                            <TextBlock x:Name="MonteCarloHint"
+                                       Text="Simulates 1,000 futures from your real backtest trades instead of the classic formula."
+                                       Foreground="{StaticResource TextMuted}" FontSize="11" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+
                     <Border x:Name="ResultPanel" Background="{StaticResource PanelBg}" CornerRadius="6" Padding="20" Margin="0,0,0,16">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="Risk of Ruin" Foreground="{StaticResource TextMuted}" FontSize="12"

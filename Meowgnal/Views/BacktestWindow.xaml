@@ -258,6 +258,8 @@
                         <Button Content="▶ Run" Padding="16,6" Margin="16,0,0,0" Click="Run_Click"/>
                         <Button Content="📉 Risk of Ruin" Padding="16,6" Margin="8,0,0,0"
                                 Style="{StaticResource TertiaryButton}" Click="RiskOfRuin_Click"/>
+                        <Button Content="🎲 Monte Carlo" Padding="16,6" Margin="8,0,0,0"
+                                Style="{StaticResource TertiaryButton}" Click="MonteCarlo_Click"/>
                     </StackPanel>
                 </Border>
 

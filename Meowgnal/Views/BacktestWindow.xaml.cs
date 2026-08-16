@@ -262,6 +262,18 @@ public partial class BacktestWindow : Window
         }
         return SKColors.Gray;
     }
+    private void MonteCarlo_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lastResult is null || _lastResult.Trades.Count == 0)
+        {
+            NotificationService.ShowToast("Meowgnal", "Run a backtest first, then open Monte Carlo analysis.");
+            return;
+        }
+        var strategy = StrategyCombo.SelectedItem as StrategyDefinition;
+        var win = new MonteCarloWindow(_lastResult, strategy) { Owner = this };
+        win.ShowDialog();
+    }
+
     private void RiskOfRuin_Click(object sender, RoutedEventArgs e)
     {
         var strategy = StrategyCombo.SelectedItem as StrategyDefinition;
