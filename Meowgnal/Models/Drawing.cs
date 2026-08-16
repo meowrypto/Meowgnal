@@ -148,7 +148,21 @@ public sealed class Drawing
 
     /// <summary>InfoLine / TrendAngle: include slope angle in the info label.</summary>
     public bool ShowAngle { get; set; }
-
+    // ----- Channel settings -----
+    /// <summary>Fill the area between channel lines with color.</summary>
+    public bool FillBackground { get; set; }
+    /// <summary>Opacity of the channel fill (0.0 - 1.0).</summary>
+    public double FillOpacity { get; set; } = 0.15;
+    /// <summary>ParallelChannel: show the median (middle) line.</summary>
+    public bool ShowMedianLine { get; set; }
+    /// <summary>ParallelChannel: color of the median line.</summary>
+    public string MedianLineColor { get; set; } = "#FF9800";
+    /// <summary>ParallelChannel: style of the median line.</summary>
+    public string MedianLineStyle { get; set; } = "dashed";
+    /// <summary>RegressionTrend: number of standard deviations for channel width (1-3).</summary>
+    public int StdDevMultiplier { get; set; } = 2;
+    /// <summary>DisjointChannel: color of the second line (empty = use main color).</summary>
+    public string SecondLineColor { get; set; } = "";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 

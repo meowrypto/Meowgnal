@@ -23,6 +23,9 @@ public partial class DrawingPropertiesWindow : Window
     private CheckBox? _showBarCount;
     private CheckBox? _showTimeElapsed;
     private CheckBox? _showAngle;
+    // Channel-specific state
+    private string _medianColor = "#FF9800";
+    private string _secondLineColor = "";
 
     public DrawingPropertiesWindow(Drawing drawing)
     {
@@ -60,7 +63,38 @@ public partial class DrawingPropertiesWindow : Window
         GannRatiosBox.Text = drawing.GannRatios is not null
             ? string.Join(", ", drawing.GannRatios)
             : "0.25, 0.5, 1, 2, 4";
-
+        // Channel settings initialization
+        _medianColor = drawing.MedianLineColor;
+        _secondLineColor = drawing.SecondLineColor;
+        var isChannel = drawing.Kind is DrawingKind.ParallelChannel or DrawingKind.RegressionTrend
+            or DrawingKind.FlatTopBottom or DrawingKind.DisjointChannel;
+        if (isChannel)
+        {
+            ChannelSection.Visibility = Visibility.Visible;
+            FillBgCheck.IsChecked = drawing.FillBackground;
+            FillOpacitySlider.Value = drawing.FillOpacity;
+            FillOpacityLabel.Text = $"{(int)(drawing.FillOpacity * 100)}%";
+            FillOpacityPanel.Visibility = drawing.FillBackground ? Visibility.Visible : Visibility.Collapsed;
+            FillOpacitySlider.ValueChanged += (_, _) => FillOpacityLabel.Text = $"{(int)(FillOpacitySlider.Value * 100)}%";
+            if (drawing.Kind == DrawingKind.ParallelChannel)
+            {
+                MedianSection.Visibility = Visibility.Visible;
+                MedianCheck.IsChecked = drawing.ShowMedianLine;
+            }
+            if (drawing.Kind == DrawingKind.RegressionTrend)
+            {
+                StdDevSection.Visibility = Visibility.Visible;
+                StdDevCombo.Items.Add(1);
+                StdDevCombo.Items.Add(2);
+                StdDevCombo.Items.Add(3);
+                StdDevCombo.SelectedItem = drawing.StdDevMultiplier is >= 1 and <= 3 ? drawing.StdDevMultiplier : 2;
+            }
+            if (drawing.Kind == DrawingKind.DisjointChannel)
+            {
+                SecondColorSection.Visibility = Visibility.Visible;
+                UpdateSecondColorPreview();
+            }
+        }
         // Show the right section based on drawing kind
         if (drawing.Kind is DrawingKind.Text or DrawingKind.Note or DrawingKind.Sticker)
         {
@@ -268,7 +302,30 @@ public partial class DrawingPropertiesWindow : Window
     }
 
     private void HexBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateSwatch();
-
+    private void FillBgCheck_Changed(object sender, RoutedEventArgs e)
+    {
+        FillOpacityPanel.Visibility = FillBgCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+    }
+    private void MedianColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _medianColor = hex;
+    }
+    private void SecondColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _secondLineColor = hex;
+        UpdateSecondColorPreview();
+    }
+    private void UpdateSecondColorPreview()
+    {
+        try
+        {
+            SecondColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
+            string.IsNullOrEmpty(_secondLineColor) ? HexBox.Text : _secondLineColor));
+        }
+        catch { SecondColorPreview.Fill = new SolidColorBrush(Colors.Gray); }
+    }
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         _drawing.Label = LabelBox.Text.Trim();
@@ -299,7 +356,23 @@ public partial class DrawingPropertiesWindow : Window
             }
             _drawing.GannRatios = ratios.Count > 0 ? ratios : null;
         }
-
+        // Save channel settings
+        var isChannelKind = _drawing.Kind is DrawingKind.ParallelChannel or DrawingKind.RegressionTrend
+            or DrawingKind.FlatTopBottom or DrawingKind.DisjointChannel;
+        if (isChannelKind)
+        {
+            _drawing.FillBackground = FillBgCheck.IsChecked == true;
+            _drawing.FillOpacity = FillOpacitySlider.Value;
+            if (_drawing.Kind == DrawingKind.ParallelChannel)
+            {
+                _drawing.ShowMedianLine = MedianCheck.IsChecked == true;
+                _drawing.MedianLineColor = _medianColor;
+            }
+            if (_drawing.Kind == DrawingKind.RegressionTrend)
+                _drawing.StdDevMultiplier = StdDevCombo.SelectedItem is int sd ? sd : 2;
+            if (_drawing.Kind == DrawingKind.DisjointChannel)
+                _drawing.SecondLineColor = _secondLineColor;
+        }
         // Save per-tool display options
         if (_extendLeft is not null) _drawing.ExtendLeft = _extendLeft.IsChecked == true;
         if (_extendRight is not null) _drawing.ExtendRight = _extendRight.IsChecked == true;

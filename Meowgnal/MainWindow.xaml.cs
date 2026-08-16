@@ -1744,6 +1744,9 @@ public partial class MainWindow : Window
                         newDrawing.Label = tLabelEl.GetString() ?? "";
                     if (drawingEl.TryGetProperty("color", out var tColorEl))
                         newDrawing.Color = tColorEl.GetString() ?? "#2962FF";
+                    // DisjointChannel: second line defaults to same color
+                    if (kind == DrawingKind.DisjointChannel)
+                        newDrawing.SecondLineColor = newDrawing.Color;
                     if (drawingEl.TryGetProperty("points", out var pts))
                     {
                         foreach (var pt in pts.EnumerateArray())
@@ -2601,8 +2604,7 @@ public partial class MainWindow : Window
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
             "cursor" or "dot" or "arrow" or "eraser" => CursorGroupButton,
-            "parallelchannel" or "regressiontrend" or "flattopbottom" or "disjointchannel"
-                or "pitchfork" or "schiffpitchfork" or "modifiedschiffpitchfork" or "insidepitchfork"
+            "pitchfork" or "schiffpitchfork" or "modifiedschiffpitchfork" or "insidepitchfork"
                 => ChannelGroupButton,
             _ => LineGroupButton,
         };
@@ -2709,32 +2711,39 @@ public partial class MainWindow : Window
         }
 
         var drawings = _drawingsFile.Drawings
-            .Where(d => d.Symbol == symbolClean && d.IsVisible)
-            .Select(d => new
-            {
-                id = d.Id,
-                kind = d.Kind.ToString().ToLowerInvariant(),
-                color = d.Color,
-                label = d.Label,
-                alert = d.AlertOnCross,
-                locked = d.IsLocked,
-                lineWidth = d.LineWidth,
-                lineStyle = d.LineStyle,
-                groupId = d.GroupId,
-                zIndex = d.ZIndex,
-                fontSize = d.FontSize,
-                fontFamily = d.FontFamily,
-                gannRatios = d.GannRatios,
-                extendLeft = d.ExtendLeft,
-                extendRight = d.ExtendRight,
-                showPriceLabels = d.ShowPriceLabels,
-                showTimeLabel = d.ShowTimeLabel,
-                showPriceChange = d.ShowPriceChange,
-                showBarCount = d.ShowBarCount,
-                showTimeElapsed = d.ShowTimeElapsed,
-                showAngle = d.ShowAngle,
-                points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
-            }).ToArray();
+    .Where(d => d.Symbol == symbolClean && d.IsVisible)
+    .Select(d => new
+    {
+        id = d.Id,
+        kind = d.Kind.ToString().ToLowerInvariant(),
+        color = d.Color,
+        label = d.Label,
+        alert = d.AlertOnCross,
+        locked = d.IsLocked,
+        lineWidth = d.LineWidth,
+        lineStyle = d.LineStyle,
+        groupId = d.GroupId,
+        zIndex = d.ZIndex,
+        fontSize = d.FontSize,
+        fontFamily = d.FontFamily,
+        gannRatios = d.GannRatios,
+        extendLeft = d.ExtendLeft,
+        extendRight = d.ExtendRight,
+        showPriceLabels = d.ShowPriceLabels,
+        showTimeLabel = d.ShowTimeLabel,
+        showPriceChange = d.ShowPriceChange,
+        showBarCount = d.ShowBarCount,
+        showTimeElapsed = d.ShowTimeElapsed,
+        showAngle = d.ShowAngle,
+        fillBackground = d.FillBackground,
+        fillOpacity = d.FillOpacity,
+        showMedianLine = d.ShowMedianLine,
+        medianLineColor = d.MedianLineColor,
+        medianLineStyle = d.MedianLineStyle,
+        stdDevMultiplier = d.StdDevMultiplier,
+        secondLineColor = d.SecondLineColor,
+        points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
+    }).ToArray();
 
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
             JsonSerializer.Serialize(new { type = "setDrawings", drawings }));

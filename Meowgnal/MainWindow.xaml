@@ -490,6 +490,20 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                             <TextBlock Text="Trend Angle" VerticalAlignment="Center"/>
                                         </StackPanel>
                                     </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="CHANNELS" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="parallelchannel" Click="ToolButton_Click">
+                                        <TextBlock Text="Parallel Channel (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="regressiontrend" Click="ToolButton_Click">
+                                        <TextBlock Text="Regression Trend (drag range)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="flattopbottom" Click="ToolButton_Click">
+                                        <TextBlock Text="Flat Top/Bottom (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="disjointchannel" Click="ToolButton_Click">
+                                        <TextBlock Text="Disjoint Channel (4 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
                                 </StackPanel>
                             </Border>
                         </Popup>

@@ -930,24 +930,30 @@
             return Math.hypot(x - (x1 + t * dx), y - (y1 + t * dy));
         }
 
-        function regressionSeg(t1, t2) {
+        function regressionData(t1, t2) {
             const lo = Math.min(t1, t2), hi = Math.max(t1, t2);
-            const idx = rawData.filter(c => c.time >= lo && c.time <= hi);
-            if (idx.length < 2) return null;
+            const bars = rawData.filter(c => c.time >= lo && c.time <= hi);
+            if (bars.length < 2) return null;
             let sx = 0, sy = 0, sxy = 0, sxx = 0;
-            idx.forEach((c, i) => { sx += i; sy += c.close; sxy += i * c.close; sxx += i * i; });
-            const nn = idx.length;
+            bars.forEach((c, i) => { sx += i; sy += c.close; sxy += i * c.close; sxx += i * i; });
+            const nn = bars.length;
             const b = (nn * sxy - sx * sy) / ((nn * sxx - sx * sx) || 1);
             const a = (sy - b * sx) / nn;
-            const xa = px(idx[0].time), xb = px(idx[nn - 1].time);
-            const ya = py(a), yb = py(a + b * (nn - 1));
-            if (xa === null || xb === null || ya === null || yb === null) return null;
-            return [xa, ya, xb, yb];
+            // Calculate standard deviation of residuals
+            let sumSqResid = 0;
+            bars.forEach((c, i) => {
+                const predicted = a + b * i;
+                sumSqResid += (c.close - predicted) * (c.close - predicted);
+            });
+            const stdDev = Math.sqrt(sumSqResid / nn);
+            const xa = px(bars[0].time), xb = px(bars[nn - 1].time);
+            if (xa === null || xb === null) return null;
+            return { a, b, nn, stdDev, xa, xb, t1: bars[0].time, t2: bars[nn - 1].time };
         }
 
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
-            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [] };
+            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [] };
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return g;
             const X = i => px(pts[i].time), Y = i => py(pts[i].price);
@@ -1034,13 +1040,72 @@
                 }
                 case 'parallelchannel': {
                     if (m === null || x3 === null) break;
-                    g.lines.push(slopeCoords(x1, y1, x2, y2, 'full'));
-                    const yAt = x => y3 + m * (x - x3);
-                    g.lines.push([0, yAt(0), W, yAt(W)]); break;
+                    const yAt1 = x => y1 + m * (x - x1);
+                    const yAt2 = x => y3 + m * (x - x3);
+                    let l1x1, l1y1, l1x2, l1y2, l2x1, l2y1, l2x2, l2y2;
+                    if (d.extendLeft || d.extendRight) {
+                        l1x1 = d.extendLeft ? 0 : x1; l1y1 = yAt1(l1x1);
+                        l1x2 = d.extendRight ? W : x2; l1y2 = yAt1(l1x2);
+                        l2x1 = d.extendLeft ? 0 : x3; l2y1 = yAt2(l2x1);
+                        l2x2 = d.extendRight ? W : x3; l2y2 = yAt2(l2x2);
+                    } else {
+                        l1x1 = x1; l1y1 = y1; l1x2 = x2; l1y2 = y2;
+                        l2x1 = x1; l2y1 = yAt2(x1); l2x2 = x2; l2y2 = yAt2(x2);
+                    }
+                    g.lines.push([l1x1, l1y1, l1x2, l1y2]);
+                    g.lines.push([l2x1, l2y1, l2x2, l2y2]);
+                    if (d.fillBackground) {
+                        g.fills.push({ pts: [[l1x1, l1y1], [l1x2, l1y2], [l2x2, l2y2], [l2x1, l2y1]], color: d.color, opacity: d.fillOpacity || 0.15 });
+                    }
+                    if (d.showMedianLine) {
+                        const mx1 = l1x1, my1 = (l1y1 + l2y1) / 2;
+                        const mx2 = l1x2, my2 = (l1y2 + l2y2) / 2;
+                        g.dashed.push([mx1, my1, mx2, my2]);
+                    }
+                    break;
                 }
-                case 'flattopbottom': g.lines.push([0, y1, W, y1], [0, y3, W, y3]); break;
-                case 'disjointchannel': g.lines.push([x1, y1, x2, y2], [x3, y3, x4, y4]); break;
-                case 'regressiontrend': { const r = regressionSeg(pts[0].time, pts[1].time); if (r) g.lines.push(r); break; }
+                case 'flattopbottom': {
+                    if (x3 === null) break;
+                    // Line 1: sloped through p1-p2
+                    g.lines.push([x1, y1, x2, y2]);
+                    // Line 2: horizontal at p3 price level
+                    const hy = y3;
+                    g.lines.push([0, hy, W, hy]);
+                    if (d.fillBackground) {
+                        // Fill between sloped line and horizontal line within p1-p2 x range
+                        const yAtSlope = x => y1 + ((y2 - y1) / ((x2 - x1) || 1)) * (x - x1);
+                        const fx1 = Math.min(x1, x2), fx2 = Math.max(x1, x2);
+                        g.fills.push({ pts: [[fx1, yAtSlope(fx1)], [fx2, yAtSlope(fx2)], [fx2, hy], [fx1, hy]], color: d.color, opacity: d.fillOpacity || 0.15 });
+                    }
+                    break;
+                }
+                case 'disjointchannel': {
+                    if (x3 === null || x4 === null) break;
+                    g.lines.push([x1, y1, x2, y2]);
+                    g.lines.push([x3, y3, x4, y4]);
+                    if (d.fillBackground) {
+                        g.fills.push({ pts: [[x1, y1], [x2, y2], [x4, y4], [x3, y3]], color: d.color, opacity: d.fillOpacity || 0.15 });
+                    }
+                    break;
+                }
+                case 'regressiontrend': {
+                    const rd = regressionData(pts[0].time, pts[1].time);
+                    if (!rd) break;
+                    const mult = d.stdDevMultiplier || 2;
+                    const yStart = py(rd.a);
+                    const yEnd = py(rd.a + rd.b * (rd.nn - 1));
+                    const yUpStart = py(rd.a + mult * rd.stdDev);
+                    const yUpEnd = py(rd.a + rd.b * (rd.nn - 1) + mult * rd.stdDev);
+                    const yDnStart = py(rd.a - mult * rd.stdDev);
+                    const yDnEnd = py(rd.a + rd.b * (rd.nn - 1) - mult * rd.stdDev);
+                    if (yStart !== null && yEnd !== null) g.lines.push([rd.xa, yStart, rd.xb, yEnd]);
+                    if (yUpStart !== null && yUpEnd !== null) g.dashed.push([rd.xa, yUpStart, rd.xb, yUpEnd]);
+                    if (yDnStart !== null && yDnEnd !== null) g.dashed.push([rd.xa, yDnStart, rd.xb, yDnEnd]);
+                    if (d.fillBackground && yUpStart !== null && yUpEnd !== null && yDnStart !== null && yDnEnd !== null) {
+                        g.fills.push({ pts: [[rd.xa, yUpStart], [rd.xb, yUpEnd], [rd.xb, yDnEnd], [rd.xa, yDnStart]], color: d.color, opacity: d.fillOpacity || 0.15 });
+                    }
+                    break;
+                }
                 case 'pitchfork': case 'schiffpitchfork': case 'modifiedschiffpitchfork': case 'insidepitchfork': {
                     if (x3 === null) break;
                     let ax = x1, ay = y1;
@@ -1301,15 +1366,25 @@
             }
 
             const sortedDrawings = [...customDrawings].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-
             for (const d of sortedDrawings) {
                 const g = geometry(d);
-                ctx.strokeStyle = d.color; ctx.fillStyle = d.color;
+                // Render fills first (behind lines)
+                for (const f of g.fills) {
+                    ctx.globalAlpha = f.opacity;
+                    ctx.fillStyle = f.color;
+                    ctx.beginPath();
+                    ctx.moveTo(f.pts[0][0], f.pts[0][1]);
+                    for (let i = 1; i < f.pts.length; i++) ctx.lineTo(f.pts[i][0], f.pts[i][1]);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.globalAlpha = d.kind === 'highlighter' ? 0.35 : 1;
+                // Determine line color (DisjointChannel second line may differ)
+                const mainColor = d.color;
+                ctx.strokeStyle = mainColor; ctx.fillStyle = mainColor;
                 ctx.lineWidth = d.kind === 'highlighter' ? 10 : (d.lineWidth || 2);
                 const styleDash = d.lineStyle === 'dashed' ? [6, 6] : d.lineStyle === 'dotted' ? [2, 4] : [];
-                ctx.globalAlpha = d.kind === 'highlighter' ? 0.35 : 1;
                 ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-
                 ctx.setLineDash(styleDash);
                 for (const L of g.lines) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
                 ctx.setLineDash([5, 5]);

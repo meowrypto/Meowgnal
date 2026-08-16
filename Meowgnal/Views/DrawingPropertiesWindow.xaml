@@ -210,12 +210,53 @@
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Enter ratios separated by commas"
-                                       Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4"/>
+                                    Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4"/>
                             <TextBlock Text="Example: 0.25, 0.5, 1, 2, 4"
-                                       Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4" FontStyle="Italic"/>
+                                    Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4" FontStyle="Italic"/>
                             <TextBox x:Name="GannRatiosBox" Margin="0,0,0,10"/>
                         </StackPanel>
-
+                        <!-- Channel section (visible for channel tools) -->
+                        <StackPanel x:Name="ChannelSection" Visibility="Collapsed">
+                            <TextBlock Text="CHANNEL SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <CheckBox x:Name="FillBgCheck" Content="Fill background between lines" Checked="FillBgCheck_Changed" Unchecked="FillBgCheck_Changed"/>
+                            <StackPanel x:Name="FillOpacityPanel" Orientation="Horizontal" Margin="24,0,0,8">
+                                <TextBlock Text="Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Slider x:Name="FillOpacitySlider" Width="120" Minimum="0.05" Maximum="0.8" Value="0.15" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="FillOpacityLabel" Text="15%" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                            </StackPanel>
+                            <!-- ParallelChannel: Median line -->
+                            <StackPanel x:Name="MedianSection" Visibility="Collapsed">
+                                <CheckBox x:Name="MedianCheck" Content="Show median line" Margin="0,4,0,4"/>
+                                <StackPanel Orientation="Horizontal" Margin="24,0,0,8">
+                                    <TextBlock Text="Median color:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="MedianColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="MedianColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="MedianColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="MedianColor_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <!-- RegressionTrend: StdDev multiplier -->
+                            <StackPanel x:Name="StdDevSection" Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
+                                    <TextBlock Text="Std Dev multiplier (1-3):" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox x:Name="StdDevCombo" Width="60"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <!-- DisjointChannel: Second line color -->
+                            <StackPanel x:Name="SecondColorSection" Visibility="Collapsed">
+                                <TextBlock Text="Second line color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,4,0,4"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="SecondColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="SecondColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="SecondColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="SecondColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#9C27B0" Background="#9C27B0" Click="SecondColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="SecondColor_Click"/>
+                                    <Rectangle x:Name="SecondColorPreview" Width="26" Height="26" RadiusX="4" RadiusY="4"
+                                            Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
                         <!-- Coordinates section -->
                         <TextBlock Text="COORDINATES" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                         <StackPanel x:Name="PointsPanel"/>
