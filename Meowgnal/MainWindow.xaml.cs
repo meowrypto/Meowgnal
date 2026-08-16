@@ -2956,6 +2956,7 @@ public partial class MainWindow : Window
             ReplayDatePicker.SelectedDate = bars[(int)(bars.Count * 0.6)].Timestamp;
 
             UpdateReplayProgress();
+            ResetReplaySession();
         }
         catch (Exception ex)
         {
@@ -2971,11 +2972,16 @@ public partial class MainWindow : Window
 
     private void ForceExitReplayUi()
     {
+        if (_guessTotal > 0)
+            NotificationService.ShowToast("Meowgnal — Replay Summary",
+                $"Session finished: {_guessCorrect}/{_guessTotal} correct guesses ({(double)_guessCorrect / _guessTotal * 100:N0}%).");
+
         _replayMode = false;
         StopReplayPlayback();
         ReplayBar.Visibility = Visibility.Collapsed;
         ReplayButton.Background = Brushes.Transparent;
         _replayBars = new List<Bar>();
+        ResetReplaySession();
     }
 
     private void ReplayDatePicker_SelectedDateChanged(object sender, SelectionChangedEventArgs e)
@@ -3053,6 +3059,89 @@ public partial class MainWindow : Window
         if (ChartWebView.CoreWebView2 is null) return;
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
             JsonSerializer.Serialize(new { type = "setBlindMode", blind }));
+    }
+
+    private sealed class ReplayGuess
+    {
+        public string Choice { get; set; } = "";
+        public int BarIndex { get; set; }
+        public decimal EntryPrice { get; set; }
+    }
+
+    private ReplayGuess? _pendingGuess;
+    private int _guessCorrect;
+    private int _guessTotal;
+
+    private void ReplayGuessButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_replayMode || _replayShown <= 0) return;
+        GuessPopup.IsOpen = !GuessPopup.IsOpen;
+    }
+
+    private void GuessLong_Click(object sender, RoutedEventArgs e) => StartGuess("long");
+    private void GuessShort_Click(object sender, RoutedEventArgs e) => StartGuess("short");
+    private void GuessSkip_Click(object sender, RoutedEventArgs e) => StartGuess("skip");
+
+    // Records the guess, jumps 10 candles forward, then evaluates the outcome.
+    private void StartGuess(string choice)
+    {
+        GuessPopup.IsOpen = false;
+        if (!_replayMode || _replayShown <= 0) return;
+        StopReplayPlayback();
+
+        _pendingGuess = new ReplayGuess
+        {
+            Choice = choice,
+            BarIndex = _replayShown - 1,
+            EntryPrice = _replayBars[_replayShown - 1].Close
+        };
+
+        ReplayStep(10);
+        ResolvePendingGuess();
+    }
+
+    private void ResolvePendingGuess()
+    {
+        if (_pendingGuess is null || _replayBars.Count == 0) return;
+        var guess = _pendingGuess;
+        _pendingGuess = null;
+
+        var exit = _replayBars[_replayShown - 1].Close;
+        var longPct = guess.EntryPrice != 0 ? (exit - guess.EntryPrice) / guess.EntryPrice * 100m : 0m;
+        var shortPct = -longPct;
+
+        string resultText;
+        if (guess.Choice == "skip")
+        {
+            _guessTotal++;
+            resultText = $"⏭ Skipped — Long would be {longPct:+0.00;-0.00}%, Short {shortPct:+0.00;-0.00}%";
+        }
+        else
+        {
+            var pct = guess.Choice == "long" ? longPct : shortPct;
+            var correct = pct > 0;
+            _guessTotal++;
+            if (correct) _guessCorrect++;
+            resultText = $"{(guess.Choice == "long" ? "🟢 Long" : "🔴 Short")}: {pct:+0.00;-0.00}% — {(correct ? "correct ✅" : "wrong ❌")}";
+        }
+
+        UpdateSessionText();
+        NotificationService.ShowToast("Meowgnal — Replay", resultText);
+    }
+
+    private void ResetReplaySession()
+    {
+        _pendingGuess = null;
+        _guessCorrect = 0;
+        _guessTotal = 0;
+        UpdateSessionText();
+    }
+
+    private void UpdateSessionText()
+    {
+        ReplaySessionText.Text = _guessTotal == 0
+            ? "Session: no guesses yet"
+            : $"Session: {_guessCorrect}/{_guessTotal} correct ({(double)_guessCorrect / _guessTotal * 100:N0}%)";
     }
     private void UpdateReplayProgress()
     {

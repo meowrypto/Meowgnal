@@ -830,7 +830,35 @@
                                 <CheckBox x:Name="BlindModeCheck" Content="🙈 Blind Mode" VerticalAlignment="Center" Margin="0,0,16,0"
                                           Foreground="{DynamicResource TextPrimary}"
                                           Checked="BlindModeCheck_Changed" Unchecked="BlindModeCheck_Changed"/>
+                                <Button x:Name="ReplayGuessButton" Content="📝 Guess" Style="{StaticResource TvButton}" Click="ReplayGuessButton_Click" Margin="0,0,10,0"/>
+                                <Popup x:Name="GuessPopup" StaysOpen="False" AllowsTransparency="True"
+                                       Placement="Top" PlacementTarget="{Binding ElementName=ReplayGuessButton}">
+                                    <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+                                            BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,4">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Button Style="{StaticResource TvButton}" Click="GuessLong_Click" Margin="0,0,6,0">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="10" Height="10" Fill="#089981" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Long" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource TvButton}" Click="GuessShort_Click" Margin="0,0,6,0">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="10" Height="10" Fill="#F23645" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Short" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                            <Button Style="{StaticResource TvButton}" Click="GuessSkip_Click">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse Width="10" Height="10" Fill="#787B86" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                                                    <TextBlock Text="Skip" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Popup>
                                 <TextBlock x:Name="ReplayProgressText" Text="" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="12,0,0,0"/>
+                                <TextBlock x:Name="ReplaySessionText" Text="" Foreground="{DynamicResource TextPrimary}" VerticalAlignment="Center" Margin="12,0,0,0"/>
                             </StackPanel>
                         </Border>
                     </Grid>
