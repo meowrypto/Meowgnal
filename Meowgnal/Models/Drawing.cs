@@ -123,6 +123,32 @@ public sealed class Drawing
     /// <summary>Custom Gann Fan ratios. If null, defaults [0.25, 0.5, 1, 2, 4] are used.</summary>
     public List<double>? GannRatios { get; set; }
 
+    // ----- Line-tool display options (TradingView-style) -----
+
+    /// <summary>Trendline: extend the segment beyond the left anchor.</summary>
+    public bool ExtendLeft { get; set; }
+
+    /// <summary>Trendline: extend the segment beyond the right anchor.</summary>
+    public bool ExtendRight { get; set; }
+
+    /// <summary>Trendline / Horizontal / HorizontalRay / Crossline: show price label(s).</summary>
+    public bool ShowPriceLabels { get; set; } = true;
+
+    /// <summary>VerticalLine / Crossline: show date-time label.</summary>
+    public bool ShowTimeLabel { get; set; } = true;
+
+    /// <summary>InfoLine: include percent change in the info label.</summary>
+    public bool ShowPriceChange { get; set; } = true;
+
+    /// <summary>InfoLine: include bar count in the info label.</summary>
+    public bool ShowBarCount { get; set; }
+
+    /// <summary>InfoLine: include elapsed time in the info label.</summary>
+    public bool ShowTimeElapsed { get; set; }
+
+    /// <summary>InfoLine / TrendAngle: include slope angle in the info label.</summary>
+    public bool ShowAngle { get; set; }
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 

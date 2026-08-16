@@ -501,6 +501,22 @@
             return p.toFixed(8);
         }
 
+        function fmtTime(t) {
+            const d = new Date(t * 1000);
+            const mo = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+            const da = d.getUTCDate().toString().padStart(2, '0');
+            const hh = d.getUTCHours().toString().padStart(2, '0');
+            const mm = d.getUTCMinutes().toString().padStart(2, '0');
+            return mo + '/' + da + ' ' + hh + ':' + mm;
+        }
+
+        function fmtDuration(sec) {
+            if (sec >= 86400 * 2) return Math.round(sec / 86400) + 'd';
+            if (sec >= 86400) return (sec / 86400).toFixed(1) + 'd';
+            if (sec >= 3600) return (sec / 3600).toFixed(1) + 'h';
+            return Math.round(sec / 60) + 'm';
+        }
+
         function createSeriesForType() {
             switch (chartType) {
                 case 'line': return chart.addLineSeries({ color: COLORS.accent, lineWidth: 2 });
@@ -943,22 +959,68 @@
             const m = (x1 !== null && x2 !== null && x2 !== x1) ? (y2 - y1) / (x2 - x1) : null;
 
             switch (d.kind) {
-                case 'horizontalline': g.lines.push([0, y1, W, y1]); if (d.label) g.labels.push([d.label, 8, y1 - 5]); break;
-                case 'horizontalray': { const right = x2 === null || x2 >= x1; g.lines.push([right ? x1 : 0, y1, right ? W : x1, y1]); break; }
-                case 'verticalline': g.lines.push([x1, 0, x1, H]); break;
-                case 'crossline': g.lines.push([0, y1, W, y1], [x1, 0, x1, H]); break;
-                case 'trendline': g.lines.push([x1, y1, x2, y2]); break;
+                case 'horizontalline':
+                    g.lines.push([0, y1, W, y1]);
+                    if (d.showPriceLabels !== false) g.labels.push([fmtPrice(pts[0].price), 8, y1 - 5]);
+                    if (d.label) g.labels.push([d.label, 8, y1 + 12]);
+                    break;
+                case 'horizontalray': {
+                    const right = x2 === null || x2 >= x1;
+                    g.lines.push([right ? x1 : 0, y1, right ? W : x1, y1]);
+                    if (d.showPriceLabels !== false) g.labels.push([fmtPrice(pts[0].price), x1 + 6, y1 - 5]);
+                    if (d.label) g.labels.push([d.label, x1 + 6, y1 + 12]);
+                    break;
+                }
+                case 'verticalline':
+                    g.lines.push([x1, 0, x1, H]);
+                    if (d.showTimeLabel !== false) g.labels.push([fmtTime(pts[0].time), x1 + 5, 12]);
+                    break;
+                case 'crossline':
+                    g.lines.push([0, y1, W, y1], [x1, 0, x1, H]);
+                    if (d.showPriceLabels !== false) g.labels.push([fmtPrice(pts[0].price), 8, y1 - 5]);
+                    if (d.showTimeLabel !== false) g.labels.push([fmtTime(pts[0].time), x1 + 5, 12]);
+                    break;
+                case 'trendline': {
+                    let sx1 = x1, sy1 = y1, sx2 = x2, sy2 = y2;
+                    if (d.extendLeft || d.extendRight) {
+                        const f = slopeCoords(x1, y1, x2, y2, 'full');
+                        if (d.extendLeft) { sx1 = f[0]; sy1 = f[1]; }
+                        if (d.extendRight) { sx2 = f[2]; sy2 = f[3]; }
+                    }
+                    g.lines.push([sx1, sy1, sx2, sy2]);
+                    if (d.showPriceLabels !== false) {
+                        g.labels.push([fmtPrice(pts[0].price), sx1 + 4, sy1 - 5]);
+                        g.labels.push([fmtPrice(pts[1].price), sx2 + 4, sy2 - 5]);
+                    }
+                    break;
+                }
                 case 'ray': g.lines.push(slopeCoords(x1, y1, x2, y2, 'ray')); break;
                 case 'extendedline': g.lines.push(slopeCoords(x1, y1, x2, y2, 'full')); break;
                 case 'infoline': {
                     g.lines.push([x1, y1, x2, y2]);
-                    const chg = ((pts[1].price - pts[0].price) / pts[0].price) * 100;
-                    g.labels.push([(chg >= 0 ? '+' : '') + chg.toFixed(2) + '%', x2 + 6, y2 - 6]); break;
+                    const parts = [];
+                    if (d.showPriceChange !== false) {
+                        const chg = ((pts[1].price - pts[0].price) / pts[0].price) * 100;
+                        parts.push((chg >= 0 ? '+' : '') + chg.toFixed(2) + '%');
+                    }
+                    if (d.showBarCount) {
+                        const barSec = rawData.length > 1 ? (rawData[1].time - rawData[0].time) : 3600;
+                        parts.push(Math.round(Math.abs(pts[1].time - pts[0].time) / barSec) + ' bars');
+                    }
+                    if (d.showTimeElapsed) parts.push(fmtDuration(Math.abs(pts[1].time - pts[0].time)));
+                    if (d.showAngle) {
+                        const ang = Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI;
+                        parts.push(ang.toFixed(1) + '°');
+                    }
+                    g.labels.push([parts.join('  '), x2 + 6, y2 - 6]);
+                    break;
                 }
                 case 'trendangle': {
                     g.lines.push([x1, y1, x2, y2]);
+                    // Same screen-space angle formula as before (matches the visible slope)
                     const ang = Math.atan2(-(y2 - y1), x2 - x1) * 180 / Math.PI;
-                    g.labels.push([ang.toFixed(1) + '°', x2 + 6, y2 - 6]); break;
+                    g.labels.push([ang.toFixed(1) + '°', x2 + 6, y2 - 6]);
+                    break;
                 }
                 case 'fibonacci': {
                     g.lines.push([x1, y1, x2, y2]);

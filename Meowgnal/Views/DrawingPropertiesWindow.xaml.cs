@@ -14,6 +14,16 @@ public partial class DrawingPropertiesWindow : Window
     private readonly Drawing _drawing;
     private readonly List<TextBox> _priceBoxes = new();
 
+    // Per-tool option checkboxes (built dynamically in BuildLineOptionsUi)
+    private CheckBox? _extendLeft;
+    private CheckBox? _extendRight;
+    private CheckBox? _showPriceLabels;
+    private CheckBox? _showTimeLabel;
+    private CheckBox? _showPriceChange;
+    private CheckBox? _showBarCount;
+    private CheckBox? _showTimeElapsed;
+    private CheckBox? _showAngle;
+
     public DrawingPropertiesWindow(Drawing drawing)
     {
         InitializeComponent();
@@ -61,6 +71,9 @@ public partial class DrawingPropertiesWindow : Window
             GannSection.Visibility = Visibility.Visible;
         }
 
+        // Build per-tool display option checkboxes (inserted into OptionsPanel)
+        BuildLineOptionsUi(drawing);
+
         // Build coordinate rows: time is read-only, price is editable
         for (var i = 0; i < drawing.Points.Count; i++)
         {
@@ -102,6 +115,106 @@ public partial class DrawingPropertiesWindow : Window
 
             PointsPanel.Children.Add(row);
         }
+    }
+
+    /// <summary>
+    /// Builds per-tool display option checkboxes based on the drawing kind.
+    /// Each checkbox maps to a boolean property on the Drawing model.
+    /// </summary>
+    private void BuildLineOptionsUi(Drawing drawing)
+    {
+        // Determine which options apply to this drawing kind
+        var needsExtendLeft = drawing.Kind is DrawingKind.TrendLine or DrawingKind.Ray or DrawingKind.ExtendedLine;
+        var needsExtendRight = drawing.Kind is DrawingKind.TrendLine;
+        var needsPriceLabel = drawing.Kind is DrawingKind.TrendLine or DrawingKind.HorizontalLine
+            or DrawingKind.HorizontalRay or DrawingKind.Crossline or DrawingKind.Ray or DrawingKind.ExtendedLine;
+        var needsTimeLabel = drawing.Kind is DrawingKind.VerticalLine or DrawingKind.Crossline;
+        var needsPriceChange = drawing.Kind == DrawingKind.InfoLine;
+        var needsBarCount = drawing.Kind == DrawingKind.InfoLine;
+        var needsTimeElapsed = drawing.Kind == DrawingKind.InfoLine;
+        var needsAngle = drawing.Kind is DrawingKind.InfoLine or DrawingKind.TrendAngle;
+
+        // If nothing applies, hide the whole options section
+        if (!needsExtendLeft && !needsExtendRight && !needsPriceLabel && !needsTimeLabel
+            && !needsPriceChange && !needsBarCount && !needsTimeElapsed && !needsAngle)
+        {
+            if (FindName("OptionsPanel") is StackPanel panel)
+                panel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        if (FindName("OptionsPanel") is not StackPanel optionsPanel) return;
+        optionsPanel.Visibility = Visibility.Visible;
+
+        // Header
+        optionsPanel.Children.Add(new TextBlock
+        {
+            Text = "Display options",
+            Foreground = (Brush)FindResource("TextColor"),
+            FontWeight = FontWeights.Bold,
+            FontSize = 12,
+            Margin = new Thickness(0, 8, 0, 4)
+        });
+
+        if (needsExtendLeft)
+        {
+            _extendLeft = MakeOptionCheckBox("Extend left", drawing.ExtendLeft);
+            optionsPanel.Children.Add(_extendLeft);
+        }
+
+        if (needsExtendRight)
+        {
+            _extendRight = MakeOptionCheckBox("Extend right", drawing.ExtendRight);
+            optionsPanel.Children.Add(_extendRight);
+        }
+
+        if (needsPriceLabel)
+        {
+            _showPriceLabels = MakeOptionCheckBox("Show price label", drawing.ShowPriceLabels);
+            optionsPanel.Children.Add(_showPriceLabels);
+        }
+
+        if (needsTimeLabel)
+        {
+            _showTimeLabel = MakeOptionCheckBox("Show time label", drawing.ShowTimeLabel);
+            optionsPanel.Children.Add(_showTimeLabel);
+        }
+
+        if (needsPriceChange)
+        {
+            _showPriceChange = MakeOptionCheckBox("Show price change %", drawing.ShowPriceChange);
+            optionsPanel.Children.Add(_showPriceChange);
+        }
+
+        if (needsBarCount)
+        {
+            _showBarCount = MakeOptionCheckBox("Show bar count", drawing.ShowBarCount);
+            optionsPanel.Children.Add(_showBarCount);
+        }
+
+        if (needsTimeElapsed)
+        {
+            _showTimeElapsed = MakeOptionCheckBox("Show time elapsed", drawing.ShowTimeElapsed);
+            optionsPanel.Children.Add(_showTimeElapsed);
+        }
+
+        if (needsAngle)
+        {
+            _showAngle = MakeOptionCheckBox("Show angle", drawing.ShowAngle);
+            optionsPanel.Children.Add(_showAngle);
+        }
+    }
+
+    /// <summary>Creates a styled checkbox consistent with the rest of the window.</summary>
+    private CheckBox MakeOptionCheckBox(string label, bool isChecked)
+    {
+        return new CheckBox
+        {
+            Content = label,
+            IsChecked = isChecked,
+            Foreground = (Brush)FindResource("TextColor"),
+            Margin = new Thickness(0, 2, 0, 2)
+        };
     }
 
     #region Custom title bar
@@ -186,6 +299,16 @@ public partial class DrawingPropertiesWindow : Window
             }
             _drawing.GannRatios = ratios.Count > 0 ? ratios : null;
         }
+
+        // Save per-tool display options
+        if (_extendLeft is not null) _drawing.ExtendLeft = _extendLeft.IsChecked == true;
+        if (_extendRight is not null) _drawing.ExtendRight = _extendRight.IsChecked == true;
+        if (_showPriceLabels is not null) _drawing.ShowPriceLabels = _showPriceLabels.IsChecked == true;
+        if (_showTimeLabel is not null) _drawing.ShowTimeLabel = _showTimeLabel.IsChecked == true;
+        if (_showPriceChange is not null) _drawing.ShowPriceChange = _showPriceChange.IsChecked == true;
+        if (_showBarCount is not null) _drawing.ShowBarCount = _showBarCount.IsChecked == true;
+        if (_showTimeElapsed is not null) _drawing.ShowTimeElapsed = _showTimeElapsed.IsChecked == true;
+        if (_showAngle is not null) _drawing.ShowAngle = _showAngle.IsChecked == true;
 
         // Save edited prices
         for (var i = 0; i < _drawing.Points.Count && i < _priceBoxes.Count; i++)

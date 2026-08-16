@@ -2725,6 +2725,14 @@ public partial class MainWindow : Window
                 fontSize = d.FontSize,
                 fontFamily = d.FontFamily,
                 gannRatios = d.GannRatios,
+                extendLeft = d.ExtendLeft,
+                extendRight = d.ExtendRight,
+                showPriceLabels = d.ShowPriceLabels,
+                showTimeLabel = d.ShowTimeLabel,
+                showPriceChange = d.ShowPriceChange,
+                showBarCount = d.ShowBarCount,
+                showTimeElapsed = d.ShowTimeElapsed,
+                showAngle = d.ShowAngle,
                 points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
             }).ToArray();
 
