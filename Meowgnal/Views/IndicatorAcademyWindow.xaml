@@ -1,0 +1,262 @@
+﻿<Window x:Class="Meowgnal.Views.IndicatorAcademyWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📚 Indicator Academy"
+        WindowStyle="None" ResizeMode="CanResizeWithGrip" AllowsTransparency="True"
+        Background="{DynamicResource BackgroundBrush}"
+        WindowStartupLocation="CenterOwner"
+        Width="1100" Height="720" MinWidth="900" MinHeight="600">
+
+    <Window.Resources>
+        <!-- Local style for search box -->
+        <Style x:Key="AcademySearchBox" TargetType="TextBox">
+            <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderLine}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="CaretBrush" Value="{DynamicResource TextPrimary}"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource Accent}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Local style for secondary buttons (minimize, maximize) -->
+        <Style x:Key="AcademySecondaryButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#363A45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Local style for danger (close) button -->
+        <Style x:Key="AcademyDangerButton" TargetType="Button" BasedOn="{StaticResource AcademySecondaryButton}">
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#E81123"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Local style for primary (Try it) button -->
+        <Style x:Key="AcademyPrimaryButton" TargetType="Button">
+            <Setter Property="Background" Value="{DynamicResource Accent}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bg" Property="Background" Value="#1E4FD9"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bg" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40" CornerRadius="8"
+                      GlassFrameThickness="0" ResizeBorderThickness="6"/>
+    </WindowChrome.WindowChrome>
+
+    <Border BorderBrush="{DynamicResource BorderLine}" BorderThickness="1" CornerRadius="8">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Custom title bar -->
+            <Border Grid.Row="0" Background="{DynamicResource BgPanel}"
+                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+                <Grid>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0">
+                        <TextBlock Text="📚" FontSize="18" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TitleText" Text="Indicator Academy"
+                                   Foreground="{DynamicResource TextPrimary}"
+                                   FontSize="14" FontWeight="Bold"
+                                   VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="8,0">
+                        <Button Content="—" Style="{StaticResource AcademySecondaryButton}"
+                                Width="40" Height="28" Click="Minimize_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="⛶" x:Name="MaximizeButton"
+                                Style="{StaticResource AcademySecondaryButton}"
+                                Width="40" Height="28" Click="Maximize_Click" Margin="4,0"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Style="{StaticResource AcademyDangerButton}"
+                                Width="40" Height="28" Click="Close_Click"
+                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Main layout -->
+            <Grid Grid.Row="1" Margin="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="320"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: search + categories -->
+                <Border Grid.Column="0" Background="{DynamicResource BgPanel}"
+                        BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,1,0"
+                        Padding="12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBox x:Name="SearchBox" Grid.Row="0"
+                                 Style="{StaticResource AcademySearchBox}"
+                                 Tag="🔍 Search indicators..."
+                                 TextChanged="SearchBox_TextChanged"
+                                 Margin="0,0,0,10"/>
+
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                            <StackPanel x:Name="CategoriesPanel"/>
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+
+                <!-- Right: content -->
+                <Grid Grid.Column="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Empty state / content -->
+                    <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Padding="28,24">
+                        <StackPanel x:Name="ContentPanel">
+                            <StackPanel x:Name="EmptyState" Visibility="Visible">
+                                <TextBlock Text="📚" FontSize="56" HorizontalAlignment="Center" Margin="0,40,0,16"/>
+                                <TextBlock Text="Select an indicator from the list"
+                                           Foreground="{DynamicResource TextMuted}"
+                                           FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Text="to read its full educational guide."
+                                           Foreground="{DynamicResource TextMuted}"
+                                           FontSize="13" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="ComingSoonState" Visibility="Collapsed">
+                                <TextBlock Text="📝" FontSize="48" HorizontalAlignment="Center" Margin="0,40,0,16"/>
+                                <TextBlock x:Name="ComingSoonTitle" Text=""
+                                           Foreground="{DynamicResource TextPrimary}"
+                                           FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                <TextBlock Text="Educational content for this indicator is coming soon."
+                                           Foreground="{DynamicResource TextMuted}"
+                                           FontSize="13" HorizontalAlignment="Center" Margin="0,8,0,0"/>
+                                <TextBlock Text="In the meantime, you can still try it in the Strategy Builder."
+                                           Foreground="{DynamicResource TextMuted}"
+                                           FontSize="12" HorizontalAlignment="Center" Margin="0,4,0,0"
+                                           FontStyle="Italic"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="ArticleState" Visibility="Collapsed">
+                                <TextBlock x:Name="ArticleTitle" Text=""
+                                           Foreground="{DynamicResource Accent}"
+                                           FontSize="22" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock x:Name="ArticleSubtitle" Text=""
+                                           Foreground="{DynamicResource TextMuted}"
+                                           FontSize="12" Margin="0,0,0,20"/>
+
+                                <TextBlock Text="📘  What is it?" Foreground="{DynamicResource Accent}"
+                                           FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock x:Name="WhatIsItText" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextPrimary}"
+                                           FontSize="13" LineHeight="20" Margin="0,0,0,18"/>
+
+                                <TextBlock Text="🎯  When to use it?" Foreground="{DynamicResource Accent}"
+                                           FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <TextBlock x:Name="WhenToUseText" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextPrimary}"
+                                           FontSize="13" LineHeight="20" Margin="0,0,0,18"/>
+
+                                <TextBlock Text="🤝  Best paired with" Foreground="{DynamicResource Accent}"
+                                           FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <StackPanel x:Name="PairedPanel" Margin="0,0,0,18"/>
+
+                                <TextBlock Text="⚠️  Common beginner traps" Foreground="{DynamicResource Accent}"
+                                           FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <StackPanel x:Name="TrapsPanel" Margin="0,0,0,18"/>
+
+                                <TextBlock Text="⚙️  Recommended settings" Foreground="{DynamicResource Accent}"
+                                           FontSize="14" FontWeight="Bold" Margin="0,0,0,6"/>
+                                <Border Background="{DynamicResource BackgroundBrush}"
+                                        BorderBrush="{DynamicResource BorderLine}" BorderThickness="1"
+                                        CornerRadius="6" Padding="14">
+                                    <TextBlock x:Name="ParamsText" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource TextPrimary}"
+                                               FontSize="13" LineHeight="20"/>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <!-- Bottom action bar -->
+                    <Border Grid.Row="1" Background="{DynamicResource BgPanel}"
+                            BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,1,0,0"
+                            Padding="18,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="HintText" Grid.Column="0"
+                                       Text="Select an indicator to see its guide."
+                                       Foreground="{DynamicResource TextMuted}"
+                                       FontSize="12" VerticalAlignment="Center"
+                                       FontStyle="Italic"/>
+
+                            <Button x:Name="TryItButton" Grid.Column="1"
+                                    Style="{StaticResource AcademyPrimaryButton}"
+                                    Padding="18,8" FontSize="13"
+                                    Click="TryIt_Click"
+                                    IsEnabled="False">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🎯" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Try it in Strategy Builder" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

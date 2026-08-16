@@ -291,6 +291,14 @@
                         <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="❓  Help Center" Click="MenuHelp_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="✨  What's new" Click="MenuWhatsNew_Click"/>
+                        <Button x:Name="MenuAcademy" Style="{DynamicResource TvButtonLeft}"
+                            Click="MenuAcademy_Click"
+                            WindowChrome.IsHitTestVisibleInChrome="True">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📚" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="Indicator Academy" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                         <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="🌙  Dark theme" Click="ThemeDark_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="☀️  Light theme" Click="ThemeLight_Click"/>

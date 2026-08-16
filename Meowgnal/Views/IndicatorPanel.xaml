@@ -6,6 +6,7 @@
              FontFamily="Trebuchet MS" FontSize="12">
 
     <UserControl.Resources>
+        <!-- Search box style -->
         <Style x:Key="SearchBox" TargetType="TextBox">
             <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
@@ -20,6 +21,7 @@
             </Style.Triggers>
         </Style>
 
+        <!-- Category header button (Favorites, Moving Averages, ...) -->
         <Style x:Key="CategoryHeaderButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -41,6 +43,7 @@
             </Setter>
         </Style>
 
+        <!-- Favorite star button -->
         <Style x:Key="StarButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -64,6 +67,31 @@
             </Setter>
         </Style>
 
+        <!-- Info button (small round button with ℹ️ icon, used in each indicator row) -->
+        <Style x:Key="TertiaryButton" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextMuted}"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="3"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource BorderLine}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Accent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- One indicator row template -->
         <DataTemplate x:Key="IndicatorRowTemplate">
             <Border Background="Transparent" Cursor="Hand" Padding="6,6" MouseLeftButtonDown="Row_Click" Tag="{Binding}">
                 <Grid>
@@ -76,7 +104,16 @@
                     <StackPanel Grid.Column="1" Margin="6,0,6,0">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="{Binding ActiveIcon}" Foreground="{DynamicResource Accent}" FontSize="12" Margin="0,0,4,0"/>
-                            <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontSize="12"/>
+                            <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimary}" FontSize="12" VerticalAlignment="Center"/>
+                            <!-- Educational guide button for this indicator -->
+                            <Button Style="{StaticResource TertiaryButton}"
+                                    Width="22" Height="22" Padding="0"
+                                    FontSize="11" Margin="6,0,0,0"
+                                    Tag="{Binding}"
+                                    Click="Info_Click"
+                                    ToolTip="Open educational guide">
+                                <TextBlock Text="ℹ️" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                            </Button>
                         </StackPanel>
                         <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextMuted}" FontSize="10" TextWrapping="Wrap"/>
                     </StackPanel>

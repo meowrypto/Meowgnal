@@ -162,6 +162,17 @@ public partial class IndicatorPanel : UserControl
         IndicatorSelected?.Invoke(vm.Info);
     }
 
+    // Opens the Indicator Academy window preselected on this indicator's type.
+    private void Info_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not FrameworkElement fe || fe.Tag is not IndicatorRowViewModel vm) return;
+        if (vm?.Info is null) return;
+
+        var owner = Window.GetWindow(this);
+        var win = new IndicatorAcademyWindow(vm.Info.Type) { Owner = owner };
+        win.ShowDialog();
+    }
+
     #region Category collapse
 
     private void FavoritesHeader_Click(object sender, RoutedEventArgs e) =>

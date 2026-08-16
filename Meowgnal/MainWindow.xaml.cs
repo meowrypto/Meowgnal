@@ -298,6 +298,16 @@ public partial class MainWindow : Window
         new WhatsNewWindow { Owner = this }.ShowDialog();
     }
 
+    
+
+    private void MenuAcademy_Click(object sender, RoutedEventArgs e)
+    {
+        ProfilePopup.IsOpen = false;
+        new IndicatorAcademyWindow { Owner = this }.ShowDialog();
+    }
+
+   
+
     private void MenuSignOut_Click(object sender, RoutedEventArgs e)
     {
         ProfilePopup.IsOpen = false;

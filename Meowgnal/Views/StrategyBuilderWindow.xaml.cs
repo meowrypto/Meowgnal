@@ -22,7 +22,6 @@ public sealed class TokenOption
     public string Label { get; set; } = "";
 }
 
-// One row in the indicator picker (duplicates allowed for the Favorites group).
 public sealed class RegistryOption
 {
     public string Type { get; init; } = "";
@@ -30,7 +29,6 @@ public sealed class RegistryOption
     public IndicatorGroup Group { get; init; } = new();
 }
 
-// Group key with explicit ordering so "⭐ Favorites" always comes first.
 public sealed class IndicatorGroup : IComparable<IndicatorGroup>
 {
     public string Name { get; init; } = "";
@@ -124,8 +122,6 @@ public partial class StrategyBuilderWindow : Window
         UpdateDescription();
     }
 
-    // Fills the indicator picker: a "⭐ Favorites" group on top (read from
-    // AppSettings.FavoriteIndicatorIds), then every indicator by SubCategory.
     private void BuildRegistryOptions()
     {
         RegistryOptions.Clear();
@@ -204,7 +200,6 @@ public partial class StrategyBuilderWindow : Window
         TargetValueBox.Text = prefill.RiskManagement?.Target?.Value.ToString() ?? "2";
         RiskPercentBox.Text = prefill.RiskManagement?.PositionSizing?.RiskPercentPerTrade.ToString() ?? "1";
 
-        // Load custom checklist if this strategy has one.
         _customChecklist = prefill.CustomChecklist;
         if (_customChecklist is not null) ChecklistButton.Content = "🐾 Checklist: Custom";
 
@@ -244,9 +239,7 @@ public partial class StrategyBuilderWindow : Window
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-
     private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
-
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
     private void ToggleMaximize()
@@ -265,7 +258,6 @@ public partial class StrategyBuilderWindow : Window
 
     #endregion
 
-    // Recursively loads a RuleGroup into ConditionNodeViewModel tree.
     private static ConditionNodeViewModel LoadRootGroup(RuleGroup group, int depth)
     {
         var vm = new ConditionNodeViewModel(true)
@@ -274,7 +266,6 @@ public partial class StrategyBuilderWindow : Window
             MinScore = group.MinScore,
             Depth = depth
         };
-
         LoadChildrenInto(vm, group.Conditions, depth);
         return vm;
     }
@@ -288,7 +279,6 @@ public partial class StrategyBuilderWindow : Window
             Depth = depth,
             Parent = parent
         };
-
         LoadChildrenInto(vm, group.Conditions, depth);
         return vm;
     }
@@ -296,7 +286,6 @@ public partial class StrategyBuilderWindow : Window
     private static void LoadChildrenInto(ConditionNodeViewModel parent, List<ConditionNode>? nodes, int depth)
     {
         if (nodes is null) return;
-
         foreach (var node in nodes)
         {
             if (node is LeafCondition leaf)
@@ -382,7 +371,6 @@ public partial class StrategyBuilderWindow : Window
                 Conditions = new List<ConditionNode>()
             };
         }
-
         return new RuleGroup
         {
             Mode = vm.Mode,
@@ -392,20 +380,16 @@ public partial class StrategyBuilderWindow : Window
         };
     }
 
-    private static ConditionGroup BuildConditionGroup(ConditionNodeViewModel vm)
+    private static ConditionGroup BuildConditionGroup(ConditionNodeViewModel vm) => new()
     {
-        return new ConditionGroup
-        {
-            Mode = vm.Mode,
-            MinScore = vm.MinScore,
-            Conditions = BuildConditions(vm)
-        };
-    }
+        Mode = vm.Mode,
+        MinScore = vm.MinScore,
+        Conditions = BuildConditions(vm)
+    };
 
     private static List<ConditionNode> BuildConditions(ConditionNodeViewModel vm)
     {
         var conditions = new List<ConditionNode>();
-
         foreach (var child in vm.Children)
         {
             if (child.IsLeaf)
@@ -431,7 +415,6 @@ public partial class StrategyBuilderWindow : Window
                     conditions.Add(childGroup);
             }
         }
-
         return conditions;
     }
 
@@ -459,7 +442,6 @@ public partial class StrategyBuilderWindow : Window
         foreach (var ind in _indicators)
         {
             var info = IndicatorRegistry.All.FirstOrDefault(i => i.Type == ind.Type);
-
             if (ind.Type == "MACD")
             {
                 TokenOptions.Add(new TokenOption { Id = ind.Id, Label = $"MACD line ({ind.Id})" });
@@ -551,7 +533,6 @@ public partial class StrategyBuilderWindow : Window
     {
         if (sender is not Button btn || btn.Tag is not ConditionNodeViewModel node) return;
         if (node.Parent is null) return;
-
         node.Parent.Children.Remove(node);
         UpdateDescription();
     }
@@ -580,7 +561,6 @@ public partial class StrategyBuilderWindow : Window
                 TestResultStatus.Text = "❌ Error: Symbol is required.";
                 return;
             }
-
             if (strategy.EntryRules.Conditions.Count == 0)
             {
                 TestResultStatus.Text = "❌ Error: At least one entry condition is required.";
@@ -631,7 +611,6 @@ public partial class StrategyBuilderWindow : Window
         if (_lastTestResult is null) return;
         var strategy = BuildStrategyFromUi();
         strategy.StrategyId = Guid.NewGuid().ToString("N");
-
         var win = new BacktestWindow(strategy, _lastTestResult) { Owner = this };
         win.ShowDialog();
     }
@@ -699,5 +678,18 @@ public partial class StrategyBuilderWindow : Window
 
         StrategyStorageService.Save(strategy);
         StatusText.Text = _editing is not null ? $"Updated '{strategy.Name}'" : $"Saved as '{strategy.Name}'";
+    }
+
+    /// <summary>
+    /// Adds the given indicator to the builder and refreshes tokens,
+    /// used by the Indicator Academy's "Try it in Strategy Builder" button.
+    /// </summary>
+    public void AddIndicator(IndicatorInfo info)
+    {
+        if (info is null) return;
+        var id = MakeId(info.Type, info.DefaultPeriod, _indicators);
+        _indicators.Add(new IndicatorRow { Id = id, Type = info.Type, Period = info.DefaultPeriod });
+        RefreshTokens();
+        UpdateDescription();
     }
 }
