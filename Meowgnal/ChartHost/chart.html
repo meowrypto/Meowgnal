@@ -1474,6 +1474,9 @@
                 const msg = e.data;
                 if (!msg || !msg.type) return;
 
+                if (msg.type === 'setCursorMode') { applyCursorMode(msg.mode); return; }
+                if (msg.type === 'setLongPressTooltip') { setLongPressTooltipEnabled(msg.enabled === true); return; }
+
                 if (msg.type === 'addIndicator') { addIndicatorToChart(msg); return; }
                 if (msg.type === 'clearIndicators') { clearIndicators(); return; }
                 if (msg.type === 'setBlindMode') { blindMode = msg.blind === true; updateTimeScaleVisibility(); return; }
