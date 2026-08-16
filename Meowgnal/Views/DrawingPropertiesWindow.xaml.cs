@@ -26,6 +26,10 @@ public partial class DrawingPropertiesWindow : Window
     // Channel-specific state
     private string _medianColor = "#FF9800";
     private string _secondLineColor = "";
+    // Pitchfork-specific state
+    private string _pfMedianColor = "#FF9800";
+    private string _pfArm1Color = "#2962FF";
+    private string _pfArm2Color = "#2962FF";
 
     public DrawingPropertiesWindow(Drawing drawing)
     {
@@ -94,6 +98,19 @@ public partial class DrawingPropertiesWindow : Window
                 SecondColorSection.Visibility = Visibility.Visible;
                 UpdateSecondColorPreview();
             }
+        }
+        // Pitchfork settings initialization
+        var isPitchfork = drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
+            or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
+        if (isPitchfork)
+        {
+            PitchforkSection.Visibility = Visibility.Visible;
+            _pfMedianColor = drawing.PitchforkMedianColor;
+            _pfArm1Color = drawing.PitchforkArm1Color;
+            _pfArm2Color = drawing.PitchforkArm2Color;
+            PfSameColorCheck.IsChecked = drawing.PitchforkUseSameColor;
+            PfSeparateColorsPanel.Visibility = drawing.PitchforkUseSameColor ? Visibility.Collapsed : Visibility.Visible;
+            PfExtendRightCheck.IsChecked = drawing.ExtendRight;
         }
         // Show the right section based on drawing kind
         if (drawing.Kind is DrawingKind.Text or DrawingKind.Note or DrawingKind.Sticker)
@@ -326,6 +343,25 @@ public partial class DrawingPropertiesWindow : Window
         }
         catch { SecondColorPreview.Fill = new SolidColorBrush(Colors.Gray); }
     }
+    private void PfSameColor_Changed(object sender, RoutedEventArgs e)
+    {
+        PfSeparateColorsPanel.Visibility = PfSameColorCheck.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
+    }
+    private void PfMedianColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _pfMedianColor = hex;
+    }
+    private void PfArm1Color_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _pfArm1Color = hex;
+    }
+    private void PfArm2Color_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _pfArm2Color = hex;
+    }
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         _drawing.Label = LabelBox.Text.Trim();
@@ -372,6 +408,17 @@ public partial class DrawingPropertiesWindow : Window
                 _drawing.StdDevMultiplier = StdDevCombo.SelectedItem is int sd ? sd : 2;
             if (_drawing.Kind == DrawingKind.DisjointChannel)
                 _drawing.SecondLineColor = _secondLineColor;
+        }
+        // Save pitchfork settings
+        var isPfKind = _drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
+            or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
+        if (isPfKind)
+        {
+            _drawing.PitchforkUseSameColor = PfSameColorCheck.IsChecked == true;
+            _drawing.PitchforkMedianColor = _pfMedianColor;
+            _drawing.PitchforkArm1Color = _pfArm1Color;
+            _drawing.PitchforkArm2Color = _pfArm2Color;
+            _drawing.ExtendRight = PfExtendRightCheck.IsChecked == true;
         }
         // Save per-tool display options
         if (_extendLeft is not null) _drawing.ExtendLeft = _extendLeft.IsChecked == true;

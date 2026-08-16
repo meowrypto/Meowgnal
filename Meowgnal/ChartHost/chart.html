@@ -953,7 +953,7 @@
 
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
-            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [] };
+            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [], pfRoles: null };
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return g;
             const X = i => px(pts[i].time), Y = i => py(pts[i].price);
@@ -1108,17 +1108,39 @@
                 }
                 case 'pitchfork': case 'schiffpitchfork': case 'modifiedschiffpitchfork': case 'insidepitchfork': {
                     if (x3 === null) break;
+                    // Calculate anchor point based on variant
                     let ax = x1, ay = y1;
-                    if (d.kind === 'schiffpitchfork') { ax = (x1 + x2) / 2; ay = (y1 + y2) / 2; }
-                    else if (d.kind === 'modifiedschiffpitchfork') { ax = (x1 + (x1 + x2) / 2) / 2; ay = (y1 + (y1 + y2) / 2) / 2; }
-                    else if (d.kind === 'insidepitchfork') { ax = (x2 + x3) / 2; ay = (y2 + y3) / 2; }
+                    if (d.kind === 'schiffpitchfork') {
+                        ax = (x1 + x2) / 2; ay = (y1 + y2) / 2;
+                    } else if (d.kind === 'modifiedschiffpitchfork') {
+                        ax = (3 * x1 + x2) / 4; ay = (3 * y1 + y2) / 4;
+                    }
+                    // insidepitchfork: anchor stays at P1 (same as standard)
                     const mx = (x2 + x3) / 2, my = (y2 + y3) / 2;
                     if (mx === ax) break;
                     const mm = (my - ay) / (mx - ax);
+                    // Determine arm pass-through points
+                    let arm1X = x2, arm1Y = y2, arm2X = x3, arm2Y = y3;
+                    if (d.kind === 'insidepitchfork') {
+                        // Arms pass through midpoints between median line and P2/P3
+                        const yMedianAtX2 = ay + mm * (x2 - ax);
+                        const yMedianAtX3 = ay + mm * (x3 - ax);
+                        arm1Y = (yMedianAtX2 + y2) / 2;
+                        arm2Y = (yMedianAtX3 + y3) / 2;
+                    }
                     const yM = x => ay + mm * (x - ax);
-                    const y2At = x => y2 + mm * (x - x2);
-                    const y3At = x => y3 + mm * (x - x3);
-                    g.lines.push([0, yM(0), W, yM(W)], [0, y2At(0), W, y2At(W)], [0, y3At(0), W, y3At(W)]); break;
+                    const y2At = x => arm1Y + mm * (x - arm1X);
+                    const y3At = x => arm2Y + mm * (x - arm2X);
+                    // Extend right: lines go to right edge; otherwise stop at midpoint x
+                    const endX = d.extendRight ? W : mx;
+                    const startX = d.extendLeft ? 0 : ax;
+                    // Store line colors for separate rendering
+                    g.lines.push([startX, yM(startX), endX, yM(endX)]);
+                    g.lines.push([arm1X, arm1Y, endX, y2At(endX)]);
+                    g.lines.push([arm2X, arm2Y, endX, y3At(endX)]);
+                    // Tag lines with pitchfork roles for color rendering
+                    g.pfRoles = ['median', 'arm1', 'arm2'];
+                    break;
                 }
                 case 'fibextension': {
                     const lo = Math.min(x1, x2);
@@ -1386,7 +1408,19 @@
                 const styleDash = d.lineStyle === 'dashed' ? [6, 6] : d.lineStyle === 'dotted' ? [2, 4] : [];
                 ctx.lineCap = 'round'; ctx.lineJoin = 'round';
                 ctx.setLineDash(styleDash);
-                for (const L of g.lines) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
+                for (let li = 0; li < g.lines.length; li++) {
+                    const L = g.lines[li];
+                    // Pitchfork: apply per-line color if useSameColor is false
+                    if (g.pfRoles && !d.pitchforkUseSameColor) {
+                        const role = g.pfRoles[li];
+                        if (role === 'median') ctx.strokeStyle = d.pitchforkMedianColor || d.color;
+                        else if (role === 'arm1') ctx.strokeStyle = d.pitchforkArm1Color || d.color;
+                        else if (role === 'arm2') ctx.strokeStyle = d.pitchforkArm2Color || d.color;
+                    }
+                    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke();
+                    // Reset to main color for non-pitchfork drawings
+                    if (g.pfRoles && !d.pitchforkUseSameColor) ctx.strokeStyle = d.color;
+                }
                 ctx.setLineDash([5, 5]);
                 for (const L of g.dashed) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
                 ctx.setLineDash([]);

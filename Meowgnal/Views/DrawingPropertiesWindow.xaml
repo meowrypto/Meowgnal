@@ -215,6 +215,35 @@
                                     Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4" FontStyle="Italic"/>
                             <TextBox x:Name="GannRatiosBox" Margin="0,0,0,10"/>
                         </StackPanel>
+                        <!-- Pitchfork section (visible for pitchfork tools) -->
+                        <StackPanel x:Name="PitchforkSection" Visibility="Collapsed">
+                            <TextBlock Text="PITCHFORK SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <CheckBox x:Name="PfSameColorCheck" Content="Use same color for all lines" Checked="PfSameColor_Changed" Unchecked="PfSameColor_Changed"/>
+                            <StackPanel x:Name="PfSeparateColorsPanel" Visibility="Collapsed" Margin="24,4,0,8">
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Median:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Width="55"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="PfMedianColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="PfMedianColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="PfMedianColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="PfMedianColor_Click"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Arm 1:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Width="55"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="PfArm1Color_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="PfArm1Color_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="PfArm1Color_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="PfArm1Color_Click"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <TextBlock Text="Arm 2:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Width="55"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="PfArm2Color_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="PfArm2Color_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="PfArm2Color_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="PfArm2Color_Click"/>
+                                </StackPanel>
+                            </StackPanel>
+                            <CheckBox x:Name="PfExtendRightCheck" Content="Extend right (towards future)"/>
+                        </StackPanel>
                         <!-- Channel section (visible for channel tools) -->
                         <StackPanel x:Name="ChannelSection" Visibility="Collapsed">
                             <TextBlock Text="CHANNEL SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>

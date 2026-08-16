@@ -1744,10 +1744,13 @@ public partial class MainWindow : Window
                         newDrawing.Label = tLabelEl.GetString() ?? "";
                     if (drawingEl.TryGetProperty("color", out var tColorEl))
                         newDrawing.Color = tColorEl.GetString() ?? "#2962FF";
-                    // DisjointChannel: second line defaults to same color
-                    if (kind == DrawingKind.DisjointChannel)
-                        newDrawing.SecondLineColor = newDrawing.Color;
+                    // Pitchforks: extend right by default (drawn towards the future)
+                    if (kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
+                        or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork)
+                        newDrawing.ExtendRight = true;
                     if (drawingEl.TryGetProperty("points", out var pts))
+                        newDrawing.SecondLineColor = newDrawing.Color;
+                  
                     {
                         foreach (var pt in pts.EnumerateArray())
                         {
@@ -2604,8 +2607,6 @@ public partial class MainWindow : Window
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
             "cursor" or "dot" or "arrow" or "eraser" => CursorGroupButton,
-            "pitchfork" or "schiffpitchfork" or "modifiedschiffpitchfork" or "insidepitchfork"
-                => ChannelGroupButton,
             _ => LineGroupButton,
         };
 
@@ -2742,6 +2743,10 @@ public partial class MainWindow : Window
         medianLineStyle = d.MedianLineStyle,
         stdDevMultiplier = d.StdDevMultiplier,
         secondLineColor = d.SecondLineColor,
+        pitchforkUseSameColor = d.PitchforkUseSameColor,
+        pitchforkMedianColor = d.PitchforkMedianColor,
+        pitchforkArm1Color = d.PitchforkArm1Color,
+        pitchforkArm2Color = d.PitchforkArm2Color,
         points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
     }).ToArray();
 

@@ -163,6 +163,15 @@ public sealed class Drawing
     public int StdDevMultiplier { get; set; } = 2;
     /// <summary>DisjointChannel: color of the second line (empty = use main color).</summary>
     public string SecondLineColor { get; set; } = "";
+    // ----- Pitchfork settings -----
+    /// <summary>Pitchfork: if true, all 3 lines use the same Color. If false, each line has its own color.</summary>
+    public bool PitchforkUseSameColor { get; set; } = true;
+    /// <summary>Pitchfork: color of the median line (used when PitchforkUseSameColor is false).</summary>
+    public string PitchforkMedianColor { get; set; } = "#FF9800";
+    /// <summary>Pitchfork: color of arm 1 / P2 side (used when PitchforkUseSameColor is false).</summary>
+    public string PitchforkArm1Color { get; set; } = "#2962FF";
+    /// <summary>Pitchfork: color of arm 2 / P3 side (used when PitchforkUseSameColor is false).</summary>
+    public string PitchforkArm2Color { get; set; } = "#2962FF";
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 
