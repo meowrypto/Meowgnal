@@ -23,7 +23,9 @@ jobs:
       uses: microsoft/setup-msbuild@v2
 
     - name: Restore dependencies
-      run: dotnet restore Meowgnal.csproj
+      working-directory: ./Meowgnal
+      run: dotnet restore
 
     - name: Build Project
-      run: msbuild Meowgnal.csproj /p:Configuration=Release
+      working-directory: ./Meowgnal
+      run: msbuild /p:Configuration=Release
