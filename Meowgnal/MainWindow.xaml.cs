@@ -2600,9 +2600,9 @@ public partial class MainWindow : Window
         // Highlight the group button that owns this tool
         var group = tag switch
         {
-            "fib" or "fibextension" or "fibtimezone" or "fibcircles" or "fibspiral"
-                or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan" => FibGroupButton,
-            "gannbox" or "gannsquare" or "gannfan" => GannGroupButton,
+            "fib" or "fibextension" or "fibchannel" or "fibtimezone" or "trendbasedfibtime" or "fibcircles" or "fibspiral"
+                  or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan" => FibGroupButton,
+            "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => GannGroupButton,
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" => ShapesGroupButton,
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
@@ -2747,6 +2747,7 @@ public partial class MainWindow : Window
         pitchforkMedianColor = d.PitchforkMedianColor,
         pitchforkArm1Color = d.PitchforkArm1Color,
         pitchforkArm2Color = d.PitchforkArm2Color,
+        fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
         points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
     }).ToArray();
 
@@ -2784,7 +2785,9 @@ public partial class MainWindow : Window
         DrawingKind.ModifiedSchiffPitchfork => "Modified Schiff",
         DrawingKind.InsidePitchfork => "Inside Pitchfork",
         DrawingKind.FibExtension => "Fib Extension",
+        DrawingKind.FibChannel => "Fib Channel",
         DrawingKind.FibTimeZone => "Fib Time Zone",
+        DrawingKind.TrendBasedFibTime => "Trend-based Fib Time",
         DrawingKind.FibCircles => "Fib Circles",
         DrawingKind.FibSpiral => "Fib Spiral",
         DrawingKind.FibArcs => "Fib Arcs",
@@ -2793,6 +2796,7 @@ public partial class MainWindow : Window
         DrawingKind.Pitchfan => "Pitchfan",
         DrawingKind.GannBox => "Gann Box",
         DrawingKind.GannSquare => "Gann Square",
+        DrawingKind.GannSquareFixed => "Gann Square Fixed",
         DrawingKind.GannFan => "Gann Fan",
         DrawingKind.Rectangle => "Rectangle",
         DrawingKind.RotatedRectangle => "Rotated Rectangle",

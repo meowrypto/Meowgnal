@@ -1,7 +1,8 @@
 ﻿<Window x:Class="Meowgnal.Views.DrawingPropertiesWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Drawing Properties" Height="600" Width="420"
+xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:local="clr-namespace:Meowgnal.Views"
+Title="Drawing Properties" Height="600" Width="420"
         WindowStyle="None" WindowStartupLocation="CenterOwner"
         Background="{StaticResource BackgroundBrush}"
         FontFamily="Trebuchet MS" FontSize="12" ResizeMode="NoResize">
@@ -204,6 +205,25 @@
                             <ComboBox x:Name="FontCombo" Margin="0,0,0,10"/>
                             <TextBlock Text="Size" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="FontSizeCombo" Margin="0,0,0,10"/>
+                        </StackPanel>
+
+                        <!-- Fibonacci section (visible only for Fibonacci tools) -->
+                        <StackPanel x:Name="FibSection" Visibility="Collapsed">
+                            <TextBlock Text="FIBONACCI LEVELS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <local:FibLevelsEditorControl x:Name="FibLevelsEditor" Height="250" Margin="0,0,0,10"/>
+                        </StackPanel>
+
+                        <!-- Gann Square Fixed section -->
+                        <StackPanel x:Name="GannSquareFixedSection" Visibility="Collapsed">
+                            <TextBlock Text="GANN SQUARE FIXED" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Grid divisions (2-10):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="GannSquareDivisionsCombo" Margin="0,0,0,10"/>
+                        </StackPanel>
+
+                        <!-- Gann Box section -->
+                        <StackPanel x:Name="GannBoxSection" Visibility="Collapsed">
+                            <TextBlock Text="GANN BOX LEVELS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <local:FibLevelsEditorControl x:Name="GannBoxLevelsEditor" Height="200" Margin="0,0,0,10"/>
                         </StackPanel>
 
                         <!-- Gann section (visible only for Gann Fan) -->

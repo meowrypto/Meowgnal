@@ -559,7 +559,10 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                         <TextBlock Text="Fib Retracement" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="fibextension" Click="ToolButton_Click">
-                                        <TextBlock Text="Fib Extension" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Trend-based Fib Extension (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fibchannel" Click="ToolButton_Click">
+                                        <TextBlock Text="Fib Channel (3 clicks)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="fibtimezone" Click="ToolButton_Click">
                                         <TextBlock Text="Fib Time Zone" VerticalAlignment="Center"/>
@@ -577,7 +580,10 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                         <TextBlock Text="Fib Wedge" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="fibspeedfan" Click="ToolButton_Click">
-                                        <TextBlock Text="Fib Speed Fan" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Fib Speed Resistance Fan (3 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="trendbasedfibtime" Click="ToolButton_Click">
+                                        <TextBlock Text="Trend-based Fib Time (3 clicks)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="pitchfan" Click="ToolButton_Click">
                                         <TextBlock Text="Pitchfan" VerticalAlignment="Center"/>
@@ -599,7 +605,10 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                         <TextBlock Text="Gann Box" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="gannsquare" Click="ToolButton_Click">
-                                        <TextBlock Text="Gann Square" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Gann Square (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="gannsquarefixed" Click="ToolButton_Click">
+                                        <TextBlock Text="Gann Square Fixed (1 click)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="gannfan" Click="ToolButton_Click">
                                         <TextBlock Text="Gann Fan" VerticalAlignment="Center"/>

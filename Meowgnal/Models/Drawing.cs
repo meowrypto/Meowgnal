@@ -25,7 +25,9 @@ public enum DrawingKind
     ModifiedSchiffPitchfork,
     InsidePitchfork,
     FibExtension,
+    FibChannel,
     FibTimeZone,
+    TrendBasedFibTime,
     FibCircles,
     FibSpiral,
     FibArcs,
@@ -34,6 +36,7 @@ public enum DrawingKind
     Pitchfan,
     GannBox,
     GannSquare,
+    GannSquareFixed,
     GannFan,
     Rectangle,
     RotatedRectangle,
@@ -55,11 +58,7 @@ public enum DrawingKind
     Sticker
 }
 
-/// <summary>Standard Fibonacci retracement levels.</summary>
-public static class FibonacciLevels
-{
-    public static readonly double[] Standard = { 0, 0.236, 0.382, 0.5, 0.618, 0.786, 1 };
-}
+// Fibonacci defaults are now handled by the FibLevel.cs file (FibonacciDefaults class).
 
 /// <summary>A single point of a drawing; time-based (Unix UTC) so it appears on all timeframes of the same symbol.</summary>
 public sealed class DrawingPoint
@@ -120,8 +119,11 @@ public sealed class Drawing
     /// <summary>Font family for Text/Note/Sticker drawings.</summary>
     public string FontFamily { get; set; } = "Trebuchet MS";
 
-    /// <summary>Custom Gann Fan ratios. If null, defaults [0.25, 0.5, 1, 2, 4] are used.</summary>
+    /// <summary>Custom Gann Fan ratios. If null, defaults [0.125, 0.25, 0.333, 0.5, 1, 2, 3, 4, 8] are used.</summary>
     public List<double>? GannRatios { get; set; }
+
+    /// <summary>Number of grid divisions for Gann Square tools (default 4).</summary>
+    public int GannSquareDivisions { get; set; } = 4;
 
     // ----- Line-tool display options (TradingView-style) -----
 
@@ -148,6 +150,11 @@ public sealed class Drawing
 
     /// <summary>InfoLine / TrendAngle: include slope angle in the info label.</summary>
     public bool ShowAngle { get; set; }
+
+    // ----- Fibonacci settings -----
+    /// <summary>Custom Fibonacci levels for this drawing. If empty, defaults are used based on the tool kind.</summary>
+    public List<FibLevel> FibLevels { get; set; } = new();
+
     // ----- Channel settings -----
     /// <summary>Fill the area between channel lines with color.</summary>
     public bool FillBackground { get; set; }

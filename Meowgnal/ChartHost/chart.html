@@ -1032,168 +1032,132 @@
                     g.lines.push([x1, y1, x2, y2]);
                     const lo = Math.min(x1, x2) - 60, hi = Math.max(x1, x2) + 60;
                     const diff = pts[1].price - pts[0].price;
-                    for (const lvl of ALL_FIB_LEVELS) {
+                    const levels = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const lvl of levels) {
                         const yy = py(pts[0].price + diff * lvl);
-                        if (yy !== null) { g.dashed.push([lo, yy, hi, yy]); g.labels.push([(lvl * 100).toFixed(1) + '%', hi + 5, yy + 4]); }
+                        const lbl = (d.fibLevels && d.fibLevels.find(f => f.ratio === lvl)) ? (d.fibLevels.find(f => f.ratio === lvl).label || (lvl * 100).toFixed(1) + '%') : (lvl * 100).toFixed(1) + '%';
+                        if (yy !== null) { g.dashed.push([lo, yy, hi, yy]); g.labels.push([lbl, hi + 5, yy + 4]); }
                     }
-                    break;
-                }
-                case 'parallelchannel': {
-                    if (m === null || x3 === null) break;
-                    const yAt1 = x => y1 + m * (x - x1);
-                    const yAt2 = x => y3 + m * (x - x3);
-                    let l1x1, l1y1, l1x2, l1y2, l2x1, l2y1, l2x2, l2y2;
-                    if (d.extendLeft || d.extendRight) {
-                        l1x1 = d.extendLeft ? 0 : x1; l1y1 = yAt1(l1x1);
-                        l1x2 = d.extendRight ? W : x2; l1y2 = yAt1(l1x2);
-                        l2x1 = d.extendLeft ? 0 : x3; l2y1 = yAt2(l2x1);
-                        l2x2 = d.extendRight ? W : x3; l2y2 = yAt2(l2x2);
-                    } else {
-                        l1x1 = x1; l1y1 = y1; l1x2 = x2; l1y2 = y2;
-                        l2x1 = x1; l2y1 = yAt2(x1); l2x2 = x2; l2y2 = yAt2(x2);
-                    }
-                    g.lines.push([l1x1, l1y1, l1x2, l1y2]);
-                    g.lines.push([l2x1, l2y1, l2x2, l2y2]);
-                    if (d.fillBackground) {
-                        g.fills.push({ pts: [[l1x1, l1y1], [l1x2, l1y2], [l2x2, l2y2], [l2x1, l2y1]], color: d.color, opacity: d.fillOpacity || 0.15 });
-                    }
-                    if (d.showMedianLine) {
-                        const mx1 = l1x1, my1 = (l1y1 + l2y1) / 2;
-                        const mx2 = l1x2, my2 = (l1y2 + l2y2) / 2;
-                        g.dashed.push([mx1, my1, mx2, my2]);
-                    }
-                    break;
-                }
-                case 'flattopbottom': {
-                    if (x3 === null) break;
-                    // Line 1: sloped through p1-p2
-                    g.lines.push([x1, y1, x2, y2]);
-                    // Line 2: horizontal at p3 price level
-                    const hy = y3;
-                    g.lines.push([0, hy, W, hy]);
-                    if (d.fillBackground) {
-                        // Fill between sloped line and horizontal line within p1-p2 x range
-                        const yAtSlope = x => y1 + ((y2 - y1) / ((x2 - x1) || 1)) * (x - x1);
-                        const fx1 = Math.min(x1, x2), fx2 = Math.max(x1, x2);
-                        g.fills.push({ pts: [[fx1, yAtSlope(fx1)], [fx2, yAtSlope(fx2)], [fx2, hy], [fx1, hy]], color: d.color, opacity: d.fillOpacity || 0.15 });
-                    }
-                    break;
-                }
-                case 'disjointchannel': {
-                    if (x3 === null || x4 === null) break;
-                    g.lines.push([x1, y1, x2, y2]);
-                    g.lines.push([x3, y3, x4, y4]);
-                    if (d.fillBackground) {
-                        g.fills.push({ pts: [[x1, y1], [x2, y2], [x4, y4], [x3, y3]], color: d.color, opacity: d.fillOpacity || 0.15 });
-                    }
-                    break;
-                }
-                case 'regressiontrend': {
-                    const rd = regressionData(pts[0].time, pts[1].time);
-                    if (!rd) break;
-                    const mult = d.stdDevMultiplier || 2;
-                    const yStart = py(rd.a);
-                    const yEnd = py(rd.a + rd.b * (rd.nn - 1));
-                    const yUpStart = py(rd.a + mult * rd.stdDev);
-                    const yUpEnd = py(rd.a + rd.b * (rd.nn - 1) + mult * rd.stdDev);
-                    const yDnStart = py(rd.a - mult * rd.stdDev);
-                    const yDnEnd = py(rd.a + rd.b * (rd.nn - 1) - mult * rd.stdDev);
-                    if (yStart !== null && yEnd !== null) g.lines.push([rd.xa, yStart, rd.xb, yEnd]);
-                    if (yUpStart !== null && yUpEnd !== null) g.dashed.push([rd.xa, yUpStart, rd.xb, yUpEnd]);
-                    if (yDnStart !== null && yDnEnd !== null) g.dashed.push([rd.xa, yDnStart, rd.xb, yDnEnd]);
-                    if (d.fillBackground && yUpStart !== null && yUpEnd !== null && yDnStart !== null && yDnEnd !== null) {
-                        g.fills.push({ pts: [[rd.xa, yUpStart], [rd.xb, yUpEnd], [rd.xb, yDnEnd], [rd.xa, yDnStart]], color: d.color, opacity: d.fillOpacity || 0.15 });
-                    }
-                    break;
-                }
-                case 'pitchfork': case 'schiffpitchfork': case 'modifiedschiffpitchfork': case 'insidepitchfork': {
-                    if (x3 === null) break;
-                    // Calculate anchor point based on variant
-                    let ax = x1, ay = y1;
-                    if (d.kind === 'schiffpitchfork') {
-                        ax = (x1 + x2) / 2; ay = (y1 + y2) / 2;
-                    } else if (d.kind === 'modifiedschiffpitchfork') {
-                        ax = (3 * x1 + x2) / 4; ay = (3 * y1 + y2) / 4;
-                    }
-                    // insidepitchfork: anchor stays at P1 (same as standard)
-                    const mx = (x2 + x3) / 2, my = (y2 + y3) / 2;
-                    if (mx === ax) break;
-                    const mm = (my - ay) / (mx - ax);
-                    // Determine arm pass-through points
-                    let arm1X = x2, arm1Y = y2, arm2X = x3, arm2Y = y3;
-                    if (d.kind === 'insidepitchfork') {
-                        // Arms pass through midpoints between median line and P2/P3
-                        const yMedianAtX2 = ay + mm * (x2 - ax);
-                        const yMedianAtX3 = ay + mm * (x3 - ax);
-                        arm1Y = (yMedianAtX2 + y2) / 2;
-                        arm2Y = (yMedianAtX3 + y3) / 2;
-                    }
-                    const yM = x => ay + mm * (x - ax);
-                    const y2At = x => arm1Y + mm * (x - arm1X);
-                    const y3At = x => arm2Y + mm * (x - arm2X);
-                    // Extend right: lines go to right edge; otherwise stop at midpoint x
-                    const endX = d.extendRight ? W : mx;
-                    const startX = d.extendLeft ? 0 : ax;
-                    // Store line colors for separate rendering
-                    g.lines.push([startX, yM(startX), endX, yM(endX)]);
-                    g.lines.push([arm1X, arm1Y, endX, y2At(endX)]);
-                    g.lines.push([arm2X, arm2Y, endX, y3At(endX)]);
-                    // Tag lines with pitchfork roles for color rendering
-                    g.pfRoles = ['median', 'arm1', 'arm2'];
                     break;
                 }
                 case 'fibextension': {
-                    const lo = Math.min(x1, x2);
-                    const diff = pts[1].price - pts[0].price;
+                    if (x3 === null) break;
+                    const baseDiff = pts[1].price - pts[0].price;
                     g.lines.push([x1, y1, x2, y2]);
-                    for (const lvl of ALL_FIB_LEVELS) {
-                        const yy = py(pts[0].price + diff * lvl);
-                        if (yy !== null) { g.dashed.push([lo, yy, W, yy]); g.labels.push([(lvl * 100).toFixed(1) + '%', W - 46, yy - 4]); }
+                    g.lines.push([x2, y2, x3, y3]);
+                    const levelsExt = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_EXTENSION_LEVELS;
+                    for (const lvl of levelsExt) {
+                        const yy = py(pts[2].price - baseDiff * lvl);
+                        const lbl = (d.fibLevels && d.fibLevels.find(f => f.ratio === lvl)) ? (d.fibLevels.find(f => f.ratio === lvl).label || (lvl * 100).toFixed(1) + '%') : (lvl * 100).toFixed(1) + '%';
+                        if (yy !== null) { g.dashed.push([0, yy, W, yy]); g.labels.push([lbl, W - 46, yy - 4]); }
+                    }
+                    break;
+                }
+                case 'fibchannel': {
+                    if (x3 === null) break;
+                    const mCh = (y2 - y1) / ((x2 - x1) || 1);
+                    const yAtCh = x => y1 + mCh * (x - x1);
+                    const y3OnLine = yAtCh(x3);
+                    const distCh = y3 - y3OnLine;
+                    g.lines.push([x1, y1, x2, y2]);
+                    g.lines.push([x3, y3OnLine, x3, y3]);
+                    const levelsCh = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const lvl of levelsCh) {
+                        const yOff = y3OnLine + distCh * lvl;
+                        g.dashed.push([0, yAtCh(0) + (yOff - y3OnLine), W, yAtCh(W) + (yOff - y3OnLine)]);
                     }
                     break;
                 }
                 case 'fibtimezone': {
                     const dx = x2 - x1;
-                    for (const r of [0.236, 0.382, 0.5, 0.618, 0.786, 1, 1.618, 2.618]) {
+                    const fibSeq = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+                    g.dashed.push([x1, 0, x1, H]);
+                    for (const r of fibSeq) {
                         const xx = x1 + dx * r;
                         if (xx >= 0 && xx <= W) g.dashed.push([xx, 0, xx, H]);
                     }
                     break;
                 }
+                case 'trendbasedfibtime': {
+                    if (x3 === null) break;
+                    const baseDx = x2 - x1;
+                    const fibSeqT = [1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
+                    g.dashed.push([x3, 0, x3, H]);
+                    for (const r of fibSeqT) {
+                        const xx = x3 + baseDx * r;
+                        if (xx >= 0 && xx <= W) g.dashed.push([xx, 0, xx, H]);
+                    }
+                    break;
+                }
                 case 'fibcircles': {
-                    const dist = Math.hypot(x2 - x1, y2 - y1);
-                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.circles.push([x2, y2, dist * lvl]); break;
+                    const distC = Math.hypot(x2 - x1, y2 - y1);
+                    const levelsC = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const lvl of levelsC) if (lvl > 0) g.circles.push([x1, y1, distC * lvl]);
+                    break;
                 }
                 case 'fibspiral': {
-                    const dist = Math.hypot(x2 - x1, y2 - y1);
-                    const startAng = Math.atan2(y1 - y2, x1 - x2);
-                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x2, y2, dist * lvl, startAng, startAng + Math.PI]); break;
+                    const distS = Math.hypot(x2 - x1, y2 - y1);
+                    const startAng = Math.atan2(y2 - y1, x2 - x1);
+                    const steps = 100;
+                    const maxAng = Math.PI * 4;
+                    let prevX = x1, prevY = y1;
+                    for (let i = 1; i <= steps; i++) {
+                        const t = i / steps;
+                        const ang = startAng + t * maxAng;
+                        const r = distS * t * 1.5;
+                        const nx = x1 + r * Math.cos(ang);
+                        const ny = y1 + r * Math.sin(ang);
+                        g.lines.push([prevX, prevY, nx, ny]);
+                        prevX = nx; prevY = ny;
+                    }
+                    break;
                 }
                 case 'fibarcs': {
-                    const dist = Math.hypot(x2 - x1, y2 - y1);
-                    const ang = Math.atan2(y2 - y1, x2 - x1);
-                    for (const lvl of FIB_LEVELS) if (lvl > 0) g.arcs.push([x1, y1, dist * lvl, ang - 0.6, ang + 0.6]); break;
+                    const distA = Math.hypot(x2 - x1, y2 - y1);
+                    const angA = Math.atan2(y2 - y1, x2 - x1);
+                    const levelsA = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const lvl of levelsA) if (lvl > 0) g.arcs.push([x1, y1, distA * lvl, angA - Math.PI / 2, angA + Math.PI / 2]);
+                    break;
                 }
                 case 'fibwedge': {
-                    g.lines.push(slopeCoords(x1, y1, x2, y2, 'ray'));
-                    g.lines.push([x1, y1, W, y1]);
-                    const diff = pts[1].price - pts[0].price;
-                    for (const lvl of ALL_FIB_LEVELS) {
-                        const yy = py(pts[0].price + diff * lvl);
-                        if (yy !== null) g.dashed.push([Math.min(x1, x2), yy, Math.max(x1, x2), yy]);
+                    if (x3 === null) break;
+                    g.lines.push([x1, y1, x2, y2]);
+                    g.lines.push([x1, y1, x3, y3]);
+                    const levelsW = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const lvl of levelsW) {
+                        const y2_lvl = y1 + (y2 - y1) * lvl;
+                        const y3_lvl = y1 + (y3 - y1) * lvl;
+                        const x2_lvl = x1 + (x2 - x1) * lvl;
+                        const x3_lvl = x1 + (x3 - x1) * lvl;
+                        g.dashed.push([x2_lvl, y2_lvl, x3_lvl, y3_lvl]);
                     }
                     break;
                 }
                 case 'fibspeedfan': {
-                    for (const lvl of FIB_LEVELS) { const yy = y1 + (y2 - y1) * lvl; g.lines.push([x1, y1, x2, yy]); } break;
+                    if (x3 === null) break;
+                    g.lines.push([x1, y1, x2, y2]);
+                    g.lines.push([x2, y2, x3, y3]);
+                    const levelsSF = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const lvl of levelsSF) {
+                        const yy = y2 + (y3 - y2) * lvl;
+                        g.lines.push([x1, y1, x3, yy]);
+                    }
+                    break;
                 }
                 case 'pitchfan': {
-                    for (const lvl of FIB_LEVELS) { const yy = y1 + (y2 - y1) * lvl; g.lines.push(slopeCoords(x1, y1, x2, yy, 'ray')); } break;
+                    const levelsPF = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const lvl of levelsPF) {
+                        const yy = y1 + (y2 - y1) * lvl;
+                        g.lines.push(slopeCoords(x1, y1, x2, yy, 'ray'));
+                    }
+                    break;
                 }
                 case 'gannbox': {
                     g.lines.push([x1, y1, x2, y1], [x1, y2, x2, y2], [x1, y1, x1, y2], [x2, y1, x2, y2]);
-                    for (const r of [0.25, 0.5, 0.75]) {
-                        const xx = x1 + (x2 - x1) * r, yy = y1 + (y2 - y1) * r;
+                    const levels = (d.fibLevels && d.fibLevels.length > 0) ? d.fibLevels.filter(l => l.enabled).map(l => l.ratio) : FIB_LEVELS;
+                    for (const r of levels) {
+                        const xx = x1 + (x2 - x1) * r;
+                        const yy = y1 + (y2 - y1) * r;
                         g.dashed.push([xx, y1, xx, y2], [x1, yy, x2, yy]);
                     }
                     break;
@@ -1203,15 +1167,32 @@
                     const sx = x2 >= x1 ? 1 : -1, sy = y2 >= y1 ? 1 : -1;
                     const xe = x1 + side * sx, ye = y1 + side * sy;
                     g.lines.push([x1, y1, xe, y1], [x1, ye, xe, ye], [x1, y1, x1, ye], [xe, y1, xe, ye]);
-                    for (const r of [0.25, 0.5, 0.75]) {
-                        g.dashed.push([x1 + side * r * sx, y1, x1 + side * r * sx, ye], [x1, y1 + side * r * sy, xe, y1 + side * r * sy]);
+                    g.lines.push([x1, y1, xe, ye], [x1, ye, xe, y1]);
+                    const divs = d.gannSquareDivisions || 4;
+                    for (let i = 1; i < divs; i++) {
+                        const offset = (side / divs) * i;
+                        g.dashed.push([x1 + offset * sx, y1, x1 + offset * sx, ye], [x1, y1 + offset * sy, xe, y1 + offset * sy]);
+                    }
+                    break;
+                }
+                case 'gannsquarefixed': {
+                    const size = 200;
+                    const divs = d.gannSquareDivisions || 4;
+                    g.lines.push([x1, y1, x1 + size, y1], [x1, y1, x1, y1 + size], [x1 + size, y1, x1 + size, y1 + size], [x1, y1 + size, x1 + size, y1 + size]);
+                    g.lines.push([x1, y1, x1 + size, y1 + size], [x1, y1 + size, x1 + size, y1]);
+                    for (let i = 1; i < divs; i++) {
+                        const offset = (size / divs) * i;
+                        g.dashed.push([x1 + offset, y1, x1 + offset, y1 + size], [x1, y1 + offset, x1 + size, y1 + offset]);
                     }
                     break;
                 }
                 case 'gannfan': {
                     if (m === null) break;
-                    const ratios = d.gannRatios || [0.25, 0.5, 1, 2, 4];
-                    for (const r of ratios) { const yAt = x => y1 + m * r * (x - x1); g.lines.push([x1, y1, W, yAt(W)]); }
+                    const ratios = d.gannRatios || [0.125, 0.25, 0.333, 0.5, 1, 2, 3, 4, 8];
+                    for (const r of ratios) {
+                        const yAt = x => y1 + m * r * (x - x1);
+                        g.lines.push([x1, y1, W, yAt(W)]);
+                    }
                     break;
                 }
                 case 'rectangle': {
@@ -1981,9 +1962,11 @@
 
         // ---------- Click / crosshair ----------
         const NEED = {
+            gannsquarefixed: 1,
             horizontal: 1, verticalline: 1, crossline: 1,
             parallelchannel: 3, flattopbottom: 3,
             pitchfork: 3, schiffpitchfork: 3, modifiedschiffpitchfork: 3, insidepitchfork: 3,
+            fibextension: 3, fibchannel: 3, fibspeedfan: 3, fibwedge: 3, trendbasedfibtime: 3,
             disjointchannel: 4,
             rectangle: 2, circle: 2, ellipse: 2, arc: 3, triangle: 3,
             polyline: 20, rotatedrectangle: 3,

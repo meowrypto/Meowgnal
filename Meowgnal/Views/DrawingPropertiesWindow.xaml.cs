@@ -63,10 +63,31 @@ public partial class DrawingPropertiesWindow : Window
             FontSizeCombo.Items.Add(s);
         FontSizeCombo.SelectedItem = drawing.FontSize is >= 8 and <= 100 ? drawing.FontSize : 13;
 
-        // Gann ratios: default to "0.25, 0.5, 1, 2, 4" if null
+        // Gann ratios: default to standard Gann angles
         GannRatiosBox.Text = drawing.GannRatios is not null
-            ? string.Join(", ", drawing.GannRatios)
-            : "0.25, 0.5, 1, 2, 4";
+            ? string.Join(", ", drawing.GannRatios.Select(r => r.ToString("0.###")))
+            : "0.125, 0.25, 0.333, 0.5, 1, 2, 3, 4, 8";
+
+        // Gann Square Fixed settings
+        if (drawing.Kind == DrawingKind.GannSquareFixed)
+        {
+            GannSquareFixedSection.Visibility = Visibility.Visible;
+            for (int i = 2; i <= 10; i++) GannSquareDivisionsCombo.Items.Add(i);
+            GannSquareDivisionsCombo.SelectedItem = drawing.GannSquareDivisions is >= 2 and <= 10 ? drawing.GannSquareDivisions : 4;
+        }
+
+        // Gann Box settings
+        if (drawing.Kind == DrawingKind.GannBox)
+        {
+            GannBoxSection.Visibility = Visibility.Visible;
+            var defaultColor = string.IsNullOrEmpty(drawing.Color) ? "#2962FF" : drawing.Color;
+            var sourceLevels = drawing.FibLevels;
+            if (sourceLevels == null || sourceLevels.Count == 0)
+            {
+                sourceLevels = FibonacciDefaults.GetDefaultRetracementLevels(defaultColor);
+            }
+            GannBoxLevelsEditor.Levels = new System.Collections.ObjectModel.ObservableCollection<FibLevel>(sourceLevels);
+        }
         // Channel settings initialization
         _medianColor = drawing.MedianLineColor;
         _secondLineColor = drawing.SecondLineColor;
@@ -124,6 +145,26 @@ public partial class DrawingPropertiesWindow : Window
 
         // Build per-tool display option checkboxes (inserted into OptionsPanel)
         BuildLineOptionsUi(drawing);
+
+        // Initialize Fibonacci levels editor if this is a Fibonacci tool
+        var isFib = drawing.Kind is DrawingKind.Fibonacci or DrawingKind.FibExtension
+    or DrawingKind.FibChannel or DrawingKind.FibTimeZone or DrawingKind.TrendBasedFibTime
+    or DrawingKind.FibCircles or DrawingKind.FibSpiral or DrawingKind.FibArcs
+    or DrawingKind.FibWedge or DrawingKind.FibSpeedFan or DrawingKind.Pitchfan;
+
+        if (isFib)
+        {
+            FibSection.Visibility = Visibility.Visible;
+            var defaultColor = string.IsNullOrEmpty(drawing.Color) ? "#2962FF" : drawing.Color;
+            var sourceLevels = drawing.FibLevels;
+            if (sourceLevels == null || sourceLevels.Count == 0)
+            {
+                sourceLevels = drawing.Kind == DrawingKind.FibExtension
+                    ? FibonacciDefaults.GetDefaultExtensionLevels(defaultColor)
+                    : FibonacciDefaults.GetDefaultRetracementLevels(defaultColor);
+            }
+            FibLevelsEditor.Levels = new System.Collections.ObjectModel.ObservableCollection<FibLevel>(sourceLevels);
+        }
 
         // Build coordinate rows: time is read-only, price is editable
         for (var i = 0; i < drawing.Points.Count; i++)
@@ -381,6 +422,18 @@ public partial class DrawingPropertiesWindow : Window
             _drawing.FontSize = FontSizeCombo.SelectedItem is int s ? s : 13;
         }
 
+        // Save Gann Square Fixed settings
+        if (_drawing.Kind == DrawingKind.GannSquareFixed)
+        {
+            _drawing.GannSquareDivisions = GannSquareDivisionsCombo.SelectedItem is int div ? div : 4;
+        }
+
+        // Save Gann Box levels
+        if (_drawing.Kind == DrawingKind.GannBox && GannBoxLevelsEditor.Levels != null)
+        {
+            _drawing.FibLevels = new List<FibLevel>(GannBoxLevelsEditor.Levels);
+        }
+
         // Save Gann ratios
         if (_drawing.Kind == DrawingKind.GannFan)
         {
@@ -420,6 +473,12 @@ public partial class DrawingPropertiesWindow : Window
             _drawing.PitchforkArm2Color = _pfArm2Color;
             _drawing.ExtendRight = PfExtendRightCheck.IsChecked == true;
         }
+        // Save Fibonacci levels
+        if (FibSection.Visibility == Visibility.Visible && FibLevelsEditor.Levels != null)
+        {
+            _drawing.FibLevels = new List<FibLevel>(FibLevelsEditor.Levels);
+        }
+
         // Save per-tool display options
         if (_extendLeft is not null) _drawing.ExtendLeft = _extendLeft.IsChecked == true;
         if (_extendRight is not null) _drawing.ExtendRight = _extendRight.IsChecked == true;
