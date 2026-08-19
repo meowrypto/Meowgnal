@@ -591,6 +591,23 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="threedrivespattern" Click="ToolButton_Click">
                                         <TextBlock Text="Three Drives Pattern (7 clicks)" VerticalAlignment="Center"/>
                                     </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="ELLIOTT WAVES" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="elliottimpulswave" Click="ToolButton_Click">
+                                        <TextBlock Text="Elliott Impulse Wave (1-2-3-4-5) (6 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="elliottcorrectionwave" Click="ToolButton_Click">
+                                        <TextBlock Text="Elliott Correction Wave (A-B-C) (4 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="elliotttrianglewave" Click="ToolButton_Click">
+                                        <TextBlock Text="Elliott Triangle Wave (A-B-C-D-E) (6 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="elliottdoublecombowave" Click="ToolButton_Click">
+                                        <TextBlock Text="Elliott Double Combo Wave (W-X-Y) (4 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="elliotttriplecombowave" Click="ToolButton_Click">
+                                        <TextBlock Text="Elliott Triple Combo Wave (W-X1-Y-X2-Z) (6 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
                                 </StackPanel>
                             </Border>
                         </Popup>

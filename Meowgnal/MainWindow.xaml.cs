@@ -1746,8 +1746,17 @@ public partial class MainWindow : Window
                         newDrawing.Color = tColorEl.GetString() ?? "#2962FF";
                     // Pitchforks: extend right by default (drawn towards the future)
                     if (kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
-                        or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork)
+                    or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork)
                         newDrawing.ExtendRight = true;
+
+                    if (kind is DrawingKind.ElliottImpulseWave or DrawingKind.ElliottCorrectionWave
+                    or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
+                    or DrawingKind.ElliottTripleComboWave)
+                    {
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowApex = false;
+                        newDrawing.ShowLabels = true;
+                    }
                     if (drawingEl.TryGetProperty("points", out var pts))
                         newDrawing.SecondLineColor = newDrawing.Color;
 
@@ -2590,7 +2599,8 @@ public partial class MainWindow : Window
             "fib" or "fibextension" or "fibchannel" or "fibtimezone" or "trendbasedfibtime" or "fibcircles" or "fibspiral"
                   or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan"
                   or "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => FibGroupButton,
-            "xabcdpattern" or "cypherpattern" or "headandshoulders" or "abcdpattern" or "trianglepattern" or "threedrivespattern" => PatternsGroupButton,
+            "xabcdpattern" or "cypherpattern" or "headandshoulders" or "abcdpattern" or "trianglepattern" or "threedrivespattern"
+or "elliottimpulswave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave" => PatternsGroupButton,
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" => ShapesGroupButton,
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
@@ -2739,6 +2749,7 @@ public partial class MainWindow : Window
         necklineColor = d.NecklineColor,
         showLabels = d.ShowLabels,
         showApex = d.ShowApex,
+        labelColor = d.LabelColor,
         fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
         points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
     }).ToArray();
@@ -2796,6 +2807,11 @@ public partial class MainWindow : Window
         DrawingKind.AbcdPattern => "ABCD Pattern",
         DrawingKind.TrianglePattern => "Triangle Pattern",
         DrawingKind.ThreeDrivesPattern => "Three Drives Pattern",
+        DrawingKind.ElliottImpulseWave => "Elliott Impulse Wave",
+        DrawingKind.ElliottCorrectionWave => "Elliott Correction Wave",
+        DrawingKind.ElliottTriangleWave => "Elliott Triangle Wave",
+        DrawingKind.ElliottDoubleComboWave => "Elliott Double Combo Wave",
+        DrawingKind.ElliottTripleComboWave => "Elliott Triple Combo Wave",
         DrawingKind.Rectangle => "Rectangle",
         DrawingKind.RotatedRectangle => "Rotated Rectangle",
         DrawingKind.Circle => "Circle",

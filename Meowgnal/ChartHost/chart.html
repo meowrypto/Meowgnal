@@ -957,6 +957,23 @@
             return { a, b, nn, stdDev, xa, xb, t1: bars[0].time, t2: bars[nn - 1].time };
         }
 
+        function addElliottGeometry(g, d, labels) {
+            const pts = d.points || [];
+            if (!pts.length || !activeSeries) return;
+            for (let i = 0; i < pts.length - 1; i++) {
+                const xa = px(pts[i].time), ya = py(pts[i].price);
+                const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                if (xa !== null && ya !== null && xb !== null && yb !== null) g.lines.push([xa, ya, xb, yb]);
+            }
+            if (d.showLabels !== false) {
+                for (let i = 0; i < pts.length && i < labels.length; i++) {
+                    if (!labels[i]) continue;
+                    const x = px(pts[i].time), y = py(pts[i].price);
+                    if (x !== null && y !== null) g.labels.push([labels[i], x + 6, y - 8]);
+                }
+            }
+        }
+
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
             const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [], pfRoles: null, neckline: null };
@@ -1198,6 +1215,11 @@
                     for (const r of ratios) { const yAt = x => y1 + m * r * (x - x1); g.lines.push([x1, y1, W, yAt(W)]); }
                     break;
                 }
+                case 'elliottimpulsewave': addElliottGeometry(g, d, ['0', '1', '2', '3', '4', '5']); break;
+                case 'elliottcorrectionwave': addElliottGeometry(g, d, ['', 'A', 'B', 'C']); break;
+                case 'elliotttrianglewave': addElliottGeometry(g, d, ['', 'A', 'B', 'C', 'D', 'E']); break;
+                case 'elliottdoublecombowave': addElliottGeometry(g, d, ['', 'W', 'X', 'Y']); break;
+                case 'elliotttriplecombowave': addElliottGeometry(g, d, ['', 'W', 'X1', 'Y', 'X2', 'Z']); break;
                 case 'xabcdpattern': {
                     if (pts.length < 5) break;
                     const labelsX = ['X', 'A', 'B', 'C', 'D'];
@@ -1313,7 +1335,6 @@
                         g.labels.push([r2.toFixed(3), mx2 + 5, my2 - 5]);
                     }
                     break;
-                }
                 }
                 case 'rectangle': {
                     const xL = Math.min(x1, x2), xR = Math.max(x1, x2), yT = Math.min(y1, y2), yB = Math.max(y1, y2);
@@ -1468,7 +1489,12 @@
                 'modifiedschiffpitchfork': 'Modified Schiff', 'insidepitchfork': 'Inside Pitchfork', 'fibextension': 'Fib Extension',
                 'fibtimezone': 'Fib Time Zone', 'fibcircles': 'Fib Circles', 'fibspiral': 'Fib Spiral', 'fibarcs': 'Fib Arcs',
                 'fibwedge': 'Fib Wedge', 'fibspeedfan': 'Fib Speed Fan', 'pitchfan': 'Pitchfan', 'gannbox': 'Gann Box',
-                'gannsquare': 'Gann Square', 'gannfan': 'Gann Fan', 'xabcdpattern': 'XABCD Pattern', 'cypherpattern': 'Cypher Pattern', 'headandshoulders': 'Head and Shoulders', 'abcdpattern': 'ABCD Pattern', 'trianglepattern': 'Triangle Pattern', 'threedrivespattern': 'Three Drives Pattern', 'rectangle': 'Rectangle',
+                'gannsquare': 'Gann Square', 'gannfan': 'Gann Fan', 'elliottimpulsewave': 'Elliott Impulse Wave',
+                'elliottcorrectionwave': 'Elliott Correction Wave',
+                'elliotttrianglewave': 'Elliott Triangle Wave',
+                'elliottdoublecombowave': 'Elliott Double Combo Wave',
+                'elliotttriplecombowave': 'Elliott Triple Combo Wave',
+                'xabcdpattern': 'XABCD Pattern', 'cypherpattern': 'Cypher Pattern', 'headandshoulders': 'Head and Shoulders', 'abcdpattern': 'ABCD Pattern', 'trianglepattern': 'Triangle Pattern', 'threedrivespattern': 'Three Drives Pattern', 'rectangle': 'Rectangle',
                 'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle', 'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
                 'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down', 'brush': 'Brush', 'highlighter': 'Highlighter',
                 'text': 'Text', 'note': 'Note', 'pricelabel': 'Price Label', 'pin': 'Pin', 'flag': 'Flag', 'sticker': 'Sticker'
@@ -1537,7 +1563,9 @@
                 for (const a of g.arcs) { ctx.beginPath(); ctx.arc(a[0], a[1], a[2], a[3], a[4]); ctx.stroke(); }
 
                 ctx.font = '11px Trebuchet MS';
+                ctx.fillStyle = d.labelColor || mainColor;
                 for (const t of g.labels) ctx.fillText(t[0], t[1], t[2]);
+                ctx.fillStyle = mainColor;
 
                 for (const t of g.texts) {
                     ctx.font = (t.size || 13) + 'px ' + (t.family || 'Trebuchet MS');
@@ -2090,6 +2118,7 @@
 
         // ---------- Click / crosshair ----------
         const NEED = {
+            elliottimpulsewave: 6, elliottcorrectionwave: 4, elliotttrianglewave: 6, elliottdoublecombowave: 4, elliotttriplecombowave: 6,
             xabcdpattern: 5, cypherpattern: 5, headandshoulders: 5, abcdpattern: 4, trianglepattern: 4, threedrivespattern: 7,
             horizontal: 1, verticalline: 1, crossline: 1,
             parallelchannel: 3, flattopbottom: 3,

@@ -37,6 +37,9 @@ public partial class DrawingPropertiesWindow : Window
     // Pattern-specific state
     private string _necklineColor = "#FF9800";
 
+    // Elliott-specific state
+    private string _elliottLabelColor = "";
+
     public DrawingPropertiesWindow(Drawing drawing)
     {
         InitializeComponent();
@@ -159,6 +162,18 @@ public partial class DrawingPropertiesWindow : Window
             ShowLabelsCheck.IsChecked = drawing.ShowLabels;
             ShowApexCheck.IsChecked = drawing.ShowApex;
             _necklineColor = drawing.NecklineColor;
+        }
+
+        var isElliottKind = drawing.Kind is DrawingKind.ElliottImpulseWave or DrawingKind.ElliottCorrectionWave
+        or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
+        or DrawingKind.ElliottTripleComboWave;
+
+        if (isElliottKind)
+        {
+            ElliottSection.Visibility = Visibility.Visible;
+            ElliottShowLabelsCheck.IsChecked = drawing.ShowLabels;
+            _elliottLabelColor = drawing.LabelColor;
+            UpdateElliottLabelColorPreview();
         }
 
         // Initialize Fibonacci levels editor if this is a Fibonacci tool
@@ -388,6 +403,29 @@ public partial class DrawingPropertiesWindow : Window
         _necklineColor = hex;
     }
 
+    private void ElliottLabelColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _elliottLabelColor = hex;
+        UpdateElliottLabelColorPreview();
+    }
+
+    private void ElliottLabelColorAuto_Click(object sender, RoutedEventArgs e)
+    {
+        _elliottLabelColor = "";
+        UpdateElliottLabelColorPreview();
+    }
+
+    private void UpdateElliottLabelColorPreview()
+    {
+        try
+        {
+            ElliottLabelColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
+            string.IsNullOrEmpty(_elliottLabelColor) ? HexBox.Text : _elliottLabelColor));
+        }
+        catch { ElliottLabelColorPreview.Fill = new SolidColorBrush(Colors.Gray); }
+    }
+
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         _drawing.Label = LabelBox.Text.Trim();
@@ -444,13 +482,24 @@ public partial class DrawingPropertiesWindow : Window
         }
 
         var isPatternKind = _drawing.Kind is DrawingKind.XabcdPattern or DrawingKind.CypherPattern or DrawingKind.HeadAndShoulders
-                         or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern;
+or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern;
+
         if (isPatternKind)
         {
             _drawing.ShowRatios = ShowRatiosCheck.IsChecked == true;
             _drawing.ShowLabels = ShowLabelsCheck.IsChecked == true;
             _drawing.ShowApex = ShowApexCheck.IsChecked == true;
             _drawing.NecklineColor = _necklineColor;
+        }
+
+        var isElliottKind = _drawing.Kind is DrawingKind.ElliottImpulseWave or DrawingKind.ElliottCorrectionWave
+        or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
+        or DrawingKind.ElliottTripleComboWave;
+
+        if (isElliottKind)
+        {
+            _drawing.ShowLabels = ElliottShowLabelsCheck.IsChecked == true;
+            _drawing.LabelColor = _elliottLabelColor;
         }
 
         var isPfKind = _drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork

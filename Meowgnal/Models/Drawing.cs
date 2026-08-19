@@ -61,7 +61,12 @@ public enum DrawingKind
     PriceLabel,
     Pin,
     Flag,
-    Sticker
+    Sticker,
+    ElliottImpulseWave,
+    ElliottCorrectionWave,
+    ElliottTriangleWave,
+    ElliottDoubleComboWave,
+    ElliottTripleComboWave
 }
 
 // Fibonacci defaults are now handled by the FibLevel.cs file (FibonacciDefaults class).
@@ -193,6 +198,9 @@ public sealed class Drawing
     public string NecklineColor { get; set; } = "#FF9800";
     /// <summary>Show labels (Head/Shoulders, Drive numbers, etc.).</summary>
     public bool ShowLabels { get; set; } = true;
+
+    /// <summary>Optional separate color for pattern/Elliott labels. Empty means use main line color.</summary>
+    public string LabelColor { get; set; } = "";
     /// <summary>Triangle pattern: Show apex point and dashed lines.</summary>
     public bool ShowApex { get; set; } = true;
 

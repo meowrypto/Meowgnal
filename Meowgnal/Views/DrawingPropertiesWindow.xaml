@@ -241,6 +241,23 @@ Title="Drawing Properties" Height="600" Width="420"
                             </StackPanel>
                         </StackPanel>
 
+                        <!-- Elliott section (visible for Elliott wave tools) -->
+                        <StackPanel x:Name="ElliottSection" Visibility="Collapsed">
+                            <TextBlock Text="ELLIOTT SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <CheckBox x:Name="ElliottShowLabelsCheck" Content="Show labels" Margin="0,0,0,6"/>
+                            <TextBlock Text="Label color (optional):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,4,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Content="Auto" Style="{StaticResource SecondaryButton}" Padding="6,2" Margin="0,0,6,0" Click="ElliottLabelColorAuto_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="ElliottLabelColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="ElliottLabelColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="ElliottLabelColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="ElliottLabelColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="ElliottLabelColor_Click"/>
+                                <Rectangle x:Name="ElliottLabelColorPreview" Width="26" Height="26" RadiusX="4" RadiusY="4"
+Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+
                         <!-- Gann section (visible only for Gann Fan) -->
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
