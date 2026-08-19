@@ -38,6 +38,12 @@ public enum DrawingKind
     GannSquare,
     GannSquareFixed,
     GannFan,
+    XabcdPattern,
+    CypherPattern,
+    HeadAndShoulders,
+    AbcdPattern,
+    TrianglePattern,
+    ThreeDrivesPattern,
     Rectangle,
     RotatedRectangle,
     Circle,
@@ -179,6 +185,17 @@ public sealed class Drawing
     public string PitchforkArm1Color { get; set; } = "#2962FF";
     /// <summary>Pitchfork: color of arm 2 / P3 side (used when PitchforkUseSameColor is false).</summary>
     public string PitchforkArm2Color { get; set; } = "#2962FF";
+
+    // ----- Pattern settings -----
+    /// <summary>Show Fibonacci ratios on pattern legs.</summary>
+    public bool ShowRatios { get; set; } = true;
+    /// <summary>Head and Shoulders: Neckline color.</summary>
+    public string NecklineColor { get; set; } = "#FF9800";
+    /// <summary>Show labels (Head/Shoulders, Drive numbers, etc.).</summary>
+    public bool ShowLabels { get; set; } = true;
+    /// <summary>Triangle pattern: Show apex point and dashed lines.</summary>
+    public bool ShowApex { get; set; } = true;
+
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }
 

@@ -302,7 +302,7 @@ public partial class MainWindow : Window
         new WhatsNewWindow { Owner = this }.ShowDialog();
     }
 
-    
+
 
     private void MenuAcademy_Click(object sender, RoutedEventArgs e)
     {
@@ -1750,7 +1750,7 @@ public partial class MainWindow : Window
                         newDrawing.ExtendRight = true;
                     if (drawingEl.TryGetProperty("points", out var pts))
                         newDrawing.SecondLineColor = newDrawing.Color;
-                  
+
                     {
                         foreach (var pt in pts.EnumerateArray())
                         {
@@ -2490,50 +2490,38 @@ public partial class MainWindow : Window
 
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
-        LinePopup.IsOpen = false; ChannelPopup.IsOpen = false; FibPopup.IsOpen = false; GannPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
         if (!CursorPopup.IsOpen) RefreshCursorMenuHighlight();
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
-
     private void LineGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; ChannelPopup.IsOpen = false; FibPopup.IsOpen = false; GannPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
         LinePopup.IsOpen = !LinePopup.IsOpen;
     }
-
-    private void ChannelGroup_Click(object sender, RoutedEventArgs e)
-    {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; GannPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
-        ChannelPopup.IsOpen = !ChannelPopup.IsOpen;
-    }
-
     private void FibGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; ChannelPopup.IsOpen = false; GannPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
         FibPopup.IsOpen = !FibPopup.IsOpen;
     }
-
-    private void GannGroup_Click(object sender, RoutedEventArgs e)
+    private void PatternsGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; ChannelPopup.IsOpen = false; FibPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
-        GannPopup.IsOpen = !GannPopup.IsOpen;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        PatternsPopup.IsOpen = !PatternsPopup.IsOpen;
     }
-
     private void ShapesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; ChannelPopup.IsOpen = false; FibPopup.IsOpen = false; GannPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
         ShapesPopup.IsOpen = !ShapesPopup.IsOpen;
     }
-
     private void BrushGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; ChannelPopup.IsOpen = false; FibPopup.IsOpen = false; GannPopup.IsOpen = false; ShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false;
         BrushPopup.IsOpen = !BrushPopup.IsOpen;
     }
-
     private void AnnotGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; ChannelPopup.IsOpen = false; FibPopup.IsOpen = false; GannPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false;
         AnnotPopup.IsOpen = !AnnotPopup.IsOpen;
     }
 
@@ -2569,9 +2557,8 @@ public partial class MainWindow : Window
 
         CursorPopup.IsOpen = false;
         LinePopup.IsOpen = false;
-        ChannelPopup.IsOpen = false;
         FibPopup.IsOpen = false;
-        GannPopup.IsOpen = false;
+        PatternsPopup.IsOpen = false;
         ShapesPopup.IsOpen = false;
         BrushPopup.IsOpen = false;
         AnnotPopup.IsOpen = false;
@@ -2601,8 +2588,9 @@ public partial class MainWindow : Window
         var group = tag switch
         {
             "fib" or "fibextension" or "fibchannel" or "fibtimezone" or "trendbasedfibtime" or "fibcircles" or "fibspiral"
-                  or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan" => FibGroupButton,
-            "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => GannGroupButton,
+                  or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan"
+                  or "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => FibGroupButton,
+            "xabcdpattern" or "cypherpattern" or "headandshoulders" or "abcdpattern" or "trianglepattern" or "threedrivespattern" => PatternsGroupButton,
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" => ShapesGroupButton,
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
@@ -2622,7 +2610,7 @@ public partial class MainWindow : Window
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, ChannelGroupButton, FibGroupButton, GannGroupButton, ShapesGroupButton, BrushGroupButton, AnnotGroupButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ShapesGroupButton, BrushGroupButton, AnnotGroupButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");
@@ -2747,6 +2735,10 @@ public partial class MainWindow : Window
         pitchforkMedianColor = d.PitchforkMedianColor,
         pitchforkArm1Color = d.PitchforkArm1Color,
         pitchforkArm2Color = d.PitchforkArm2Color,
+        showRatios = d.ShowRatios,
+        necklineColor = d.NecklineColor,
+        showLabels = d.ShowLabels,
+        showApex = d.ShowApex,
         fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
         points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
     }).ToArray();
@@ -2798,6 +2790,12 @@ public partial class MainWindow : Window
         DrawingKind.GannSquare => "Gann Square",
         DrawingKind.GannSquareFixed => "Gann Square Fixed",
         DrawingKind.GannFan => "Gann Fan",
+        DrawingKind.XabcdPattern => "XABCD Pattern",
+        DrawingKind.CypherPattern => "Cypher Pattern",
+        DrawingKind.HeadAndShoulders => "Head and Shoulders",
+        DrawingKind.AbcdPattern => "ABCD Pattern",
+        DrawingKind.TrianglePattern => "Triangle Pattern",
+        DrawingKind.ThreeDrivesPattern => "Three Drives Pattern",
         DrawingKind.Rectangle => "Rectangle",
         DrawingKind.RotatedRectangle => "Rotated Rectangle",
         DrawingKind.Circle => "Circle",

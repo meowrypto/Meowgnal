@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -23,13 +24,18 @@ public partial class DrawingPropertiesWindow : Window
     private CheckBox? _showBarCount;
     private CheckBox? _showTimeElapsed;
     private CheckBox? _showAngle;
+
     // Channel-specific state
     private string _medianColor = "#FF9800";
     private string _secondLineColor = "";
+
     // Pitchfork-specific state
     private string _pfMedianColor = "#FF9800";
     private string _pfArm1Color = "#2962FF";
     private string _pfArm2Color = "#2962FF";
+
+    // Pattern-specific state
+    private string _necklineColor = "#FF9800";
 
     public DrawingPropertiesWindow(Drawing drawing)
     {
@@ -88,6 +94,7 @@ public partial class DrawingPropertiesWindow : Window
             }
             GannBoxLevelsEditor.Levels = new System.Collections.ObjectModel.ObservableCollection<FibLevel>(sourceLevels);
         }
+
         // Channel settings initialization
         _medianColor = drawing.MedianLineColor;
         _secondLineColor = drawing.SecondLineColor;
@@ -120,6 +127,7 @@ public partial class DrawingPropertiesWindow : Window
                 UpdateSecondColorPreview();
             }
         }
+
         // Pitchfork settings initialization
         var isPitchfork = drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
             or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
@@ -133,6 +141,7 @@ public partial class DrawingPropertiesWindow : Window
             PfSeparateColorsPanel.Visibility = drawing.PitchforkUseSameColor ? Visibility.Collapsed : Visibility.Visible;
             PfExtendRightCheck.IsChecked = drawing.ExtendRight;
         }
+
         // Show the right section based on drawing kind
         if (drawing.Kind is DrawingKind.Text or DrawingKind.Note or DrawingKind.Sticker)
         {
@@ -142,15 +151,21 @@ public partial class DrawingPropertiesWindow : Window
         {
             GannSection.Visibility = Visibility.Visible;
         }
-
-        // Build per-tool display option checkboxes (inserted into OptionsPanel)
-        BuildLineOptionsUi(drawing);
+        else if (drawing.Kind is DrawingKind.XabcdPattern or DrawingKind.CypherPattern or DrawingKind.HeadAndShoulders
+              or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern)
+        {
+            PatternSection.Visibility = Visibility.Visible;
+            ShowRatiosCheck.IsChecked = drawing.ShowRatios;
+            ShowLabelsCheck.IsChecked = drawing.ShowLabels;
+            ShowApexCheck.IsChecked = drawing.ShowApex;
+            _necklineColor = drawing.NecklineColor;
+        }
 
         // Initialize Fibonacci levels editor if this is a Fibonacci tool
         var isFib = drawing.Kind is DrawingKind.Fibonacci or DrawingKind.FibExtension
-    or DrawingKind.FibChannel or DrawingKind.FibTimeZone or DrawingKind.TrendBasedFibTime
-    or DrawingKind.FibCircles or DrawingKind.FibSpiral or DrawingKind.FibArcs
-    or DrawingKind.FibWedge or DrawingKind.FibSpeedFan or DrawingKind.Pitchfan;
+                 or DrawingKind.FibChannel or DrawingKind.FibTimeZone or DrawingKind.TrendBasedFibTime
+                 or DrawingKind.FibCircles or DrawingKind.FibSpiral or DrawingKind.FibArcs
+                 or DrawingKind.FibWedge or DrawingKind.FibSpeedFan or DrawingKind.Pitchfan;
 
         if (isFib)
         {
@@ -165,6 +180,9 @@ public partial class DrawingPropertiesWindow : Window
             }
             FibLevelsEditor.Levels = new System.Collections.ObjectModel.ObservableCollection<FibLevel>(sourceLevels);
         }
+
+        // Build per-tool display option checkboxes (inserted into OptionsPanel)
+        BuildLineOptionsUi(drawing);
 
         // Build coordinate rows: time is read-only, price is editable
         for (var i = 0; i < drawing.Points.Count; i++)
@@ -211,11 +229,9 @@ public partial class DrawingPropertiesWindow : Window
 
     /// <summary>
     /// Builds per-tool display option checkboxes based on the drawing kind.
-    /// Each checkbox maps to a boolean property on the Drawing model.
     /// </summary>
     private void BuildLineOptionsUi(Drawing drawing)
     {
-        // Determine which options apply to this drawing kind
         var needsExtendLeft = drawing.Kind is DrawingKind.TrendLine or DrawingKind.Ray or DrawingKind.ExtendedLine;
         var needsExtendRight = drawing.Kind is DrawingKind.TrendLine;
         var needsPriceLabel = drawing.Kind is DrawingKind.TrendLine or DrawingKind.HorizontalLine
@@ -226,7 +242,6 @@ public partial class DrawingPropertiesWindow : Window
         var needsTimeElapsed = drawing.Kind == DrawingKind.InfoLine;
         var needsAngle = drawing.Kind is DrawingKind.InfoLine or DrawingKind.TrendAngle;
 
-        // If nothing applies, hide the whole options section
         if (!needsExtendLeft && !needsExtendRight && !needsPriceLabel && !needsTimeLabel
             && !needsPriceChange && !needsBarCount && !needsTimeElapsed && !needsAngle)
         {
@@ -238,7 +253,6 @@ public partial class DrawingPropertiesWindow : Window
         if (FindName("OptionsPanel") is not StackPanel optionsPanel) return;
         optionsPanel.Visibility = Visibility.Visible;
 
-        // Header
         optionsPanel.Children.Add(new TextBlock
         {
             Text = "Display options",
@@ -248,56 +262,16 @@ public partial class DrawingPropertiesWindow : Window
             Margin = new Thickness(0, 8, 0, 4)
         });
 
-        if (needsExtendLeft)
-        {
-            _extendLeft = MakeOptionCheckBox("Extend left", drawing.ExtendLeft);
-            optionsPanel.Children.Add(_extendLeft);
-        }
-
-        if (needsExtendRight)
-        {
-            _extendRight = MakeOptionCheckBox("Extend right", drawing.ExtendRight);
-            optionsPanel.Children.Add(_extendRight);
-        }
-
-        if (needsPriceLabel)
-        {
-            _showPriceLabels = MakeOptionCheckBox("Show price label", drawing.ShowPriceLabels);
-            optionsPanel.Children.Add(_showPriceLabels);
-        }
-
-        if (needsTimeLabel)
-        {
-            _showTimeLabel = MakeOptionCheckBox("Show time label", drawing.ShowTimeLabel);
-            optionsPanel.Children.Add(_showTimeLabel);
-        }
-
-        if (needsPriceChange)
-        {
-            _showPriceChange = MakeOptionCheckBox("Show price change %", drawing.ShowPriceChange);
-            optionsPanel.Children.Add(_showPriceChange);
-        }
-
-        if (needsBarCount)
-        {
-            _showBarCount = MakeOptionCheckBox("Show bar count", drawing.ShowBarCount);
-            optionsPanel.Children.Add(_showBarCount);
-        }
-
-        if (needsTimeElapsed)
-        {
-            _showTimeElapsed = MakeOptionCheckBox("Show time elapsed", drawing.ShowTimeElapsed);
-            optionsPanel.Children.Add(_showTimeElapsed);
-        }
-
-        if (needsAngle)
-        {
-            _showAngle = MakeOptionCheckBox("Show angle", drawing.ShowAngle);
-            optionsPanel.Children.Add(_showAngle);
-        }
+        if (needsExtendLeft) { _extendLeft = MakeOptionCheckBox("Extend left", drawing.ExtendLeft); optionsPanel.Children.Add(_extendLeft); }
+        if (needsExtendRight) { _extendRight = MakeOptionCheckBox("Extend right", drawing.ExtendRight); optionsPanel.Children.Add(_extendRight); }
+        if (needsPriceLabel) { _showPriceLabels = MakeOptionCheckBox("Show price label", drawing.ShowPriceLabels); optionsPanel.Children.Add(_showPriceLabels); }
+        if (needsTimeLabel) { _showTimeLabel = MakeOptionCheckBox("Show time label", drawing.ShowTimeLabel); optionsPanel.Children.Add(_showTimeLabel); }
+        if (needsPriceChange) { _showPriceChange = MakeOptionCheckBox("Show price change %", drawing.ShowPriceChange); optionsPanel.Children.Add(_showPriceChange); }
+        if (needsBarCount) { _showBarCount = MakeOptionCheckBox("Show bar count", drawing.ShowBarCount); optionsPanel.Children.Add(_showBarCount); }
+        if (needsTimeElapsed) { _showTimeElapsed = MakeOptionCheckBox("Show time elapsed", drawing.ShowTimeElapsed); optionsPanel.Children.Add(_showTimeElapsed); }
+        if (needsAngle) { _showAngle = MakeOptionCheckBox("Show angle", drawing.ShowAngle); optionsPanel.Children.Add(_showAngle); }
     }
 
-    /// <summary>Creates a styled checkbox consistent with the rest of the window.</summary>
     private CheckBox MakeOptionCheckBox(string label, bool isChecked)
     {
         return new CheckBox
@@ -310,7 +284,6 @@ public partial class DrawingPropertiesWindow : Window
     }
 
     #region Custom title bar
-
     private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2) { ToggleMaximize(); return; }
@@ -325,9 +298,7 @@ public partial class DrawingPropertiesWindow : Window
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-
     private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
-
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
     private void ToggleMaximize()
@@ -343,7 +314,6 @@ public partial class DrawingPropertiesWindow : Window
             MaximizeButton.Content = "❐";
         }
     }
-
     #endregion
 
     private void UpdateSwatch()
@@ -360,49 +330,64 @@ public partial class DrawingPropertiesWindow : Window
     }
 
     private void HexBox_TextChanged(object sender, TextChangedEventArgs e) => UpdateSwatch();
+
     private void FillBgCheck_Changed(object sender, RoutedEventArgs e)
     {
         FillOpacityPanel.Visibility = FillBgCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     }
+
     private void MedianColor_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string hex) return;
         _medianColor = hex;
     }
+
     private void SecondColor_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string hex) return;
         _secondLineColor = hex;
         UpdateSecondColorPreview();
     }
+
     private void UpdateSecondColorPreview()
     {
         try
         {
             SecondColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
-            string.IsNullOrEmpty(_secondLineColor) ? HexBox.Text : _secondLineColor));
+                string.IsNullOrEmpty(_secondLineColor) ? HexBox.Text : _secondLineColor));
         }
         catch { SecondColorPreview.Fill = new SolidColorBrush(Colors.Gray); }
     }
+
     private void PfSameColor_Changed(object sender, RoutedEventArgs e)
     {
         PfSeparateColorsPanel.Visibility = PfSameColorCheck.IsChecked == true ? Visibility.Collapsed : Visibility.Visible;
     }
+
     private void PfMedianColor_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string hex) return;
         _pfMedianColor = hex;
     }
+
     private void PfArm1Color_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string hex) return;
         _pfArm1Color = hex;
     }
+
     private void PfArm2Color_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string hex) return;
         _pfArm2Color = hex;
     }
+
+    private void NecklineColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _necklineColor = hex;
+    }
+
     private void Ok_Click(object sender, RoutedEventArgs e)
     {
         _drawing.Label = LabelBox.Text.Trim();
@@ -411,30 +396,25 @@ public partial class DrawingPropertiesWindow : Window
         _drawing.IsLocked = LockedCheck.IsChecked == true;
         _drawing.IsVisible = HiddenCheck.IsChecked != true;
 
-        // Save thickness and line style
         _drawing.LineWidth = WidthCombo.SelectedItem is int w ? w : 2;
         _drawing.LineStyle = StyleCombo.SelectedItem as string ?? "solid";
 
-        // Save font and size for text drawings
         if (_drawing.Kind is DrawingKind.Text or DrawingKind.Note or DrawingKind.Sticker)
         {
             _drawing.FontFamily = FontCombo.SelectedItem as string ?? "Trebuchet MS";
             _drawing.FontSize = FontSizeCombo.SelectedItem is int s ? s : 13;
         }
 
-        // Save Gann Square Fixed settings
         if (_drawing.Kind == DrawingKind.GannSquareFixed)
         {
             _drawing.GannSquareDivisions = GannSquareDivisionsCombo.SelectedItem is int div ? div : 4;
         }
 
-        // Save Gann Box levels
         if (_drawing.Kind == DrawingKind.GannBox && GannBoxLevelsEditor.Levels != null)
         {
             _drawing.FibLevels = new List<FibLevel>(GannBoxLevelsEditor.Levels);
         }
 
-        // Save Gann ratios
         if (_drawing.Kind == DrawingKind.GannFan)
         {
             var ratios = new List<double>();
@@ -445,7 +425,7 @@ public partial class DrawingPropertiesWindow : Window
             }
             _drawing.GannRatios = ratios.Count > 0 ? ratios : null;
         }
-        // Save channel settings
+
         var isChannelKind = _drawing.Kind is DrawingKind.ParallelChannel or DrawingKind.RegressionTrend
             or DrawingKind.FlatTopBottom or DrawingKind.DisjointChannel;
         if (isChannelKind)
@@ -462,9 +442,19 @@ public partial class DrawingPropertiesWindow : Window
             if (_drawing.Kind == DrawingKind.DisjointChannel)
                 _drawing.SecondLineColor = _secondLineColor;
         }
-        // Save pitchfork settings
+
+        var isPatternKind = _drawing.Kind is DrawingKind.XabcdPattern or DrawingKind.CypherPattern or DrawingKind.HeadAndShoulders
+                         or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern;
+        if (isPatternKind)
+        {
+            _drawing.ShowRatios = ShowRatiosCheck.IsChecked == true;
+            _drawing.ShowLabels = ShowLabelsCheck.IsChecked == true;
+            _drawing.ShowApex = ShowApexCheck.IsChecked == true;
+            _drawing.NecklineColor = _necklineColor;
+        }
+
         var isPfKind = _drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
-            or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
+                    or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
         if (isPfKind)
         {
             _drawing.PitchforkUseSameColor = PfSameColorCheck.IsChecked == true;
@@ -473,13 +463,12 @@ public partial class DrawingPropertiesWindow : Window
             _drawing.PitchforkArm2Color = _pfArm2Color;
             _drawing.ExtendRight = PfExtendRightCheck.IsChecked == true;
         }
-        // Save Fibonacci levels
+
         if (FibSection.Visibility == Visibility.Visible && FibLevelsEditor.Levels != null)
         {
             _drawing.FibLevels = new List<FibLevel>(FibLevelsEditor.Levels);
         }
 
-        // Save per-tool display options
         if (_extendLeft is not null) _drawing.ExtendLeft = _extendLeft.IsChecked == true;
         if (_extendRight is not null) _drawing.ExtendRight = _extendRight.IsChecked == true;
         if (_showPriceLabels is not null) _drawing.ShowPriceLabels = _showPriceLabels.IsChecked == true;
@@ -489,7 +478,6 @@ public partial class DrawingPropertiesWindow : Window
         if (_showTimeElapsed is not null) _drawing.ShowTimeElapsed = _showTimeElapsed.IsChecked == true;
         if (_showAngle is not null) _drawing.ShowAngle = _showAngle.IsChecked == true;
 
-        // Save edited prices
         for (var i = 0; i < _drawing.Points.Count && i < _priceBoxes.Count; i++)
         {
             if (decimal.TryParse(_priceBoxes[i].Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var price) && price > 0)

@@ -287,6 +287,12 @@
         }, window.__INITIAL_COLORS__ || {});
 
         const FIB_LEVELS = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+        function legRatio(pts, i1, i2, i3, i4) {
+            const len1 = Math.abs(pts[i2].price - pts[i1].price);
+            const len2 = Math.abs(pts[i4].price - pts[i3].price);
+            if (len1 === 0) return 0;
+            return len2 / len1;
+        }
         const FIB_EXTENSION_LEVELS = [1.272, 1.618, 2.618];
         const ALL_FIB_LEVELS = FIB_LEVELS.concat(FIB_EXTENSION_LEVELS);
 
@@ -953,7 +959,7 @@
 
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
-            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [], pfRoles: null };
+            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [], pfRoles: null, neckline: null };
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return g;
             const X = i => px(pts[i].time), Y = i => py(pts[i].price);
@@ -1188,12 +1194,126 @@
                 }
                 case 'gannfan': {
                     if (m === null) break;
-                    const ratios = d.gannRatios || [0.125, 0.25, 0.333, 0.5, 1, 2, 3, 4, 8];
-                    for (const r of ratios) {
-                        const yAt = x => y1 + m * r * (x - x1);
-                        g.lines.push([x1, y1, W, yAt(W)]);
+                    const ratios = d.gannRatios || [0.25, 0.5, 1, 2, 4];
+                    for (const r of ratios) { const yAt = x => y1 + m * r * (x - x1); g.lines.push([x1, y1, W, yAt(W)]); }
+                    break;
+                }
+                case 'xabcdpattern': {
+                    if (pts.length < 5) break;
+                    const labelsX = ['X', 'A', 'B', 'C', 'D'];
+                    for (let i = 0; i < 4; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        g.lines.push([xa, ya, xb, yb]);
+                        g.labels.push([labelsX[i], xa - 10, ya - 10]);
+                        if (d.showRatios !== false && i > 0) {
+                            const ratio = legRatio(pts, i - 1, i, i, i + 1);
+                            const mx = (xa + xb) / 2, my = (ya + yb) / 2;
+                            g.labels.push([ratio.toFixed(3), mx + 5, my - 5]);
+                        }
+                    }
+                    g.labels.push([labelsX[4], px(pts[4].time) - 10, py(pts[4].price) - 10]);
+                    break;
+                }
+                case 'cypherpattern': {
+                    if (pts.length < 5) break;
+                    const labelsC = ['X', 'A', 'B', 'C', 'D'];
+                    for (let i = 0; i < 4; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        g.lines.push([xa, ya, xb, yb]);
+                        g.labels.push([labelsC[i], xa - 10, ya - 10]);
+                        if (d.showRatios !== false && i > 0) {
+                            const ratio = legRatio(pts, i - 1, i, i, i + 1);
+                            const mx = (xa + xb) / 2, my = (ya + yb) / 2;
+                            g.labels.push([ratio.toFixed(3), mx + 5, my - 5]);
+                        }
+                    }
+                    g.labels.push([labelsC[4], px(pts[4].time) - 10, py(pts[4].price) - 10]);
+                    break;
+                }
+                case 'headandshoulders': {
+                    if (pts.length < 5) break;
+                    const hsLabels = ['L.Shoulder', '', 'Head', '', 'R.Shoulder'];
+                    for (let i = 0; i < 5; i++) {
+                        const x = px(pts[i].time), y = py(pts[i].price);
+                        if (d.showLabels !== false && hsLabels[i]) g.labels.push([hsLabels[i], x - 25, y - 10]);
+                    }
+                    for (let i = 0; i < 4; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        g.lines.push([xa, ya, xb, yb]);
+                    }
+                    const nx1 = px(pts[1].time), ny1 = py(pts[1].price);
+                    const nx2 = px(pts[3].time), ny2 = py(pts[3].price);
+                    g.neckline = slopeCoords(nx1, ny1, nx2, ny2, 'full');
+                    break;
+                }
+                case 'abcdpattern': {
+                    if (pts.length < 4) break;
+                    const labelsAB = ['A', 'B', 'C', 'D'];
+                    for (let i = 0; i < 3; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        g.lines.push([xa, ya, xb, yb]);
+                        g.labels.push([labelsAB[i], xa - 10, ya - 10]);
+                    }
+                    g.labels.push([labelsAB[3], px(pts[3].time) - 10, py(pts[3].price) - 10]);
+                    if (d.showRatios !== false) {
+                        const ratio = legRatio(pts, 0, 1, 2, 3);
+                        const mx = (px(pts[2].time) + px(pts[3].time)) / 2;
+                        const my = (py(pts[2].price) + py(pts[3].price)) / 2;
+                        g.labels.push([ratio.toFixed(3), mx + 5, my - 5]);
                     }
                     break;
+                }
+                case 'trianglepattern': {
+                    if (pts.length < 4) break;
+                    const x0 = px(pts[0].time), y0 = py(pts[0].price);
+                    const x1 = px(pts[1].time), y1 = py(pts[1].price);
+                    const x2 = px(pts[2].time), y2 = py(pts[2].price);
+                    const x3 = px(pts[3].time), y3 = py(pts[3].price);
+                    g.lines.push([x0, y0, x1, y1]);
+                    g.lines.push([x2, y2, x3, y3]);
+                    if (d.showApex !== false) {
+                        const m1 = (y1 - y0) / ((x1 - x0) || 1);
+                        const m2 = (y3 - y2) / ((x3 - x2) || 1);
+                        if (m1 !== m2) {
+                            const b1 = y0 - m1 * x0;
+                            const b2 = y2 - m2 * x2;
+                            const apexX = (b2 - b1) / (m1 - m2);
+                            const apexY = m1 * apexX + b1;
+                            g.dashed.push([x1, y1, apexX, apexY]);
+                            g.dashed.push([x3, y3, apexX, apexY]);
+                            g.labels.push(['Apex', apexX + 5, apexY - 5]);
+                        }
+                    }
+                    break;
+                }
+                case 'threedrivespattern': {
+                    if (pts.length < 7) break;
+                    for (let i = 0; i < 6; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        g.lines.push([xa, ya, xb, yb]);
+                    }
+                    if (d.showLabels !== false) {
+                        g.labels.push(['1', px(pts[1].time), py(pts[1].price) - 10]);
+                        g.labels.push(['2', px(pts[3].time), py(pts[3].price) - 10]);
+                        g.labels.push(['3', px(pts[5].time), py(pts[5].price) - 10]);
+                    }
+                    if (d.showRatios !== false) {
+                        const r1 = legRatio(pts, 0, 1, 2, 3);
+                        const r2 = legRatio(pts, 2, 3, 4, 5);
+                        const mx1 = (px(pts[2].time) + px(pts[3].time)) / 2;
+                        const my1 = (py(pts[2].price) + py(pts[3].price)) / 2;
+                        g.labels.push([r1.toFixed(3), mx1 + 5, my1 - 5]);
+                        const mx2 = (px(pts[4].time) + px(pts[5].time)) / 2;
+                        const my2 = (py(pts[4].price) + py(pts[5].price)) / 2;
+                        g.labels.push([r2.toFixed(3), mx2 + 5, my2 - 5]);
+                    }
+                    break;
+                }
                 }
                 case 'rectangle': {
                     const xL = Math.min(x1, x2), xR = Math.max(x1, x2), yT = Math.min(y1, y2), yB = Math.max(y1, y2);
@@ -1348,7 +1468,7 @@
                 'modifiedschiffpitchfork': 'Modified Schiff', 'insidepitchfork': 'Inside Pitchfork', 'fibextension': 'Fib Extension',
                 'fibtimezone': 'Fib Time Zone', 'fibcircles': 'Fib Circles', 'fibspiral': 'Fib Spiral', 'fibarcs': 'Fib Arcs',
                 'fibwedge': 'Fib Wedge', 'fibspeedfan': 'Fib Speed Fan', 'pitchfan': 'Pitchfan', 'gannbox': 'Gann Box',
-                'gannsquare': 'Gann Square', 'gannfan': 'Gann Fan', 'rectangle': 'Rectangle', 'rotatedrectangle': 'Rotated Rectangle',
+                'gannsquare': 'Gann Square', 'gannfan': 'Gann Fan', 'xabcdpattern': 'XABCD Pattern', 'cypherpattern': 'Cypher Pattern', 'headandshoulders': 'Head and Shoulders', 'abcdpattern': 'ABCD Pattern', 'trianglepattern': 'Triangle Pattern', 'threedrivespattern': 'Three Drives Pattern', 'rectangle': 'Rectangle',
                 'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle', 'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
                 'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down', 'brush': 'Brush', 'highlighter': 'Highlighter',
                 'text': 'Text', 'note': 'Note', 'pricelabel': 'Price Label', 'pin': 'Pin', 'flag': 'Flag', 'sticker': 'Sticker'
@@ -1405,6 +1525,14 @@
                 ctx.setLineDash([5, 5]);
                 for (const L of g.dashed) { ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[2], L[3]); ctx.stroke(); }
                 ctx.setLineDash([]);
+                if (g.neckline) {
+                    ctx.strokeStyle = d.necklineColor || '#FF9800';
+                    ctx.beginPath();
+                    ctx.moveTo(g.neckline[0], g.neckline[1]);
+                    ctx.lineTo(g.neckline[2], g.neckline[3]);
+                    ctx.stroke();
+                    ctx.strokeStyle = mainColor;
+                }
                 for (const c of g.circles) { ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2); ctx.stroke(); }
                 for (const a of g.arcs) { ctx.beginPath(); ctx.arc(a[0], a[1], a[2], a[3], a[4]); ctx.stroke(); }
 
@@ -1962,7 +2090,7 @@
 
         // ---------- Click / crosshair ----------
         const NEED = {
-            gannsquarefixed: 1,
+            xabcdpattern: 5, cypherpattern: 5, headandshoulders: 5, abcdpattern: 4, trianglepattern: 4, threedrivespattern: 7,
             horizontal: 1, verticalline: 1, crossline: 1,
             parallelchannel: 3, flattopbottom: 3,
             pitchfork: 3, schiffpitchfork: 3, modifiedschiffpitchfork: 3, insidepitchfork: 3,

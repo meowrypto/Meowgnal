@@ -226,6 +226,21 @@ Title="Drawing Properties" Height="600" Width="420"
                             <local:FibLevelsEditorControl x:Name="GannBoxLevelsEditor" Height="200" Margin="0,0,0,10"/>
                         </StackPanel>
 
+                        <!-- Pattern section (visible for pattern tools) -->
+                        <StackPanel x:Name="PatternSection" Visibility="Collapsed">
+                            <TextBlock Text="PATTERN SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <CheckBox x:Name="ShowRatiosCheck" Content="Show Fibonacci ratios" Margin="0,0,0,6"/>
+                            <CheckBox x:Name="ShowLabelsCheck" Content="Show labels" Margin="0,0,0,6"/>
+                            <CheckBox x:Name="ShowApexCheck" Content="Show apex (Triangle)" Margin="0,0,0,6"/>
+                            <TextBlock Text="Neckline color (H&amp;S):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,4,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="NecklineColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="NecklineColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="NecklineColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="NecklineColor_Click"/>
+                            </StackPanel>
+                        </StackPanel>
+
                         <!-- Gann section (visible only for Gann Fan) -->
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>

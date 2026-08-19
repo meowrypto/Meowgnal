@@ -1,21 +1,19 @@
 ﻿<Window x:Class="Meowgnal.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:views="clr-namespace:Meowgnal.Views"
-        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
-        Title="Meowgnal" Height="600" Width="980"
-        WindowStyle="None" Background="{DynamicResource BackgroundBrush}"
-        FontFamily="Trebuchet MS" FontSize="12"
-        PreviewKeyDown="Window_PreviewKeyDown">
-
+xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:views="clr-namespace:Meowgnal.Views"
+xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+Title="Meowgnal" Height="600" Width="980"
+WindowStyle="None" Background="{DynamicResource BackgroundBrush}"
+FontFamily="Trebuchet MS" FontSize="12"
+PreviewKeyDown="Window_PreviewKeyDown">
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="32"
-                      ResizeBorderThickness="6"
-                      GlassFrameThickness="0"
-                      CornerRadius="0"
-                      UseAeroCaptionButtons="False"/>
+ResizeBorderThickness="6"
+GlassFrameThickness="0"
+CornerRadius="0"
+UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
-
     <Window.Resources>
         <views:SignalTypeToBrushConverter x:Key="TypeToBrushConverter"/>
         <views:QualityToBrushConverter x:Key="QualityToBrushConverter"/>
@@ -28,7 +26,6 @@
         <SolidColorBrush x:Key="Accent" Color="{DynamicResource ColorAccent}"/>
         <SolidColorBrush x:Key="Up" Color="{DynamicResource ColorUp}"/>
         <SolidColorBrush x:Key="Down" Color="{DynamicResource ColorDown}"/>
-
         <Canvas x:Key="Icon_candles" x:Shared="False" Width="18" Height="14">
             <Line Canvas.Left="4" Canvas.Top="0" X1="0" Y1="0" X2="0" Y2="14" Stroke="#089981" StrokeThickness="1"/>
             <Rectangle Canvas.Left="2" Canvas.Top="4" Width="5" Height="7" Fill="#089981"/>
@@ -56,7 +53,6 @@
             <Line Canvas.Left="12" Canvas.Top="0" X1="0" Y1="0" X2="0" Y2="13" Stroke="#089981" StrokeThickness="1"/>
             <Rectangle Canvas.Left="10" Canvas.Top="2" Width="5" Height="6" RadiusX="1.5" RadiusY="1.5" Fill="#089981"/>
         </Canvas>
-
         <Canvas x:Key="Icon_cursor" x:Shared="False" Width="18" Height="18">
             <Path Data="M5,2 L5,15 L8.5,11.5 L11,16.5 L13,15.5 L10.5,10.5 L15,10.5 Z" Fill="#B2B5BE"/>
         </Canvas>
@@ -150,6 +146,9 @@
             <Line X1="9" Y1="2" X2="9" Y2="16" Stroke="#B2B5BE" StrokeThickness="1"/>
             <Line X1="2" Y1="9" X2="16" Y2="9" Stroke="#B2B5BE" StrokeThickness="1"/>
         </Canvas>
+        <Canvas x:Key="Icon_patterns" x:Shared="False" Width="18" Height="18">
+            <Polyline Points="1,14 5,4 9,10 13,2 17,14" Stroke="#B2B5BE" StrokeThickness="1.5" Fill="Transparent"/>
+        </Canvas>
         <Canvas x:Key="Icon_shapes" x:Shared="False" Width="18" Height="18">
             <Rectangle Canvas.Left="1" Canvas.Top="1" Width="8" Height="8" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
             <Ellipse Canvas.Left="9" Canvas.Top="9" Width="8" Height="8" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
@@ -162,7 +161,6 @@
             <Path Data="M3,14 L4,10 L11,3 L14,6 L7,13 Z" Fill="#B2B5BE"/>
             <Line X1="3" Y1="16" X2="15" Y2="16" Stroke="#B2B5BE" StrokeThickness="1.2"/>
         </Canvas>
-
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
@@ -183,7 +181,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="CloseButton" TargetType="Button" BasedOn="{StaticResource WindowControlButton}">
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
@@ -192,7 +189,6 @@
                 </Trigger>
             </Style.Triggers>
         </Style>
-
         <Style x:Key="ProfileMenuButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -213,7 +209,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="RailButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -237,7 +232,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="TvButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
@@ -249,7 +243,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+CornerRadius="4" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -262,7 +256,6 @@
                 </Setter.Value>
             </Setter>
         </Style>
-
         <Style x:Key="TvButtonLeft" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
@@ -274,7 +267,7 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+CornerRadius="4" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -288,48 +281,42 @@
             </Setter>
         </Style>
     </Window.Resources>
-
     <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="0">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-
             <Border Grid.Row="0" Background="{DynamicResource BgPanel}"
-                    BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                         <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Minimize_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+WindowChrome.IsHitTestVisibleInChrome="True"/>
                         <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+WindowChrome.IsHitTestVisibleInChrome="True"/>
                         <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" Click="Close_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
+WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
-
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Button x:Name="ProfileButton" Style="{StaticResource ProfileMenuButton}" Click="ProfileButton_Click" Margin="10,0,0,0"
-                                WindowChrome.IsHitTestVisibleInChrome="True">
+WindowChrome.IsHitTestVisibleInChrome="True">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock x:Name="ProfileAvatarText" Text="🐱" FontSize="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="▾" FontSize="9" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,1,0,0"/>
+                                <TextBlock Text="" FontSize="9" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,1,0,0"/>
                             </StackPanel>
                         </Button>
-
                         <Rectangle Width="1" Height="20" Fill="{DynamicResource BorderLine}" Margin="12,0,12,0"/>
-
                         <TextBlock Text="🐱" FontSize="14" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <TextBlock Text="Meowgnal" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" VerticalAlignment="Center" FontSize="13"/>
                         <TextBlock x:Name="TitleBarVersion" Text="" Foreground="{DynamicResource TextMuted}" FontSize="11" Margin="8,1,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
                 </DockPanel>
             </Border>
-
             <Popup x:Name="ProfilePopup" StaysOpen="False" AllowsTransparency="True"
-                   Placement="Bottom" PlacementTarget="{Binding ElementName=ProfileButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=ProfileButton}">
                 <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                        BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0" Width="240">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0" Width="240">
                     <StackPanel>
                         <Border Background="{DynamicResource BackgroundBrush}" CornerRadius="4" Padding="12" Margin="4,4,4,8">
                             <StackPanel Orientation="Horizontal">
@@ -340,16 +327,15 @@
                                 </StackPanel>
                             </StackPanel>
                         </Border>
-
                         <Button Style="{StaticResource TvButtonLeft}" Content="⚙  App settings" Click="MenuSettings_Click"/>
                         <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
-                        <Button Style="{StaticResource TvButtonLeft}" Content="❓  Help Center" Click="MenuHelp_Click"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="  Help Center" Click="MenuHelp_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="✨  What's new" Click="MenuWhatsNew_Click"/>
                         <Button x:Name="MenuAcademy" Style="{DynamicResource TvButtonLeft}"
-                            Click="MenuAcademy_Click"
-                            WindowChrome.IsHitTestVisibleInChrome="True">
+Click="MenuAcademy_Click"
+WindowChrome.IsHitTestVisibleInChrome="True">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="📚" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock Text="" Margin="0,0,8,0" VerticalAlignment="Center"/>
                                 <TextBlock Text="Indicator Academy" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -357,31 +343,29 @@
                         <Button Style="{StaticResource TvButtonLeft}" Content="🌙  Dark theme" Click="ThemeDark_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="☀️  Light theme" Click="ThemeLight_Click"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="🖥️  Match Windows" Click="ThemeSystem_Click"/>
-                        <Button Style="{StaticResource TvButtonLeft}" Content="🎨  Custom colors…" Click="ThemeCustom_Click"/>
+                        <Button Style="{StaticResource TvButtonLeft}" Content="  Custom colors…" Click="ThemeCustom_Click"/>
                         <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
                         <Button Style="{StaticResource TvButtonLeft}" Content="🚪  Sign out / Switch profile" Click="MenuSignOut_Click" Foreground="{DynamicResource Down}"/>
                     </StackPanel>
                 </Border>
             </Popup>
-
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="48"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="250"/>
                 </Grid.ColumnDefinitions>
-
                 <Border Grid.Column="0" Background="{DynamicResource BgPanel}"
-                        BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
                     <StackPanel VerticalAlignment="Top" Margin="0,8,0,0">
                         <Button x:Name="CursorGroupButton" Style="{StaticResource RailButton}"
-        Click="CursorGroup_Click" ToolTip="Cursor tools">
+Click="CursorGroup_Click" ToolTip="Cursor tools">
                             <ContentControl x:Name="CursorGroupIcon" Content="{StaticResource Icon_cross}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="CursorPopup" StaysOpen="False" AllowsTransparency="True"
-       Placement="Right" PlacementTarget="{Binding ElementName=CursorGroupButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=CursorGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-            BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
                                     <Button x:Name="CursorCrossItem" Style="{StaticResource TvButtonLeft}" Tag="cur_cross" Click="ToolButton_Click">
                                         <StackPanel Orientation="Horizontal">
@@ -421,14 +405,13 @@
                                     </Button>
                                     <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
                                     <CheckBox x:Name="LongPressTooltipToggle" Content="Values tooltip on long press"
-                      Foreground="{DynamicResource TextSecondary}" FontSize="12"
-                      Margin="8,4,4,4" Click="LongPressTooltip_Click"/>
+Foreground="{DynamicResource TextSecondary}" FontSize="12"
+Margin="8,4,4,4" Click="LongPressTooltip_Click"/>
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Button x:Name="LineGroupButton" Style="{StaticResource RailButton}"
-                                Click="LineGroup_Click" ToolTip="Line tools">
+Click="LineGroup_Click" ToolTip="Line tools">
                             <ContentControl Content="{StaticResource Icon_trend}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="LinePopup" StaysOpen="False" AllowsTransparency="True"
@@ -504,32 +487,8 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="disjointchannel" Click="ToolButton_Click">
                                         <TextBlock Text="Disjoint Channel (4 clicks)" VerticalAlignment="Center"/>
                                     </Button>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-
-                        <Button x:Name="ChannelGroupButton" Style="{StaticResource RailButton}"
-                                Click="ChannelGroup_Click" ToolTip="Channel and pitchfork tools">
-                            <ContentControl Content="{StaticResource Icon_hline}" Width="18" Height="18"/>
-                        </Button>
-                        <Popup x:Name="ChannelPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=ChannelGroupButton}">
-                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
-                                <StackPanel>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="parallelchannel" Click="ToolButton_Click">
-                                        <TextBlock Text="Parallel Channel (3 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="regressiontrend" Click="ToolButton_Click">
-                                        <TextBlock Text="Regression Trend" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="flattopbottom" Click="ToolButton_Click">
-                                        <TextBlock Text="Flat Top/Bottom (3 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="disjointchannel" Click="ToolButton_Click">
-                                        <TextBlock Text="Disjoint Channel (4 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="PITCHFORKS" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="pitchfork" Click="ToolButton_Click">
                                         <TextBlock Text="Pitchfork (3 clicks)" VerticalAlignment="Center"/>
                                     </Button>
@@ -545,15 +504,14 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Button x:Name="FibGroupButton" Style="{StaticResource RailButton}"
-                                Click="FibGroup_Click" ToolTip="Fibonacci tools">
+Click="FibGroup_Click" ToolTip="Fibonacci &amp; Gann tools">
                             <ContentControl Content="{StaticResource Icon_fib}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="FibPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=FibGroupButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=FibGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="fib" Click="ToolButton_Click">
                                         <TextBlock Text="Fib Retracement" VerticalAlignment="Center"/>
@@ -588,19 +546,8 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="pitchfan" Click="ToolButton_Click">
                                         <TextBlock Text="Pitchfan" VerticalAlignment="Center"/>
                                     </Button>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-
-                        <Button x:Name="GannGroupButton" Style="{StaticResource RailButton}"
-                                Click="GannGroup_Click" ToolTip="Gann tools">
-                            <ContentControl Content="{StaticResource Icon_gann}" Width="18" Height="18"/>
-                        </Button>
-                        <Popup x:Name="GannPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=GannGroupButton}">
-                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
-                                <StackPanel>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="GANN" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="gannbox" Click="ToolButton_Click">
                                         <TextBlock Text="Gann Box" VerticalAlignment="Center"/>
                                     </Button>
@@ -616,15 +563,45 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-
+                        <Button x:Name="PatternsGroupButton" Style="{StaticResource RailButton}"
+Click="PatternsGroup_Click" ToolTip="Chart patterns">
+                            <ContentControl Content="{StaticResource Icon_patterns}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="PatternsPopup" StaysOpen="False" AllowsTransparency="True"
+Placement="Right" PlacementTarget="{Binding ElementName=PatternsGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="CHART PATTERNS" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="xabcdpattern" Click="ToolButton_Click">
+                                        <TextBlock Text="XABCD Pattern (5 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="cypherpattern" Click="ToolButton_Click">
+                                        <TextBlock Text="Cypher Pattern (5 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="headandshoulders" Click="ToolButton_Click">
+                                        <TextBlock Text="Head and Shoulders (5 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="abcdpattern" Click="ToolButton_Click">
+                                        <TextBlock Text="ABCD Pattern (4 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="trianglepattern" Click="ToolButton_Click">
+                                        <TextBlock Text="Triangle Pattern (4 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="threedrivespattern" Click="ToolButton_Click">
+                                        <TextBlock Text="Three Drives Pattern (7 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
                         <Button x:Name="ShapesGroupButton" Style="{StaticResource RailButton}"
-                                Click="ShapesGroup_Click" ToolTip="Geometric shapes">
+Click="ShapesGroup_Click" ToolTip="Geometric shapes">
                             <ContentControl Content="{StaticResource Icon_shapes}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="ShapesPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=ShapesGroupButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=ShapesGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="rectangle" Click="ToolButton_Click">
                                         <TextBlock Text="Rectangle (2 clicks)" VerticalAlignment="Center"/>
@@ -650,15 +627,14 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Button x:Name="BrushGroupButton" Style="{StaticResource RailButton}"
-                                Click="BrushGroup_Click" ToolTip="Arrows and brush">
+Click="BrushGroup_Click" ToolTip="Arrows and brush">
                             <ContentControl Content="{StaticResource Icon_brush}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="BrushPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=BrushGroupButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=BrushGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="arrow" Click="ToolButton_Click">
                                         <TextBlock Text="Arrow (2 clicks)" VerticalAlignment="Center"/>
@@ -679,15 +655,14 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Button x:Name="AnnotGroupButton" Style="{StaticResource RailButton}"
-                                Click="AnnotGroup_Click" ToolTip="Text and annotations">
+Click="AnnotGroup_Click" ToolTip="Text and annotations">
                             <ContentControl Content="{StaticResource Icon_annot}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="AnnotPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=AnnotGroupButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=AnnotGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="text" Click="ToolButton_Click">
                                         <TextBlock Text="Text (type on chart)" VerticalAlignment="Center"/>
@@ -711,33 +686,31 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Rectangle Width="24" Height="1" Fill="{DynamicResource BorderLine}" Margin="0,6,0,6"/>
-
                         <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
-                                Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
+Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
                             <ContentControl Content="{StaticResource Icon_autosr}" Width="18" Height="18"/>
                         </Button>
                         <Button x:Name="ToggleDrawingsButton" Style="{StaticResource RailButton}"
-                                Click="ToggleDrawingsVisibility_Click" ToolTip="Show / hide all drawings">
+Click="ToggleDrawingsVisibility_Click" ToolTip="Show / hide all drawings">
                             <TextBlock Text="👁" FontSize="15"/>
                         </Button>
                         <Button x:Name="ObjectsRailButton" Style="{StaticResource RailButton}"
-                                Click="ObjectsButton_Click" ToolTip="Objects list — manage drawings">
+Click="ObjectsButton_Click" ToolTip="Objects list — manage drawings">
                             <TextBlock Text="📋" FontSize="15"/>
                         </Button>
                         <Button x:Name="ColorPickerButton" Style="{StaticResource RailButton}"
-                                Click="ColorPickerButton_Click" ToolTip="Default color for new drawings">
+Click="ColorPickerButton_Click" ToolTip="Default color for new drawings">
                             <TextBlock Text="🎨" FontSize="15"/>
                         </Button>
                         <Button x:Name="ToolClearButton" Style="{StaticResource RailButton}" Tag="clear"
-                                Click="TrashButton_Click" ToolTip="Delete drawings">
+Click="TrashButton_Click" ToolTip="Delete drawings">
                             <ContentControl Content="{StaticResource Icon_trash}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="TrashPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=ToolClearButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=ToolClearButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
                                     <Button Style="{StaticResource TvButtonLeft}" Click="ClearAllDrawings_Click">
                                         <TextBlock Text="🗑 Delete ALL drawings" VerticalAlignment="Center"/>
@@ -748,14 +721,13 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Popup x:Name="ColorPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=ColorPickerButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=ColorPickerButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="10" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="10" Margin="4,0,0,0">
                                 <StackPanel>
                                     <TextBlock Text="Default drawing color" Foreground="{DynamicResource TextSecondary}"
-                                               FontSize="11" Margin="0,0,0,8"/>
+FontSize="11" Margin="0,0,0,8"/>
                                     <StackPanel Orientation="Horizontal">
                                         <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#2962FF" Tag="#2962FF" Click="DefaultColor_Click"/>
                                         <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#089981" Tag="#089981" Click="DefaultColor_Click"/>
@@ -769,11 +741,10 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-
                         <Popup x:Name="ObjectsPopup" StaysOpen="False" AllowsTransparency="True"
-                               Placement="Right" PlacementTarget="{Binding ElementName=ObjectsRailButton}">
+Placement="Right" PlacementTarget="{Binding ElementName=ObjectsRailButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                    BorderThickness="1" CornerRadius="4" Padding="8" Margin="4,0,0,0" Width="360">
+BorderThickness="1" CornerRadius="4" Padding="8" Margin="4,0,0,0" Width="360">
                                 <StackPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                                         <TextBlock Text="📋 Objects — " Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
@@ -793,7 +764,6 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                         </Popup>
                     </StackPanel>
                 </Border>
-
                 <Grid Grid.Column="1">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -803,30 +773,28 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-
                     <Border Grid.Row="0" BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
                         <StackPanel Orientation="Horizontal">
                             <StackPanel x:Name="TabsPanel" Orientation="Horizontal"/>
                             <Button x:Name="AddTabButton" Content="＋" Style="{StaticResource TvButton}"
-                                    ToolTip="Open a new chart tab" Click="AddTabButton_Click"/>
+ToolTip="Open a new chart tab" Click="AddTabButton_Click"/>
                             <Popup x:Name="NewTabPopup" StaysOpen="False" AllowsTransparency="True"
-                                   Placement="Bottom" PlacementTarget="{Binding ElementName=AddTabButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=AddTabButton}">
                                 <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                        BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
                                     <StackPanel>
                                         <TextBlock Text="Symbol (e.g. ETH/USDT)" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                         <TextBox x:Name="NewTabSymbolBox" Text="ETH/USDT" Width="170" Margin="0,4,0,8"
-                                                 Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                 BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                         <Button Content="Open chart" Style="{StaticResource TvButton}" Click="NewTabOpen_Click"/>
                                     </StackPanel>
                                 </Border>
                             </Popup>
                         </StackPanel>
                     </Border>
-
                     <Border Grid.Row="1" Background="{DynamicResource BgPanel}"
-                            BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="10,6">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="10,6">
                         <Grid>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <TextBlock x:Name="SymbolText" Text="BTC/USDT" Foreground="{DynamicResource TextPrimary}" FontSize="13" FontWeight="Bold" VerticalAlignment="Center"/>
@@ -841,17 +809,16 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                             </StackPanel>
                         </Grid>
                     </Border>
-
                     <Border Grid.Row="2" BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="8,4">
                         <Grid>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                 <StackPanel x:Name="TimeframePanel" Orientation="Horizontal"/>
                                 <Button x:Name="TimeframeMenuButton" Content="▾" Style="{StaticResource TvButton}"
-                                        ToolTip="All timeframes" Click="TimeframeMenuButton_Click"/>
+ToolTip="All timeframes" Click="TimeframeMenuButton_Click"/>
                                 <Popup x:Name="TimeframePopup" StaysOpen="False" AllowsTransparency="True"
-                                       Placement="Bottom" PlacementTarget="{Binding ElementName=TimeframeMenuButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=TimeframeMenuButton}">
                                     <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                            BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
                                         <ScrollViewer x:Name="TimeframeMenuScroll" VerticalScrollBarVisibility="Auto" MaxHeight="640">
                                             <StackPanel x:Name="TimeframeMenuPanel"/>
                                         </ScrollViewer>
@@ -866,9 +833,9 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     </StackPanel>
                                 </Button>
                                 <Popup x:Name="ChartTypePopup" StaysOpen="False" AllowsTransparency="True"
-                                       Placement="Bottom" PlacementTarget="{Binding ElementName=ChartTypeButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=ChartTypeButton}">
                                     <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                            BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
                                         <StackPanel>
                                             <Button Style="{StaticResource TvButtonLeft}" Tag="candles" Click="ChartTypeItem_Click">
                                                 <StackPanel Orientation="Horizontal">
@@ -912,15 +879,15 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     </StackPanel>
                                 </Button>
                                 <Popup x:Name="IndicatorPopup" StaysOpen="False" AllowsTransparency="True"
-                                       Placement="Bottom" PlacementTarget="{Binding ElementName=IndicatorButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=IndicatorButton}">
                                     <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                            BorderThickness="1" CornerRadius="4" Padding="0" Margin="0,4,0,0">
+BorderThickness="1" CornerRadius="4" Padding="0" Margin="0,4,0,0">
                                         <views:IndicatorPanel x:Name="IndicatorPanelControl"/>
                                     </Border>
                                 </Popup>
                                 <Button x:Name="ReplayButton" Style="{StaticResource TvButton}" Click="ReplayButton_Click" ToolTip="Replay Mode — practice without seeing the future">
                                     <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="⏯" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                        <TextBlock Text="❯" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                         <TextBlock Text="Replay Mode" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
@@ -931,14 +898,12 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                             </StackPanel>
                         </Grid>
                     </Border>
-
                     <Grid Grid.Row="3" Background="{DynamicResource BackgroundBrush}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-
                         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10,6,0,0">
                             <TextBlock Text="O" Foreground="{DynamicResource TextMuted}" FontSize="11" VerticalAlignment="Center"/>
                             <TextBlock x:Name="OhlcOpenText" Text="—" FontSize="11" Margin="3,0,10,0" VerticalAlignment="Center"/>
@@ -950,17 +915,16 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                             <TextBlock x:Name="OhlcCloseText" Text="—" FontSize="11" Margin="3,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                         <wv2:WebView2 Grid.Row="1" x:Name="ChartWebView"/>
-
                         <Border Grid.Row="2" x:Name="ReplayBar" Visibility="Collapsed"
-                                Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                BorderThickness="0,1,0,0" Padding="10,6">
+Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+BorderThickness="0,1,0,0" Padding="10,6">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Start:" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <DatePicker x:Name="ReplayDatePicker" Width="130" VerticalAlignment="Center" Margin="0,0,10,0"
-                                            SelectedDateChanged="ReplayDatePicker_SelectedDateChanged"/>
-                                <Button x:Name="ReplayResetButton" Content="⏮ Reset" Style="{StaticResource TvButton}" Click="ReplayReset_Click" Margin="0,0,6,0"/>
+SelectedDateChanged="ReplayDatePicker_SelectedDateChanged"/>
+                                <Button x:Name="ReplayResetButton" Content="↮ Reset" Style="{StaticResource TvButton}" Click="ReplayReset_Click" Margin="0,0,6,0"/>
                                 <Button x:Name="ReplayPlayButton" Content="▶ Play" Style="{StaticResource TvButton}" Click="ReplayPlay_Click" Margin="0,0,6,0"/>
-                                <Button x:Name="ReplayStepButton" Content="⏭ Step" Style="{StaticResource TvButton}" Click="ReplayStep_Click" Margin="0,0,10,0"/>
+                                <Button x:Name="ReplayStepButton" Content="❮ Step" Style="{StaticResource TvButton}" Click="ReplayStep_Click" Margin="0,0,10,0"/>
                                 <TextBlock Text="Speed:" Foreground="{DynamicResource TextMuted}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <ComboBox x:Name="ReplaySpeedCombo" Width="110" VerticalAlignment="Center" SelectionChanged="ReplaySpeedCombo_Changed">
                                     <ComboBoxItem Content="Slow (2s)" Tag="2000"/>
@@ -968,13 +932,13 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     <ComboBoxItem Content="Fast (0.5s)" Tag="500"/>
                                 </ComboBox>
                                 <CheckBox x:Name="BlindModeCheck" Content="🙈 Blind Mode" VerticalAlignment="Center" Margin="0,0,16,0"
-                                          Foreground="{DynamicResource TextPrimary}"
-                                          Checked="BlindModeCheck_Changed" Unchecked="BlindModeCheck_Changed"/>
+Foreground="{DynamicResource TextPrimary}"
+Checked="BlindModeCheck_Changed" Unchecked="BlindModeCheck_Changed"/>
                                 <Button x:Name="ReplayGuessButton" Content="📝 Guess" Style="{StaticResource TvButton}" Click="ReplayGuessButton_Click" Margin="0,0,10,0"/>
                                 <Popup x:Name="GuessPopup" StaysOpen="False" AllowsTransparency="True"
-                                       Placement="Top" PlacementTarget="{Binding ElementName=ReplayGuessButton}">
+Placement="Top" PlacementTarget="{Binding ElementName=ReplayGuessButton}">
                                     <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                            BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,4">
+BorderThickness="1" CornerRadius="4" Padding="8" Margin="0,0,0,4">
                                         <StackPanel Orientation="Horizontal">
                                             <Button Style="{StaticResource TvButton}" Click="GuessLong_Click" Margin="0,0,6,0">
                                                 <StackPanel Orientation="Horizontal">
@@ -1002,13 +966,11 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                             </StackPanel>
                         </Border>
                     </Grid>
-
                     <Grid Grid.Row="4" Margin="10,8">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-
                         <StackPanel Grid.Row="0" Orientation="Horizontal">
                             <Border Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8" Margin="0,0,8,0">
                                 <StackPanel>
@@ -1029,47 +991,44 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </StackPanel>
-
-                        <!-- Learning path banner: shown only when user hasn't completed all 4 steps -->
                         <Border x:Name="LearningPathBanner" Grid.Row="1" Visibility="Collapsed"
-                                Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8"
-                                Margin="0,8,0,0" Cursor="Hand" MouseLeftButtonUp="LearningPathBanner_Click">
+Background="{DynamicResource BgPanel}" CornerRadius="4" Padding="12,8"
+Margin="0,8,0,0" Cursor="Hand" MouseLeftButtonUp="LearningPathBanner_Click">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="🎓" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBlock Text="New here? Start the guided walkthrough"
-                                           Foreground="{DynamicResource Accent}" FontSize="12"
-                                           VerticalAlignment="Center"/>
+Foreground="{DynamicResource Accent}" FontSize="12"
+VerticalAlignment="Center"/>
                             </StackPanel>
                         </Border>
                     </Grid>
-
                     <Border Grid.Row="5" Background="{DynamicResource BgPanel}"
-                            BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,1,0,0" Padding="10,4">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,1,0,0" Padding="10,4">
                         <Grid>
                             <TextBlock HorizontalAlignment="Left" VerticalAlignment="Center" FontSize="11"
-                                       Foreground="{DynamicResource TextMuted}">
-                                <Hyperlink NavigateUri="https://www.tradingview.com"
-                                           RequestNavigate="TradingViewLink_RequestNavigate"
-                                           Foreground="{DynamicResource TextMuted}"
-                                           TextDecorations="None">Chart powered by TradingView Lightweight Charts</Hyperlink>
+Foreground="{DynamicResource TextMuted}">
+<Hyperlink NavigateUri="https://www.tradingview.com"
+RequestNavigate="TradingViewLink_RequestNavigate"
+Foreground="{DynamicResource TextMuted}"
+TextDecorations="None">Chart powered by TradingView Lightweight Charts</Hyperlink>
                             </TextBlock>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                                 <TextBlock x:Name="PaperStatusText" Text="" FontSize="11" Foreground="{DynamicResource TextMuted}" Margin="0,0,12,0"/>
                                 <Button x:Name="ClockButton" Style="{StaticResource TvButton}" Click="ClockButton_Click"
-                                        ToolTip="Clock time zone — click to change">
+ToolTip="Clock time zone — click to change">
                                     <StackPanel Orientation="Horizontal">
                                         <TextBlock x:Name="ClockText" Text="--:--:--" FontSize="11"
-                                                   Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
+Foreground="{DynamicResource TextSecondary}" VerticalAlignment="Center"/>
                                         <TextBlock x:Name="ClockZoneText" Text="UTC" FontSize="11"
-                                                   Foreground="{DynamicResource TextMuted}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+Foreground="{DynamicResource TextMuted}" Margin="6,0,0,0" VerticalAlignment="Center"/>
                                         <TextBlock Text="▾" FontSize="8" Foreground="{DynamicResource TextMuted}"
-                                                   Margin="4,1,0,0" VerticalAlignment="Center"/>
+Margin="4,1,0,0" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                                 <Popup x:Name="ClockPopup" StaysOpen="False" AllowsTransparency="True"
-                                       Placement="Top" PlacementTarget="{Binding ElementName=ClockButton}">
+Placement="Top" PlacementTarget="{Binding ElementName=ClockButton}">
                                     <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                            BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,0,0,4" Width="270">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,0,0,4" Width="270">
                                         <StackPanel>
                                             <Button Style="{StaticResource TvButtonLeft}" Tag="utc" Click="ClockMode_Click">
                                                 <TextBlock Text="UTC — exchange standard" FontSize="11"/>
@@ -1088,12 +1047,11 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                         </Grid>
                     </Border>
                 </Grid>
-
                 <Border Grid.Column="2" Background="{DynamicResource BackgroundBrush}"
-                        BorderBrush="{DynamicResource BorderLine}" BorderThickness="1,0,0,0">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="1,0,0,0">
                     <DockPanel>
                         <Border DockPanel.Dock="Top" Background="{DynamicResource BgPanel}"
-                                BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -1101,17 +1059,16 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <Button x:Name="TabWatchlistButton" Content="Watchlist" Style="{StaticResource TvButton}"
-                                        Background="{DynamicResource Accent}" Foreground="White" Click="RightTabWatchlist_Click"/>
+Background="{DynamicResource Accent}" Foreground="White" Click="RightTabWatchlist_Click"/>
                                 <Button x:Name="TabSignalsButton" Grid.Column="1" Content="Signals" Style="{StaticResource TvButton}"
-                                        Click="RightTabSignals_Click"/>
+Click="RightTabSignals_Click"/>
                                 <Button x:Name="TabPaperButton" Grid.Column="2" Content="Paper" Style="{StaticResource TvButton}"
-                                        Click="RightTabPaper_Click"/>
+Click="RightTabPaper_Click"/>
                             </Grid>
                         </Border>
-
                         <DockPanel x:Name="WatchlistPane">
                             <Border DockPanel.Dock="Top" Padding="6,5"
-                                    BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="*"/>
@@ -1119,71 +1076,66 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <Button x:Name="WatchlistNameButton" Style="{StaticResource TvButtonLeft}"
-                                            Click="WatchlistNameButton_Click" ToolTip="Switch watchlist">
+Click="WatchlistNameButton_Click" ToolTip="Switch watchlist">
                                         <StackPanel Orientation="Horizontal">
                                             <TextBlock x:Name="WatchlistNameText" Text="Main" Foreground="{DynamicResource TextPrimary}"
-                                                       FontWeight="Bold" VerticalAlignment="Center"/>
+FontWeight="Bold" VerticalAlignment="Center"/>
                                             <TextBlock Text="▾" FontSize="9" Foreground="{DynamicResource TextMuted}"
-                                                       VerticalAlignment="Center" Margin="6,1,0,0"/>
+VerticalAlignment="Center" Margin="6,1,0,0"/>
                                         </StackPanel>
                                     </Button>
                                     <Button x:Name="NewWatchlistButton" Grid.Column="1" Content="＋ List" Style="{StaticResource TvButton}"
-                                            ToolTip="Create a new watchlist" Click="NewWatchlistButton_Click"/>
+ToolTip="Create a new watchlist" Click="NewWatchlistButton_Click"/>
                                     <Button x:Name="AddSymbolButton" Grid.Column="2" Content="＋ Symbol" Style="{StaticResource TvButton}"
-                                            ToolTip="Add a symbol to this watchlist" Click="AddSymbolButton_Click"/>
-
+ToolTip="Add a symbol to this watchlist" Click="AddSymbolButton_Click"/>
                                     <Popup x:Name="WatchlistSwitchPopup" StaysOpen="False" AllowsTransparency="True"
-                                           Placement="Bottom" PlacementTarget="{Binding ElementName=WatchlistNameButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=WatchlistNameButton}">
                                         <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                                BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="0,4,0,0">
                                             <StackPanel x:Name="SwitchListPanel"/>
                                         </Border>
                                     </Popup>
-
                                     <Popup x:Name="NewWatchlistPopup" StaysOpen="False" AllowsTransparency="True"
-                                           Placement="Bottom" PlacementTarget="{Binding ElementName=NewWatchlistButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=NewWatchlistButton}">
                                         <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
                                             <StackPanel>
                                                 <TextBlock Text="Watchlist name" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                 <TextBox x:Name="NewWatchlistNameBox" Width="160" Margin="0,4,0,8"
-                                                         Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                         BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                 <Button Content="Create" Style="{StaticResource TvButton}" Click="NewWatchlistConfirm_Click"/>
                                             </StackPanel>
                                         </Border>
                                     </Popup>
-
                                     <Popup x:Name="AddSymbolPopup" StaysOpen="False" AllowsTransparency="True"
-                                           Placement="Bottom" PlacementTarget="{Binding ElementName=AddSymbolButton}">
+Placement="Bottom" PlacementTarget="{Binding ElementName=AddSymbolButton}">
                                         <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                                BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
+BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,4,0,0">
                                             <StackPanel>
                                                 <TextBlock Text="Symbol (e.g. BTC/USDT)" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                 <TextBox x:Name="AddSymbolBox" Text="BTC/USDT" Width="200" Margin="0,4,0,8"
-                                                         TextChanged="AddSymbolBox_TextChanged"
-                                                         Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                         BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+TextChanged="AddSymbolBox_TextChanged"
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                 <TextBlock Text="Pick the price source:" Foreground="{DynamicResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                                                 <RadioButton x:Name="SourceBinanceRadio" Content="Binance — …" GroupName="AddSrc"
-                                                             Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
+Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,4"/>
                                                 <RadioButton x:Name="SourceHyperRadio" Content="Hyperliquid — …" GroupName="AddSrc"
-                                                             Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
+Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,8"/>
                                                 <Button Content="Add to watchlist" Style="{StaticResource TvButton}" Click="AddSymbolConfirm_Click"/>
                                             </StackPanel>
                                         </Border>
                                     </Popup>
                                 </Grid>
                             </Border>
-
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel x:Name="WatchlistRowsPanel" Margin="10,8,10,8"/>
                             </ScrollViewer>
                         </DockPanel>
-
                         <DockPanel x:Name="SignalsPane" Visibility="Collapsed">
                             <Border DockPanel.Dock="Top" Background="{DynamicResource BgPanel}"
-                                    BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,8">
                                 <TextBlock Text="Active signals" Foreground="{DynamicResource TextSecondary}" FontSize="12" FontWeight="Bold"/>
                             </Border>
                             <ItemsControl x:Name="SignalsList">
@@ -1198,11 +1150,11 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Text="{Binding Symbol}" Foreground="{DynamicResource TextPrimary}" FontSize="12" FontWeight="Bold"/>
                                                     <Border Grid.Column="1" CornerRadius="3" Padding="6,1" Margin="0,0,6,0"
-                                                            Background="{Binding Type, Converter={StaticResource TypeToBrushConverter}}">
+Background="{Binding Type, Converter={StaticResource TypeToBrushConverter}}">
                                                         <TextBlock Text="{Binding Type}" FontSize="10" Foreground="White"/>
                                                     </Border>
                                                     <Border Grid.Column="1" CornerRadius="3" Padding="4,1" HorizontalAlignment="Right"
-                                                            Background="{Binding QualityLabel, Converter={StaticResource QualityToBrushConverter}}">
+Background="{Binding QualityLabel, Converter={StaticResource QualityToBrushConverter}}">
                                                         <TextBlock Text="{Binding QualityLabel}" FontSize="10" Foreground="White"/>
                                                     </Border>
                                                 </Grid>
@@ -1214,10 +1166,9 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </DockPanel>
-
                         <DockPanel x:Name="PaperPane" Visibility="Collapsed">
                             <Border DockPanel.Dock="Top" Background="{DynamicResource BgPanel}"
-                                    BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,10">
+BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="12,10">
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
@@ -1227,7 +1178,7 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                         <StackPanel>
                                             <TextBlock Text="PAPER BALANCE" Foreground="{DynamicResource TextMuted}" FontSize="10"/>
                                             <TextBlock x:Name="PaperBalanceText" Text="—" Foreground="{DynamicResource TextPrimary}"
-                                                       FontSize="16" FontWeight="Bold" Margin="0,2,0,0"/>
+FontSize="16" FontWeight="Bold" Margin="0,2,0,0"/>
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" HorizontalAlignment="Right">
                                             <TextBlock Text="UNREALIZED PNL" Foreground="{DynamicResource TextMuted}" FontSize="10"/>
@@ -1235,59 +1186,58 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                         </StackPanel>
                                     </Grid>
                                     <TextBlock x:Name="PaperEquityText" Text="Equity: —" Foreground="{DynamicResource TextMuted}"
-                                               FontSize="10" Margin="0,6,0,0"/>
+FontSize="10" Margin="0,6,0,0"/>
                                     <CheckBox x:Name="AutoTradeCheck" Content="Auto-trade signals"
-                                              Foreground="{DynamicResource TextSecondary}"
-                                              Margin="0,10,0,0" Click="AutoTradeCheck_Click"/>
+Foreground="{DynamicResource TextSecondary}"
+Margin="0,10,0,0" Click="AutoTradeCheck_Click"/>
                                     <Button x:Name="OpenPositionButton" Content="＋ Open position" Style="{StaticResource TvButton}"
-                                            HorizontalAlignment="Stretch" Margin="0,6,0,0" Click="OpenPositionButton_Click"/>
-
+HorizontalAlignment="Stretch" Margin="0,6,0,0" Click="OpenPositionButton_Click"/>
                                     <Popup x:Name="OpenPositionPopup" StaysOpen="False" AllowsTransparency="True"
-                                           Placement="Left" PlacementTarget="{Binding ElementName=OpenPositionButton}">
+Placement="Left" PlacementTarget="{Binding ElementName=OpenPositionButton}">
                                         <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-                                                BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,4,0" Width="240">
+BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,0,4,0" Width="240">
                                             <ScrollViewer MaxHeight="460" VerticalScrollBarVisibility="Auto">
                                                 <StackPanel>
                                                     <TextBlock Text="Symbol" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                     <TextBox x:Name="PopSymbolBox" Text="BTC/USDT" Margin="0,4,0,8"
-                                                             Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                             BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                     <TextBlock Text="Side" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                     <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
                                                         <RadioButton x:Name="PopSideLong" Content="Long" GroupName="PopSide"
-                                                                     Foreground="{DynamicResource Up}" IsChecked="True" Margin="0,0,14,0"/>
+Foreground="{DynamicResource Up}" IsChecked="True" Margin="0,0,14,0"/>
                                                         <RadioButton x:Name="PopSideShort" Content="Short" GroupName="PopSide"
-                                                                     Foreground="{DynamicResource Down}"/>
+Foreground="{DynamicResource Down}"/>
                                                     </StackPanel>
                                                     <TextBlock Text="Leverage (x)" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                     <TextBox x:Name="PopLeverageBox" Text="10" Margin="0,4,0,8"
-                                                             Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                             BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                     <TextBlock Text="Margin (USDT)" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                     <TextBox x:Name="PopMarginBox" Text="1000" Margin="0,4,0,8"
-                                                             Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                             BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                     <TextBlock Text="Stop-loss %" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                     <TextBox x:Name="PopSLBox" Text="2" Margin="0,4,0,8"
-                                                             Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                             BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                     <TextBlock Text="Take-profit %" Foreground="{DynamicResource TextMuted}" FontSize="11"/>
                                                     <TextBox x:Name="PopTPBox" Text="4" Margin="0,4,0,8"
-                                                             Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                             BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                     <CheckBox x:Name="PopTrailingCheck" Content="Trailing stop" Foreground="{DynamicResource TextPrimary}" Margin="0,0,0,6"/>
                                                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                                                         <StackPanel Margin="0,0,10,0">
                                                             <TextBlock Text="Distance %" Foreground="{DynamicResource TextMuted}" FontSize="10"/>
                                                             <TextBox x:Name="PopTrailingDistBox" Text="2" Width="70" Margin="0,2,0,0"
-                                                                     Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                                     BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                         </StackPanel>
                                                         <StackPanel>
                                                             <TextBlock Text="Activate after %" Foreground="{DynamicResource TextMuted}" FontSize="10"/>
                                                             <TextBox x:Name="PopTrailingActBox" Text="2" Width="70" Margin="0,2,0,0"
-                                                                     Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
-                                                                     BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
+Background="{DynamicResource BackgroundBrush}" Foreground="{DynamicResource TextPrimary}"
+BorderBrush="{DynamicResource BorderLine}" CaretBrush="{DynamicResource TextPrimary}"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                     <Button Content="Open position" Style="{StaticResource TvButton}" Click="OpenPositionConfirm_Click"/>
@@ -1297,7 +1247,6 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     </Popup>
                                 </StackPanel>
                             </Border>
-
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <StackPanel Margin="10,8,10,8">
                                     <TextBlock Text="OPEN POSITIONS" Foreground="{DynamicResource TextMuted}" FontSize="10" Margin="0,0,0,6"/>
