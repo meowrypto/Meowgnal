@@ -257,7 +257,23 @@ Title="Drawing Properties" Height="600" Width="420"
 Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
-
+                        <!-- Cycles section (visible for Cyclic Lines and Time Cycles) -->
+                        <StackPanel x:Name="CyclesSection" Visibility="Collapsed">
+                            <TextBlock Text="CYCLES SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <CheckBox x:Name="CycleShowLabelsCheck" Content="Show cycle number labels" Margin="0,0,0,6"/>
+                            <TextBlock Text="Number of lines (1-50):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="CycleCountCombo" Margin="0,0,0,10"/>
+                            <TextBlock Text="Interval (seconds, empty = auto):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBox x:Name="CycleIntervalBox" Margin="0,0,0,10"/>
+                        </StackPanel>
+                        <!-- Sine Line section -->
+                        <StackPanel x:Name="SineSection" Visibility="Collapsed">
+                            <TextBlock Text="SINE LINE SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Amplitude (% of price distance):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="SineAmplitudeCombo" Margin="0,0,0,10"/>
+                            <TextBlock Text="Repetitions to the right (1-10):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="SineRepeatCombo" Margin="0,0,0,10"/>
+                        </StackPanel>
                         <!-- Gann section (visible only for Gann Fan) -->
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>

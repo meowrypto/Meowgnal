@@ -40,6 +40,12 @@ public partial class DrawingPropertiesWindow : Window
     // Elliott-specific state
     private string _elliottLabelColor = "";
 
+    // Cycles-specific state
+    private int _cycleCount = 10;
+    private long _cycleIntervalSeconds = 0;
+    private double _sineAmplitudePercent = 50;
+    private int _sineRepeatCount = 3;
+
     public DrawingPropertiesWindow(Drawing drawing)
     {
         InitializeComponent();
@@ -174,6 +180,29 @@ public partial class DrawingPropertiesWindow : Window
             ElliottShowLabelsCheck.IsChecked = drawing.ShowLabels;
             _elliottLabelColor = drawing.LabelColor;
             UpdateElliottLabelColorPreview();
+        }
+
+        var isCyclesKind = drawing.Kind is DrawingKind.CyclicLines or DrawingKind.TimeCycles;
+        if (isCyclesKind)
+        {
+            CyclesSection.Visibility = Visibility.Visible;
+            CycleShowLabelsCheck.IsChecked = drawing.ShowLabels;
+            _cycleCount = drawing.CycleCount;
+            _cycleIntervalSeconds = drawing.CycleIntervalSeconds;
+            for (int i = 1; i <= 50; i++) CycleCountCombo.Items.Add(i);
+            CycleCountCombo.SelectedItem = drawing.CycleCount is >= 1 and <= 50 ? drawing.CycleCount : 10;
+            CycleIntervalBox.Text = drawing.CycleIntervalSeconds > 0 ? drawing.CycleIntervalSeconds.ToString() : "";
+        }
+
+        if (drawing.Kind == DrawingKind.SineLine)
+        {
+            SineSection.Visibility = Visibility.Visible;
+            _sineAmplitudePercent = drawing.SineAmplitudePercent;
+            _sineRepeatCount = drawing.SineRepeatCount;
+            for (int i = 10; i <= 200; i += 10) SineAmplitudeCombo.Items.Add(i);
+            SineAmplitudeCombo.SelectedItem = drawing.SineAmplitudePercent is >= 10 and <= 200 ? (int)drawing.SineAmplitudePercent : 50;
+            for (int i = 1; i <= 10; i++) SineRepeatCombo.Items.Add(i);
+            SineRepeatCombo.SelectedItem = drawing.SineRepeatCount is >= 1 and <= 10 ? drawing.SineRepeatCount : 3;
         }
 
         // Initialize Fibonacci levels editor if this is a Fibonacci tool
@@ -493,17 +522,33 @@ or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDr
         }
 
         var isElliottKind = _drawing.Kind is DrawingKind.ElliottImpulseWave or DrawingKind.ElliottCorrectionWave
-        or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
-        or DrawingKind.ElliottTripleComboWave;
-
+or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
+or DrawingKind.ElliottTripleComboWave;
         if (isElliottKind)
         {
             _drawing.ShowLabels = ElliottShowLabelsCheck.IsChecked == true;
             _drawing.LabelColor = _elliottLabelColor;
         }
 
+        var isCyclesKind = _drawing.Kind is DrawingKind.CyclicLines or DrawingKind.TimeCycles;
+        if (isCyclesKind)
+        {
+            _drawing.ShowLabels = CycleShowLabelsCheck.IsChecked == true;
+            _drawing.CycleCount = CycleCountCombo.SelectedItem is int cc ? cc : 10;
+            if (long.TryParse(CycleIntervalBox.Text, out var interval) && interval > 0)
+                _drawing.CycleIntervalSeconds = interval;
+            else
+                _drawing.CycleIntervalSeconds = 0;
+        }
+
+        if (_drawing.Kind == DrawingKind.SineLine)
+        {
+            _drawing.SineAmplitudePercent = SineAmplitudeCombo.SelectedItem is int sa ? sa : 50;
+            _drawing.SineRepeatCount = SineRepeatCombo.SelectedItem is int sr ? sr : 3;
+        }
+
         var isPfKind = _drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
-                    or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
+                            or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
         if (isPfKind)
         {
             _drawing.PitchforkUseSameColor = PfSameColorCheck.IsChecked == true;

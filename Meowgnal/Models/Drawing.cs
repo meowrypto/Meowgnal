@@ -66,8 +66,12 @@ public enum DrawingKind
     ElliottCorrectionWave,
     ElliottTriangleWave,
     ElliottDoubleComboWave,
-    ElliottTripleComboWave
+    ElliottTripleComboWave,
+    CyclicLines,
+    TimeCycles,
+    SineLine
 }
+
 
 // Fibonacci defaults are now handled by the FibLevel.cs file (FibonacciDefaults class).
 
@@ -203,6 +207,19 @@ public sealed class Drawing
     public string LabelColor { get; set; } = "";
     /// <summary>Triangle pattern: Show apex point and dashed lines.</summary>
     public bool ShowApex { get; set; } = true;
+
+    // ----- Cycles settings -----
+    /// <summary>Cycles: number of vertical lines to display (default 10).</summary>
+    public int CycleCount { get; set; } = 10;
+
+    /// <summary>Cycles: interval in seconds between cycle lines. If 0, calculated from points.</summary>
+    public long CycleIntervalSeconds { get; set; }
+
+    /// <summary>Sine line: amplitude as percentage of price distance between two points (default 50).</summary>
+    public double SineAmplitudePercent { get; set; } = 50;
+
+    /// <summary>Sine line: number of wave repetitions to the right (default 3).</summary>
+    public int SineRepeatCount { get; set; } = 3;
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }

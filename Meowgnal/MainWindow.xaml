@@ -608,6 +608,17 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="elliotttriplecombowave" Click="ToolButton_Click">
                                         <TextBlock Text="Elliott Triple Combo Wave (W-X1-Y-X2-Z) (6 clicks)" VerticalAlignment="Center"/>
                                     </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="CYCLES" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="cycliclines" Click="ToolButton_Click">
+                                        <TextBlock Text="Cyclic Lines (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="timecycles" Click="ToolButton_Click">
+                                        <TextBlock Text="Time Cycles (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="sineline" Click="ToolButton_Click">
+                                        <TextBlock Text="Sine Line (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
                                 </StackPanel>
                             </Border>
                         </Popup>

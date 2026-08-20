@@ -1770,6 +1770,22 @@ public partial class MainWindow : Window
                             });
                         }
                     }
+                    if (kind is DrawingKind.CyclicLines or DrawingKind.TimeCycles)
+                    {
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowApex = false;
+                        newDrawing.ShowLabels = kind == DrawingKind.TimeCycles;
+                        if (newDrawing.Points.Count >= 2)
+                            newDrawing.CycleIntervalSeconds = Math.Abs(newDrawing.Points[1].TimeUnix - newDrawing.Points[0].TimeUnix);
+                    }
+
+                    if (kind == DrawingKind.SineLine)
+                    {
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowApex = false;
+                        newDrawing.ShowLabels = false;
+                    }
+
                     if (newDrawing.Points.Count > 0)
                     {
                         CaptureSnapshot();
@@ -2600,7 +2616,8 @@ public partial class MainWindow : Window
                   or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan"
                   or "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => FibGroupButton,
             "xabcdpattern" or "cypherpattern" or "headandshoulders" or "abcdpattern" or "trianglepattern" or "threedrivespattern"
-or "elliottimpulswave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave" => PatternsGroupButton,
+or "elliottimpulswave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave"
+or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" => ShapesGroupButton,
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
@@ -2750,6 +2767,10 @@ or "elliottimpulswave" or "elliottcorrectionwave" or "elliotttrianglewave" or "e
         showLabels = d.ShowLabels,
         showApex = d.ShowApex,
         labelColor = d.LabelColor,
+        cycleCount = d.CycleCount,
+        cycleIntervalSeconds = d.CycleIntervalSeconds,
+        sineAmplitudePercent = d.SineAmplitudePercent,
+        sineRepeatCount = d.SineRepeatCount,
         fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
         points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
     }).ToArray();
@@ -2812,6 +2833,9 @@ or "elliottimpulswave" or "elliottcorrectionwave" or "elliotttrianglewave" or "e
         DrawingKind.ElliottTriangleWave => "Elliott Triangle Wave",
         DrawingKind.ElliottDoubleComboWave => "Elliott Double Combo Wave",
         DrawingKind.ElliottTripleComboWave => "Elliott Triple Combo Wave",
+        DrawingKind.CyclicLines => "Cyclic Lines",
+        DrawingKind.TimeCycles => "Time Cycles",
+        DrawingKind.SineLine => "Sine Line",
         DrawingKind.Rectangle => "Rectangle",
         DrawingKind.RotatedRectangle => "Rotated Rectangle",
         DrawingKind.Circle => "Circle",

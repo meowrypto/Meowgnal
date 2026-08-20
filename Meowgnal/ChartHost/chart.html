@@ -1215,7 +1215,55 @@
                     for (const r of ratios) { const yAt = x => y1 + m * r * (x - x1); g.lines.push([x1, y1, W, yAt(W)]); }
                     break;
                 }
-                case 'elliottimpulsewave': addElliottGeometry(g, d, ['0', '1', '2', '3', '4', '5']); break;
+                case 'cycliclines': {
+                    if (pts.length < 2) break;
+                    const interval = d.cycleIntervalSeconds || Math.abs(pts[1].time - pts[0].time);
+                    const count = d.cycleCount || 10;
+                    for (let i = 0; i < count; i++) {
+                        const t = pts[0].time + interval * i;
+                        const xx = px(t);
+                        if (xx !== null && xx >= 0 && xx <= W) g.lines.push([xx, 0, xx, H]);
+                    }
+                    break;
+                }
+                case 'timecycles': {
+                    if (pts.length < 2) break;
+                    const interval = d.cycleIntervalSeconds || Math.abs(pts[1].time - pts[0].time);
+                    const count = d.cycleCount || 10;
+                    for (let i = 0; i < count; i++) {
+                        const t = pts[0].time + interval * i;
+                        const xx = px(t);
+                        if (xx !== null && xx >= 0 && xx <= W) {
+                            g.lines.push([xx, 0, xx, H]);
+                            if (d.showLabels !== false) g.labels.push([String(i + 1), xx + 4, 14]);
+                        }
+                    }
+                    break;
+                }
+                case 'sineline': {
+                    if (pts.length < 2) break;
+                    const x1s = px(pts[0].time), y1s = py(pts[0].price);
+                    const x2s = px(pts[1].time), y2s = py(pts[1].price);
+                    if (x1s === null || y1s === null || x2s === null || y2s === null) break;
+                    const dx = x2s - x1s;
+                    const dy = y2s - y1s;
+                    const amp = (d.sineAmplitudePercent || 50) / 100;
+                    const repeats = d.sineRepeatCount || 3;
+                    const amplitude = Math.abs(dy) * amp;
+                    const steps = 100;
+                    let prevX = x1s, prevY = y1s;
+                    for (let i = 1; i <= steps * repeats; i++) {
+                        const t = i / steps;
+                        const xx = x1s + dx * t;
+                        const baseY = y1s + dy * t;
+                        const sineOffset = Math.sin(t * Math.PI * 2) * amplitude;
+                        const yy = baseY + sineOffset;
+                        g.lines.push([prevX, prevY, xx, yy]);
+                        prevX = xx; prevY = yy;
+                    }
+                    break;
+                }
+                case 'elliottimpulswave': addElliottGeometry(g, d, ['0', '1', '2', '3', '4', '5']); break;
                 case 'elliottcorrectionwave': addElliottGeometry(g, d, ['', 'A', 'B', 'C']); break;
                 case 'elliotttrianglewave': addElliottGeometry(g, d, ['', 'A', 'B', 'C', 'D', 'E']); break;
                 case 'elliottdoublecombowave': addElliottGeometry(g, d, ['', 'W', 'X', 'Y']); break;
@@ -1494,6 +1542,7 @@
                 'elliotttrianglewave': 'Elliott Triangle Wave',
                 'elliottdoublecombowave': 'Elliott Double Combo Wave',
                 'elliotttriplecombowave': 'Elliott Triple Combo Wave',
+                'cycliclines': 'Cyclic Lines', 'timecycles': 'Time Cycles', 'sineline': 'Sine Line',
                 'xabcdpattern': 'XABCD Pattern', 'cypherpattern': 'Cypher Pattern', 'headandshoulders': 'Head and Shoulders', 'abcdpattern': 'ABCD Pattern', 'trianglepattern': 'Triangle Pattern', 'threedrivespattern': 'Three Drives Pattern', 'rectangle': 'Rectangle',
                 'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle', 'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
                 'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down', 'brush': 'Brush', 'highlighter': 'Highlighter',
@@ -2117,7 +2166,8 @@
         });
 
         // ---------- Click / crosshair ----------
-const NEED = {
+        const NEED = {
+            cycliclines: 2, timecycles: 2, sineline: 2,
             elliottimpulsewave: 6, elliottcorrectionwave: 4, elliotttrianglewave: 6, elliottdoublecombowave: 4, elliotttriplecombowave: 6,
             xabcdpattern: 5, cypherpattern: 5, headandshoulders: 5, abcdpattern: 4, trianglepattern: 4, threedrivespattern: 7,
             horizontal: 1, verticalline: 1, crossline: 1,
