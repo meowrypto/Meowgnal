@@ -2289,7 +2289,7 @@ public partial class MainWindow : Window
         ObjectsPopup.IsOpen = true;
     }
 
-    private void OnOpenDrawingProperties(string id)
+    private async void OnOpenDrawingProperties(string id)
     {
         try
         {
@@ -2301,7 +2301,7 @@ public partial class MainWindow : Window
             if (win.ShowDialog() == true)
             {
                 DrawingStorageService.Save(_drawingsFile);
-                _ = SendDrawingsToChartAsync();
+                await SendDrawingsToChartAsync();
                 RebuildObjectList();
             }
         }
@@ -2976,14 +2976,15 @@ or "elliottimpulswave" or "elliottcorrectionwave" or "elliotttrianglewave" or "e
         RebuildObjectList();
     }
 
-    private void ObjectEdit_Click(object sender, RoutedEventArgs e)
+    private async void ObjectEdit_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not Drawing d) return;
         var win = new DrawingPropertiesWindow(d) { Owner = this };
         if (win.ShowDialog() == true)
         {
             DrawingStorageService.Save(_drawingsFile);
-            _ = SendDrawingsToChartAsync();
+            try { await SendDrawingsToChartAsync(); }
+            catch (Exception ex) { AppLogger.Fatal("Error sending drawings to chart", ex); }
             RebuildObjectList();
         }
     }

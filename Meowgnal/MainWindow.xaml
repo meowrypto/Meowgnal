@@ -593,7 +593,7 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     </Button>
                                     <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
                                     <TextBlock Text="ELLIOTT WAVES" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="elliottimpulswave" Click="ToolButton_Click">
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="elliottimpulsewave" Click="ToolButton_Click">
                                         <TextBlock Text="Elliott Impulse Wave (1-2-3-4-5) (6 clicks)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="elliottcorrectionwave" Click="ToolButton_Click">
