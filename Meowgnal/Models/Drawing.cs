@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Meowgnal.Models;
 
@@ -69,8 +70,15 @@ public enum DrawingKind
     ElliottTripleComboWave,
     CyclicLines,
     TimeCycles,
-    SineLine
+    SineLine,
+    LongPosition,
+    ShortPosition,
+    PositionForecast,
+    BarsPattern,
+    GhostFeed,
+    Sector
 }
+
 
 
 // Fibonacci defaults are now handled by the FibLevel.cs file (FibonacciDefaults class).
@@ -205,6 +213,48 @@ public sealed class Drawing
 
     /// <summary>Optional separate color for pattern/Elliott labels. Empty means use main line color.</summary>
     public string LabelColor { get; set; } = "";
+
+    // ----- Forecasting & Measurement settings -----
+    /// <summary>Position side: "long" or "short".</summary>
+    public string PositionSide { get; set; } = "long";
+
+    /// <summary>Long/Short position: entry price.</summary>
+    public decimal EntryPrice { get; set; }
+
+    /// <summary>Long/Short position: stop loss price.</summary>
+    public decimal StopLossPrice { get; set; }
+
+    /// <summary>Long/Short position: take profit price.</summary>
+    public decimal TakeProfitPrice { get; set; }
+
+    /// <summary>Position size as percentage of account (0-100).</summary>
+    public decimal PositionSizePercent { get; set; } = 10;
+
+    /// <summary>Color for profit zone (default green).</summary>
+    public string ProfitZoneColor { get; set; } = "#089981";
+
+    /// <summary>Color for loss zone (default red).</summary>
+    public string LossZoneColor { get; set; } = "#F23645";
+
+    /// <summary>Ghost feed: symbol to overlay.</summary>
+    public string GhostSymbol { get; set; } = "";
+
+    /// <summary>Ghost feed: data source (binance/hyperliquid).</summary>
+    public string GhostDataSource { get; set; } = "binance";
+
+    /// <summary>Ghost feed: cached candles for overlay (not serialized).</summary>
+    [JsonIgnore]
+    public List<Bar> GhostCandles { get; set; } = new();
+
+    /// <summary>Ghost feed opacity (0-1).</summary>
+    public double GhostOpacity { get; set; } = 0.5;
+
+    /// <summary>Bars pattern: opacity (0-1).</summary>
+    public double BarsPatternOpacity { get; set; } = 0.5;
+
+    /// <summary>Sector: fill opacity (0-1).</summary>
+    public double SectorFillOpacity { get; set; } = 0.3;
+
     /// <summary>Triangle pattern: Show apex point and dashed lines.</summary>
     public bool ShowApex { get; set; } = true;
 

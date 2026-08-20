@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
@@ -40,6 +41,10 @@ public partial class DrawingPropertiesWindow : Window
     // Elliott-specific state
     private string _elliottLabelColor = "";
 
+    // Forecast Position state
+    private string _profitZoneColor = "#089981";
+    private string _lossZoneColor = "#F23645";
+
     // Cycles-specific state
     private int _cycleCount = 10;
     private long _cycleIntervalSeconds = 0;
@@ -80,8 +85,8 @@ public partial class DrawingPropertiesWindow : Window
 
         // Gann ratios: default to standard Gann angles
         GannRatiosBox.Text = drawing.GannRatios is not null
-            ? string.Join(", ", drawing.GannRatios.Select(r => r.ToString("0.###")))
-            : "0.125, 0.25, 0.333, 0.5, 1, 2, 3, 4, 8";
+        ? string.Join(", ", drawing.GannRatios.Select(r => r.ToString("0.###")))
+        : "0.125, 0.25, 0.333, 0.5, 1, 2, 3, 4, 8";
 
         // Gann Square Fixed settings
         if (drawing.Kind == DrawingKind.GannSquareFixed)
@@ -108,7 +113,7 @@ public partial class DrawingPropertiesWindow : Window
         _medianColor = drawing.MedianLineColor;
         _secondLineColor = drawing.SecondLineColor;
         var isChannel = drawing.Kind is DrawingKind.ParallelChannel or DrawingKind.RegressionTrend
-            or DrawingKind.FlatTopBottom or DrawingKind.DisjointChannel;
+        or DrawingKind.FlatTopBottom or DrawingKind.DisjointChannel;
         if (isChannel)
         {
             ChannelSection.Visibility = Visibility.Visible;
@@ -139,7 +144,7 @@ public partial class DrawingPropertiesWindow : Window
 
         // Pitchfork settings initialization
         var isPitchfork = drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
-            or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
+        or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
         if (isPitchfork)
         {
             PitchforkSection.Visibility = Visibility.Visible;
@@ -161,7 +166,7 @@ public partial class DrawingPropertiesWindow : Window
             GannSection.Visibility = Visibility.Visible;
         }
         else if (drawing.Kind is DrawingKind.XabcdPattern or DrawingKind.CypherPattern or DrawingKind.HeadAndShoulders
-              or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern)
+        or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern)
         {
             PatternSection.Visibility = Visibility.Visible;
             ShowRatiosCheck.IsChecked = drawing.ShowRatios;
@@ -173,7 +178,6 @@ public partial class DrawingPropertiesWindow : Window
         var isElliottKind = drawing.Kind is DrawingKind.ElliottImpulseWave or DrawingKind.ElliottCorrectionWave
         or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
         or DrawingKind.ElliottTripleComboWave;
-
         if (isElliottKind)
         {
             ElliottSection.Visibility = Visibility.Visible;
@@ -205,12 +209,47 @@ public partial class DrawingPropertiesWindow : Window
             SineRepeatCombo.SelectedItem = drawing.SineRepeatCount is >= 1 and <= 10 ? drawing.SineRepeatCount : 3;
         }
 
+        var isForecastPositionKind = drawing.Kind is DrawingKind.LongPosition or DrawingKind.ShortPosition;
+        if (isForecastPositionKind)
+        {
+            ForecastPositionSection.Visibility = Visibility.Visible;
+            EntryPriceBox.Text = drawing.EntryPrice.ToString();
+            StopLossPriceBox.Text = drawing.StopLossPrice.ToString();
+            TakeProfitPriceBox.Text = drawing.TakeProfitPrice.ToString();
+            PositionSizeBox.Text = drawing.PositionSizePercent.ToString();
+            _profitZoneColor = drawing.ProfitZoneColor;
+            _lossZoneColor = drawing.LossZoneColor;
+            UpdateProfitZoneColorPreview();
+            UpdateLossZoneColorPreview();
+            UpdateRiskReward();
+            EntryPriceBox.TextChanged += PriceBox_TextChanged;
+            StopLossPriceBox.TextChanged += PriceBox_TextChanged;
+            TakeProfitPriceBox.TextChanged += PriceBox_TextChanged;
+        }
+
+        if (drawing.Kind == DrawingKind.GhostFeed)
+        {
+            GhostFeedSection.Visibility = Visibility.Visible;
+            if (Application.Current.MainWindow is MainWindow mw)
+            {
+                foreach (var sym in mw.GetWatchlistSymbols())
+                    GhostSymbolCombo.Items.Add(sym);
+            }
+            GhostSymbolBox.Text = drawing.GhostSymbol;
+            GhostOpacitySlider.Value = drawing.GhostOpacity;
+        }
+
+        if (drawing.Kind is DrawingKind.Sector or DrawingKind.BarsPattern)
+        {
+            SectorSection.Visibility = Visibility.Visible;
+            SectorOpacitySlider.Value = drawing.Kind == DrawingKind.Sector ? drawing.SectorFillOpacity : drawing.BarsPatternOpacity;
+        }
+
         // Initialize Fibonacci levels editor if this is a Fibonacci tool
         var isFib = drawing.Kind is DrawingKind.Fibonacci or DrawingKind.FibExtension
-                 or DrawingKind.FibChannel or DrawingKind.FibTimeZone or DrawingKind.TrendBasedFibTime
-                 or DrawingKind.FibCircles or DrawingKind.FibSpiral or DrawingKind.FibArcs
-                 or DrawingKind.FibWedge or DrawingKind.FibSpeedFan or DrawingKind.Pitchfan;
-
+        or DrawingKind.FibChannel or DrawingKind.FibTimeZone or DrawingKind.TrendBasedFibTime
+        or DrawingKind.FibCircles or DrawingKind.FibSpiral or DrawingKind.FibArcs
+        or DrawingKind.FibWedge or DrawingKind.FibSpeedFan or DrawingKind.Pitchfan;
         if (isFib)
         {
             FibSection.Visibility = Visibility.Visible;
@@ -219,8 +258,8 @@ public partial class DrawingPropertiesWindow : Window
             if (sourceLevels == null || sourceLevels.Count == 0)
             {
                 sourceLevels = drawing.Kind == DrawingKind.FibExtension
-                    ? FibonacciDefaults.GetDefaultExtensionLevels(defaultColor)
-                    : FibonacciDefaults.GetDefaultRetracementLevels(defaultColor);
+                ? FibonacciDefaults.GetDefaultExtensionLevels(defaultColor)
+                : FibonacciDefaults.GetDefaultRetracementLevels(defaultColor);
             }
             FibLevelsEditor.Levels = new System.Collections.ObjectModel.ObservableCollection<FibLevel>(sourceLevels);
         }
@@ -236,7 +275,6 @@ public partial class DrawingPropertiesWindow : Window
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(32) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(10, GridUnitType.Star) });
-
             var header = new TextBlock
             {
                 Text = $"P{i + 1}",
@@ -245,7 +283,6 @@ public partial class DrawingPropertiesWindow : Window
             };
             Grid.SetColumn(header, 0);
             row.Children.Add(header);
-
             var time = new TextBlock
             {
                 Text = System.DateTimeOffset.FromUnixTimeSeconds(p.TimeUnix).UtcDateTime.ToString("yyyy/MM/dd HH:mm"),
@@ -255,7 +292,6 @@ public partial class DrawingPropertiesWindow : Window
             };
             Grid.SetColumn(time, 1);
             row.Children.Add(time);
-
             var priceBox = new TextBox
             {
                 Text = p.Price.ToString(CultureInfo.InvariantCulture),
@@ -266,7 +302,6 @@ public partial class DrawingPropertiesWindow : Window
             Grid.SetColumn(priceBox, 2);
             row.Children.Add(priceBox);
             _priceBoxes.Add(priceBox);
-
             PointsPanel.Children.Add(row);
         }
     }
@@ -279,24 +314,21 @@ public partial class DrawingPropertiesWindow : Window
         var needsExtendLeft = drawing.Kind is DrawingKind.TrendLine or DrawingKind.Ray or DrawingKind.ExtendedLine;
         var needsExtendRight = drawing.Kind is DrawingKind.TrendLine;
         var needsPriceLabel = drawing.Kind is DrawingKind.TrendLine or DrawingKind.HorizontalLine
-            or DrawingKind.HorizontalRay or DrawingKind.Crossline or DrawingKind.Ray or DrawingKind.ExtendedLine;
+        or DrawingKind.HorizontalRay or DrawingKind.Crossline or DrawingKind.Ray or DrawingKind.ExtendedLine;
         var needsTimeLabel = drawing.Kind is DrawingKind.VerticalLine or DrawingKind.Crossline;
         var needsPriceChange = drawing.Kind == DrawingKind.InfoLine;
         var needsBarCount = drawing.Kind == DrawingKind.InfoLine;
         var needsTimeElapsed = drawing.Kind == DrawingKind.InfoLine;
         var needsAngle = drawing.Kind is DrawingKind.InfoLine or DrawingKind.TrendAngle;
-
         if (!needsExtendLeft && !needsExtendRight && !needsPriceLabel && !needsTimeLabel
-            && !needsPriceChange && !needsBarCount && !needsTimeElapsed && !needsAngle)
+        && !needsPriceChange && !needsBarCount && !needsTimeElapsed && !needsAngle)
         {
             if (FindName("OptionsPanel") is StackPanel panel)
                 panel.Visibility = Visibility.Collapsed;
             return;
         }
-
         if (FindName("OptionsPanel") is not StackPanel optionsPanel) return;
         optionsPanel.Visibility = Visibility.Visible;
-
         optionsPanel.Children.Add(new TextBlock
         {
             Text = "Display options",
@@ -305,7 +337,6 @@ public partial class DrawingPropertiesWindow : Window
             FontSize = 12,
             Margin = new Thickness(0, 8, 0, 4)
         });
-
         if (needsExtendLeft) { _extendLeft = MakeOptionCheckBox("Extend left", drawing.ExtendLeft); optionsPanel.Children.Add(_extendLeft); }
         if (needsExtendRight) { _extendRight = MakeOptionCheckBox("Extend right", drawing.ExtendRight); optionsPanel.Children.Add(_extendRight); }
         if (needsPriceLabel) { _showPriceLabels = MakeOptionCheckBox("Show price label", drawing.ShowPriceLabels); optionsPanel.Children.Add(_showPriceLabels); }
@@ -340,11 +371,9 @@ public partial class DrawingPropertiesWindow : Window
         }
         DragMove();
     }
-
     private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
-
     private void ToggleMaximize()
     {
         if (WindowState == WindowState.Maximized)
@@ -398,7 +427,7 @@ public partial class DrawingPropertiesWindow : Window
         try
         {
             SecondColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
-                string.IsNullOrEmpty(_secondLineColor) ? HexBox.Text : _secondLineColor));
+            string.IsNullOrEmpty(_secondLineColor) ? HexBox.Text : _secondLineColor));
         }
         catch { SecondColorPreview.Fill = new SolidColorBrush(Colors.Gray); }
     }
@@ -445,6 +474,71 @@ public partial class DrawingPropertiesWindow : Window
         UpdateElliottLabelColorPreview();
     }
 
+    private void PriceBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        UpdateRiskReward();
+    }
+
+    private void UpdateRiskReward()
+    {
+        if (!decimal.TryParse(EntryPriceBox.Text, out var entry) || !decimal.TryParse(StopLossPriceBox.Text, out var sl) || !decimal.TryParse(TakeProfitPriceBox.Text, out var tp))
+        {
+            RiskRewardText.Text = "—";
+            return;
+        }
+        var risk = Math.Abs(entry - sl);
+        var reward = Math.Abs(tp - entry);
+        if (risk == 0) { RiskRewardText.Text = "—"; return; }
+        var rr = reward / risk;
+        RiskRewardText.Text = $"1 : {rr:F2}";
+    }
+
+    private void ProfitZoneColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _profitZoneColor = hex;
+        UpdateProfitZoneColorPreview();
+    }
+
+    private void LossZoneColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _lossZoneColor = hex;
+        UpdateLossZoneColorPreview();
+    }
+
+    private void UpdateProfitZoneColorPreview()
+    {
+        try { ProfitZoneColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_profitZoneColor)); }
+        catch { ProfitZoneColorPreview.Fill = new SolidColorBrush(Colors.Green); }
+    }
+
+    private void UpdateLossZoneColorPreview()
+    {
+        try { LossZoneColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_lossZoneColor)); }
+        catch { LossZoneColorPreview.Fill = new SolidColorBrush(Colors.Red); }
+    }
+
+    private async void OpenAsPaper_Click(object sender, RoutedEventArgs e)
+    {
+        if (!decimal.TryParse(EntryPriceBox.Text, out var entry) || !decimal.TryParse(StopLossPriceBox.Text, out var sl) || !decimal.TryParse(TakeProfitPriceBox.Text, out var tp) || !decimal.TryParse(PositionSizeBox.Text, out var size))
+        {
+            MessageBox.Show("Please fill in all price fields correctly.", "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        if (Application.Current.MainWindow is MainWindow mw)
+        {
+            var side = _drawing.Kind == DrawingKind.LongPosition ? "long" : "short";
+            var result = await mw.OpenPaperPositionFromDrawingAsync(side, entry, sl, tp, size);
+            if (result)
+            {
+                MessageBox.Show("Position opened successfully!", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                DialogResult = true;
+                Close();
+            }
+        }
+    }
+
     private void UpdateElliottLabelColorPreview()
     {
         try
@@ -462,7 +556,6 @@ public partial class DrawingPropertiesWindow : Window
         _drawing.AlertOnCross = AlertCheck.IsChecked == true;
         _drawing.IsLocked = LockedCheck.IsChecked == true;
         _drawing.IsVisible = HiddenCheck.IsChecked != true;
-
         _drawing.LineWidth = WidthCombo.SelectedItem is int w ? w : 2;
         _drawing.LineStyle = StyleCombo.SelectedItem as string ?? "solid";
 
@@ -494,7 +587,7 @@ public partial class DrawingPropertiesWindow : Window
         }
 
         var isChannelKind = _drawing.Kind is DrawingKind.ParallelChannel or DrawingKind.RegressionTrend
-            or DrawingKind.FlatTopBottom or DrawingKind.DisjointChannel;
+        or DrawingKind.FlatTopBottom or DrawingKind.DisjointChannel;
         if (isChannelKind)
         {
             _drawing.FillBackground = FillBgCheck.IsChecked == true;
@@ -511,8 +604,7 @@ public partial class DrawingPropertiesWindow : Window
         }
 
         var isPatternKind = _drawing.Kind is DrawingKind.XabcdPattern or DrawingKind.CypherPattern or DrawingKind.HeadAndShoulders
-or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern;
-
+        or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDrivesPattern;
         if (isPatternKind)
         {
             _drawing.ShowRatios = ShowRatiosCheck.IsChecked == true;
@@ -522,8 +614,8 @@ or DrawingKind.AbcdPattern or DrawingKind.TrianglePattern or DrawingKind.ThreeDr
         }
 
         var isElliottKind = _drawing.Kind is DrawingKind.ElliottImpulseWave or DrawingKind.ElliottCorrectionWave
-or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
-or DrawingKind.ElliottTripleComboWave;
+        or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
+        or DrawingKind.ElliottTripleComboWave;
         if (isElliottKind)
         {
             _drawing.ShowLabels = ElliottShowLabelsCheck.IsChecked == true;
@@ -547,8 +639,33 @@ or DrawingKind.ElliottTripleComboWave;
             _drawing.SineRepeatCount = SineRepeatCombo.SelectedItem is int sr ? sr : 3;
         }
 
+        var isForecastPositionKind = _drawing.Kind is DrawingKind.LongPosition or DrawingKind.ShortPosition;
+        if (isForecastPositionKind)
+        {
+            if (decimal.TryParse(EntryPriceBox.Text, out var entry)) _drawing.EntryPrice = entry;
+            if (decimal.TryParse(StopLossPriceBox.Text, out var sl)) _drawing.StopLossPrice = sl;
+            if (decimal.TryParse(TakeProfitPriceBox.Text, out var tp)) _drawing.TakeProfitPrice = tp;
+            if (decimal.TryParse(PositionSizeBox.Text, out var size)) _drawing.PositionSizePercent = Math.Max(0, Math.Min(100, size));
+            _drawing.ProfitZoneColor = _profitZoneColor;
+            _drawing.LossZoneColor = _lossZoneColor;
+        }
+
+        if (_drawing.Kind == DrawingKind.GhostFeed)
+        {
+            _drawing.GhostSymbol = string.IsNullOrWhiteSpace(GhostSymbolBox.Text) ? GhostSymbolCombo.SelectedItem?.ToString() ?? "" : GhostSymbolBox.Text;
+            _drawing.GhostOpacity = GhostOpacitySlider.Value;
+        }
+
+        if (_drawing.Kind is DrawingKind.Sector or DrawingKind.BarsPattern)
+        {
+            if (_drawing.Kind == DrawingKind.Sector)
+                _drawing.SectorFillOpacity = SectorOpacitySlider.Value;
+            else
+                _drawing.BarsPatternOpacity = SectorOpacitySlider.Value;
+        }
+
         var isPfKind = _drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
-                            or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
+        or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;
         if (isPfKind)
         {
             _drawing.PitchforkUseSameColor = PfSameColorCheck.IsChecked == true;

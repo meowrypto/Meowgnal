@@ -274,6 +274,54 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock Text="Repetitions to the right (1-10):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="SineRepeatCombo" Margin="0,0,0,10"/>
                         </StackPanel>
+                        <!-- Forecast Position section (visible for Long/Short Position) -->
+                        <StackPanel x:Name="ForecastPositionSection" Visibility="Collapsed">
+                            <TextBlock Text="POSITION SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Entry Price:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBox x:Name="EntryPriceBox" Margin="0,0,0,8"/>
+                            <TextBlock Text="Stop Loss Price:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBox x:Name="StopLossPriceBox" Margin="0,0,0,8"/>
+                            <TextBlock Text="Take Profit Price:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBox x:Name="TakeProfitPriceBox" Margin="0,0,0,8"/>
+                            <TextBlock Text="Risk/Reward Ratio:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBlock x:Name="RiskRewardText" Text="—" Foreground="{StaticResource TextPrimary}" FontSize="12" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <TextBlock Text="Position Size (% of account):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBox x:Name="PositionSizeBox" Margin="0,0,0,8"/>
+                            <TextBlock Text="Profit Zone Color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="ProfitZoneColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#4CAF50" Background="#4CAF50" Click="ProfitZoneColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#00BCD4" Background="#00BCD4" Click="ProfitZoneColor_Click"/>
+                                <Rectangle x:Name="ProfitZoneColorPreview" Width="26" Height="26" RadiusX="4" RadiusY="4" Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <TextBlock Text="Loss Zone Color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="LossZoneColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#FF5722" Background="#FF5722" Click="LossZoneColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#E91E63" Background="#E91E63" Click="LossZoneColor_Click"/>
+                                <Rectangle x:Name="LossZoneColorPreview" Width="26" Height="26" RadiusX="4" RadiusY="4" Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
+                            </StackPanel>
+                            <Button x:Name="OpenAsPaperButton" Content="📈 Open as paper position" Style="{StaticResource SecondaryButton}" Margin="0,8,0,0" Click="OpenAsPaper_Click"/>
+                        </StackPanel>
+
+                        <!-- Ghost Feed section -->
+                        <StackPanel x:Name="GhostFeedSection" Visibility="Collapsed">
+                            <TextBlock Text="GHOST FEED SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Select symbol from watchlist:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="GhostSymbolCombo" Margin="0,0,0,8"/>
+                            <TextBlock Text="Or type symbol manually:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <TextBox x:Name="GhostSymbolBox" Margin="0,0,0,8"/>
+                            <TextBlock Text="Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <Slider x:Name="GhostOpacitySlider" Minimum="0.1" Maximum="1.0" Value="0.5" Margin="0,0,0,8"/>
+                        </StackPanel>
+
+                        <!-- Sector section (visible for Sector and Bars Pattern) -->
+                        <StackPanel x:Name="SectorSection" Visibility="Collapsed">
+                            <TextBlock Text="SECTOR / BARS PATTERN SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Fill Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <Slider x:Name="SectorOpacitySlider" Minimum="0.05" Maximum="0.8" Value="0.3" Margin="0,0,0,8"/>
+                        </StackPanel>
+
                         <!-- Gann section (visible only for Gann Fan) -->
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>

@@ -110,14 +110,11 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
-        // Apply saved theme before UI is built
         ThemeService.ApplyTheme(SettingsStorageService.Load());
 
-        // 1. Show Splash Screen
         var splash = new SplashWindow();
         splash.Show();
 
-        // Keep UI responsive while splash is visible
         var sw = Stopwatch.StartNew();
         while (sw.ElapsedMilliseconds < 1200)
         {
@@ -126,11 +123,10 @@ public partial class MainWindow : Window
 
         InitializeComponent();
 
-        // Set version in custom title bar
         var v = Assembly.GetEntryAssembly()?.GetName().Version;
         TitleBarVersion.Text = v is null ? "" : $"v{v.Major}.{v.Minor}";
-
         splash.Close();
+
         SignalsList.ItemsSource = _signals;
         ChartWebView.DefaultBackgroundColor = System.Drawing.Color.FromArgb(0x13, 0x17, 0x22);
         ApplyChartType("candles");
@@ -160,7 +156,6 @@ public partial class MainWindow : Window
     {
         var settings = SettingsStorageService.Load();
 
-        // 2. First Run Onboarding
         if (!settings.FirstRunCompleted)
         {
             var onboard = new OnboardingWindow { Owner = this };
@@ -187,9 +182,6 @@ public partial class MainWindow : Window
                 return;
             }
         }
-        else if (settings.IsGuest)
-        {
-        }
 
         UpdateProfileMenu(settings);
         _ = InitializeChartWebViewAsync();
@@ -210,16 +202,14 @@ public partial class MainWindow : Window
         _alerts = PriceAlertStorageService.Load();
         _watchlistsFile = WatchlistStorageService.Load();
         _activeWatchlist = _watchlistsFile.Lists.FirstOrDefault(l => l.Name == _watchlistsFile.ActiveListName)
-            ?? _watchlistsFile.Lists[0];
+                           ?? _watchlistsFile.Lists[0];
         WatchlistNameText.Text = _activeWatchlist.Name;
         RebuildWatchlistPanel();
         _ = RefreshWatchlistPricesAsync();
-
         _paperAccount = PaperAccountStorageService.Load();
         PaperTradingEngine.CheckDailyReset(_paperAccount);
         RebuildPaperPanel();
         AutoTradeCheck.IsChecked = SettingsStorageService.Load().PaperAutoTradeEnabled;
-
         await LoadDashboardAsync();
         UpdateLearningPathBanner();
         StartSignalMonitor();
@@ -254,9 +244,7 @@ public partial class MainWindow : Window
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
-
     private void Maximize_Click(object sender, RoutedEventArgs e) => ToggleMaximize();
-
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
     private void ToggleMaximize()
@@ -302,15 +290,11 @@ public partial class MainWindow : Window
         new WhatsNewWindow { Owner = this }.ShowDialog();
     }
 
-
-
     private void MenuAcademy_Click(object sender, RoutedEventArgs e)
     {
         ProfilePopup.IsOpen = false;
         new IndicatorAcademyWindow { Owner = this }.ShowDialog();
     }
-
-
 
     private void MenuSignOut_Click(object sender, RoutedEventArgs e)
     {
@@ -392,11 +376,9 @@ public partial class MainWindow : Window
     private void RebuildTabsBar()
     {
         TabsPanel.Children.Clear();
-
         foreach (var tab in _tabs)
         {
             var isActive = tab == _activeTab;
-
             var border = new Border
             {
                 Background = isActive ? (Brush)FindResource("BgPanel") : Brushes.Transparent,
@@ -429,8 +411,8 @@ public partial class MainWindow : Window
                 Tag = tab,
             };
             close.MouseLeftButtonUp += TabClose_Click;
-
             sp.Children.Add(close);
+
             border.Child = sp;
             TabsPanel.Children.Add(border);
         }
@@ -473,17 +455,14 @@ public partial class MainWindow : Window
             return;
         }
         NewTabPopup.IsOpen = false;
-
         var existing = _tabs.FirstOrDefault(t => t.Symbol == symbol);
         if (existing is not null)
         {
             await ActivateTabAsync(existing);
             return;
         }
-
         var dataSource = StrategyStorageService.LoadAll().FirstOrDefault(s => s.Symbol == symbol)?.DataSource
-            ?? SettingsStorageService.Load().DefaultDataSource;
-
+                         ?? SettingsStorageService.Load().DefaultDataSource;
         var tab = new ChartTab
         {
             Symbol = symbol,
@@ -513,7 +492,6 @@ public partial class MainWindow : Window
         _chartTimeframe = tab.Timeframe;
         _chartDataSource = tab.DataSource;
         _chartType = tab.ChartType;
-
         RebuildTabsBar();
         RebuildTimeframeBar();
         ApplyChartType(_chartType);
@@ -540,7 +518,6 @@ public partial class MainWindow : Window
     private void RightTabSignals_Click(object sender, RoutedEventArgs e) => SetRightTab("signals");
     private void RightTabPaper_Click(object sender, RoutedEventArgs e) => SetRightTab("paper");
 
-    // Real coin logo (same icons as CoinMarketCap) shown left of symbol names.
     private ContentControl MakeCoinBadge(string symbol)
     {
         var coin = (symbol ?? "").Split('/')[0].ToUpperInvariant();
@@ -552,12 +529,10 @@ public partial class MainWindow : Window
             VerticalAlignment = VerticalAlignment.Center,
             Content = new TextBlock { Text = "🪙", FontSize = 12, VerticalAlignment = VerticalAlignment.Center },
         };
-
         if (CoinLogoService.TryGetCached(coin, out var cached))
             host.Content = MakeLogoImage(cached);
         else
             _ = LoadLogoAsync(host, coin);
-
         return host;
     }
 
@@ -628,6 +603,7 @@ public partial class MainWindow : Window
                 VerticalAlignment = VerticalAlignment.Center,
             };
             Grid.SetColumn(last, 1);
+
             var chg = new TextBlock
             {
                 Text = "—",
@@ -637,6 +613,7 @@ public partial class MainWindow : Window
                 VerticalAlignment = VerticalAlignment.Center,
             };
             Grid.SetColumn(chg, 2);
+
             var del = new TextBlock
             {
                 Text = "✕",
@@ -653,7 +630,6 @@ public partial class MainWindow : Window
             row.Children.Add(chg);
             row.Children.Add(del);
             row.MouseLeftButtonUp += WatchlistRow_Click;
-
             WatchlistRowsPanel.Children.Add(row);
             _watchlistRows.Add(new WatchlistRow { Item = item, LastText = last, ChgText = chg });
         }
@@ -967,6 +943,7 @@ public partial class MainWindow : Window
             var bottomRow = new Grid();
             bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             bottomRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
             var priceText = new TextBlock
             {
                 Text = "—",
@@ -975,6 +952,7 @@ public partial class MainWindow : Window
                 VerticalAlignment = VerticalAlignment.Center,
             };
             bottomRow.Children.Add(priceText);
+
             var pnlText = new TextBlock
             {
                 Text = "—",
@@ -1030,6 +1008,7 @@ public partial class MainWindow : Window
             var line1 = new Grid();
             line1.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             line1.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+
             var left = new StackPanel { Orientation = Orientation.Horizontal };
             left.Children.Add(new TextBlock
             {
@@ -1045,6 +1024,7 @@ public partial class MainWindow : Window
                 FontSize = 9,
             });
             line1.Children.Add(left);
+
             var pnl = new TextBlock
             {
                 Text = $"{trade.PnL:+0.00;-0.00}",
@@ -1055,6 +1035,7 @@ public partial class MainWindow : Window
             Grid.SetColumn(pnl, 1);
             line1.Children.Add(pnl);
             tsp.Children.Add(line1);
+
             tsp.Children.Add(new TextBlock
             {
                 Text = $"{trade.Reason} · {trade.CloseTime:MM/dd HH:mm}",
@@ -1122,7 +1103,6 @@ public partial class MainWindow : Window
             : balance * settings.PaperPositionSizePercent / 100m;
         if (suggested <= 0) suggested = 100m;
         PopMarginBox.Text = Math.Round(Math.Min(suggested, balance), 2).ToString();
-
         OpenPositionPopup.IsOpen = true;
     }
 
@@ -1171,8 +1151,6 @@ public partial class MainWindow : Window
             ? (side == PositionSide.Long ? entry * (1m + tpPct / 100m) : entry * (1m - tpPct / 100m))
             : 0m;
 
-        // Pre-Hunt Checklist: pause the watch timer while the modal dialog is open
-        // to avoid race conditions on the OpenPositions collection.
         _watchTimer.Stop();
         ChecklistResult checklistResult = new();
         try
@@ -1190,10 +1168,10 @@ public partial class MainWindow : Window
             _watchTimer.Start();
         }
 
-        // Multiple open positions on the same symbol are allowed (like real exchanges).
         var result = PaperTradingEngine.TryOpen(
             _paperAccount, settings, symbol, dataSource, side, entry, leverage,
             slPrice, tpPrice, trailing, trailDist, trailAct, marginUsdt, strategyId: null);
+
         if (!result.Ok)
         {
             NotificationService.ShowToast("Meowgnal", result.Error);
@@ -1224,7 +1202,6 @@ public partial class MainWindow : Window
             NotificationService.ShowToast("Meowgnal", "Exchange unreachable — could not close the position.");
             return;
         }
-
         var trade = PaperTradingEngine.Close(_paperAccount, pos, ticker.Last, CloseReason.Manual, settings.PaperTakerFeePercent);
         CheckDailySuspension(settings);
         SavePaperAccount();
@@ -1250,8 +1227,6 @@ public partial class MainWindow : Window
         var settings = SettingsStorageService.Load();
         PaperTradingEngine.CheckDailyReset(_paperAccount);
 
-        // Snapshot the positions list up front to avoid "collection modified" crashes
-        // if a trade is closed or opened elsewhere while we iterate.
         var positions = _paperAccount.OpenPositions.ToList();
         if (positions.Count == 0)
         {
@@ -1391,8 +1366,6 @@ public partial class MainWindow : Window
 
     private async Task CheckDrawingAlertsAsync()
     {
-        // Find all horizontal-style drawings that have alerts enabled.
-        // Supported kinds: HorizontalLine, HorizontalRay, and PriceLabel.
         var horizontalDrawings = _drawingsFile.Drawings
             .Where(d => d.AlertOnCross &&
                         (d.Kind == DrawingKind.HorizontalLine ||
@@ -1412,26 +1385,20 @@ public partial class MainWindow : Window
                     : new BinanceDataProvider();
                 var symbols = group.Select(d => d.Symbol).Distinct();
                 var tickers = await provider.GetTickersAsync(symbols);
-
                 foreach (var drawing in group)
                 {
                     if (!tickers.TryGetValue(drawing.Symbol, out var t)) continue;
                     var alertPrice = GetAlertPrice(drawing);
                     if (alertPrice <= 0) continue;
                     var above = t.Last >= alertPrice;
-
-                    // Seed the baseline on first tick, no alert yet
                     if (!_drawingAlertWasAbove.TryGetValue(drawing.Id, out var wasAbove) || wasAbove is null)
                     {
                         _drawingAlertWasAbove[drawing.Id] = above;
                         continue;
                     }
-
-                    // Detect crossover
                     if (above != wasAbove)
                     {
                         _drawingAlertWasAbove[drawing.Id] = above;
-                        // Disable alert after first trigger (user can re-enable in properties)
                         drawing.AlertOnCross = false;
                         DrawingStorageService.Save(_drawingsFile);
                         _ = SendDrawingsToChartAsync();
@@ -1451,10 +1418,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>
-    /// Extracts the alert price from a horizontal-style drawing.
-    /// Returns 0 if the drawing has no valid points.
-    /// </summary>
     private static decimal GetAlertPrice(Drawing drawing)
     {
         if (drawing.Points.Count == 0) return 0m;
@@ -1467,7 +1430,6 @@ public partial class MainWindow : Window
         };
     }
 
-    // Empty portfolio list means all strategies are allowed (default behavior)
     private static bool IsStrategyInPortfolio(StrategyDefinition strategy, AppSettings settings)
     {
         if (settings.PortfolioEnabledStrategyIds.Count == 0) return true;
@@ -1491,18 +1453,14 @@ public partial class MainWindow : Window
             if (f.Signal.Type == SignalType.Entry)
             {
                 if (_paperAccount.OpenPositions.Any(p => p.Symbol == symbol)) continue;
-                // Portfolio gate: only auto-trade strategies approved in the Portfolio window
                 if (!IsStrategyInPortfolio(f.Strategy, settings)) continue;
-                // Portfolio limit: max total open positions across all strategies
                 if (settings.PortfolioMaxTotalPositions > 0 &&
                     _paperAccount.OpenPositions.Count >= settings.PortfolioMaxTotalPositions)
                     continue;
-                // Portfolio limit: max open positions per strategy
                 if (settings.PortfolioMaxPositionsPerStrategy > 0 &&
                     _paperAccount.OpenPositions.Count(p => p.StrategyId == f.Strategy.StrategyId) >= settings.PortfolioMaxPositionsPerStrategy)
                     continue;
 
-                // Pre-Hunt Checklist: pause the watch timer while the modal dialog is open.
                 _watchTimer.Stop();
                 ChecklistResult? checklistResult = null;
                 try
@@ -1518,7 +1476,6 @@ public partial class MainWindow : Window
                 }
                 if (checklistResult is null) continue;
 
-                // Build entry autopsy: real indicator values at the signal bar.
                 var barsForSnapshot = await provider.GetHistoricalCandlesAsync(symbol, f.Strategy.Timeframe, limit: 50);
                 var entrySnapshot = new Dictionary<string, decimal>();
                 var entryExplanation = "Auto-opened by signal.";
@@ -1544,6 +1501,7 @@ public partial class MainWindow : Window
                     trailingEnabled: false, trailingDistancePercent: 0m, trailingActivationPercent: 0m,
                     customMarginUsdt: 0m, strategyId: f.Strategy.StrategyId,
                     entrySnapshot: entrySnapshot, entryExplanation: entryExplanation);
+
                 if (result.Ok)
                 {
                     result.Position!.ChecklistResult = checklistResult;
@@ -1572,6 +1530,35 @@ public partial class MainWindow : Window
             RebuildPaperPanel();
             _ = SendPositionsToChartAsync();
         }
+    }
+
+    public List<string> GetWatchlistSymbols()
+    {
+        return _activeWatchlist.Items.Select(i => i.Symbol).ToList();
+    }
+
+    public async Task<bool> OpenPaperPositionFromDrawingAsync(string side, decimal entry, decimal sl, decimal tp, decimal sizePercent)
+    {
+        var settings = SettingsStorageService.Load();
+        var posSide = side == "long" ? PositionSide.Long : PositionSide.Short;
+        var marginUsdt = _paperAccount.CurrentBalance * Math.Clamp(sizePercent, 1m, 100m) / 100m;
+        var result = PaperTradingEngine.TryOpen(
+            _paperAccount, settings, _chartSymbol, _chartDataSource, posSide, entry,
+            settings.PaperDefaultLeverage, sl, tp,
+            trailingEnabled: false, trailingDistancePercent: 0m, trailingActivationPercent: 0m,
+            customMarginUsdt: marginUsdt,
+            entryExplanation: "Opened from Long/Short Position drawing tool.");
+        if (!result.Ok)
+        {
+            NotificationService.ShowToast("Meowgnal", result.Error);
+            return false;
+        }
+        SavePaperAccount();
+        RebuildPaperPanel();
+        await SendPositionsToChartAsync();
+        NotificationService.ShowToast("Meowgnal",
+            $"{(posSide == PositionSide.Long ? "LONG" : "SHORT")} {_chartSymbol} opened from drawing: {result.Position!.Size} @ {FormatPrice(entry)}");
+        return true;
     }
 
     private async Task SendPositionsToChartAsync()
@@ -1620,7 +1607,6 @@ public partial class MainWindow : Window
                 _ = SendDrawingsToChartAsync();
             };
             core.WebMessageReceived += OnChartWebMessageReceived;
-
             var hostFolder = Path.Combine(AppContext.BaseDirectory, "ChartHost");
             core.SetVirtualHostNameToFolderMapping("meowgnal.local", hostFolder, CoreWebView2HostResourceAccessKind.Allow);
             core.Navigate("https://meowgnal.local/chart.html");
@@ -1739,44 +1725,32 @@ public partial class MainWindow : Window
                     var kind = Enum.TryParse<DrawingKind>(normalizedKind, true, out var parsedKind)
                         ? parsedKind
                         : DrawingKind.HorizontalLine;
+
                     var newDrawing = new Drawing { Kind = kind, Symbol = _chartSymbol.Replace("/", ""), DataSource = _chartDataSource };
+
                     if (drawingEl.TryGetProperty("label", out var tLabelEl))
                         newDrawing.Label = tLabelEl.GetString() ?? "";
                     if (drawingEl.TryGetProperty("color", out var tColorEl))
                         newDrawing.Color = tColorEl.GetString() ?? "#2962FF";
-                    // Pitchforks: extend right by default (drawn towards the future)
+
                     if (kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
-                    or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork)
+                        or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork)
                         newDrawing.ExtendRight = true;
 
                     if (kind is DrawingKind.ElliottImpulseWave or DrawingKind.ElliottCorrectionWave
-                    or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
-                    or DrawingKind.ElliottTripleComboWave)
+                        or DrawingKind.ElliottTriangleWave or DrawingKind.ElliottDoubleComboWave
+                        or DrawingKind.ElliottTripleComboWave)
                     {
                         newDrawing.ShowRatios = false;
                         newDrawing.ShowApex = false;
                         newDrawing.ShowLabels = true;
                     }
-                    if (drawingEl.TryGetProperty("points", out var pts))
-                        newDrawing.SecondLineColor = newDrawing.Color;
 
-                    {
-                        foreach (var pt in pts.EnumerateArray())
-                        {
-                            newDrawing.Points.Add(new DrawingPoint
-                            {
-                                TimeUnix = pt.GetProperty("time").GetInt64(),
-                                Price = pt.GetProperty("price").GetDecimal(),
-                            });
-                        }
-                    }
                     if (kind is DrawingKind.CyclicLines or DrawingKind.TimeCycles)
                     {
                         newDrawing.ShowRatios = false;
                         newDrawing.ShowApex = false;
                         newDrawing.ShowLabels = kind == DrawingKind.TimeCycles;
-                        if (newDrawing.Points.Count >= 2)
-                            newDrawing.CycleIntervalSeconds = Math.Abs(newDrawing.Points[1].TimeUnix - newDrawing.Points[0].TimeUnix);
                     }
 
                     if (kind == DrawingKind.SineLine)
@@ -1786,12 +1760,79 @@ public partial class MainWindow : Window
                         newDrawing.ShowLabels = false;
                     }
 
+                    if (kind is DrawingKind.LongPosition or DrawingKind.ShortPosition)
+                    {
+                        newDrawing.PositionSide = kind == DrawingKind.LongPosition ? "long" : "short";
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowLabels = true;
+                    }
+
+                    if (kind == DrawingKind.PositionForecast)
+                    {
+                        newDrawing.LineStyle = "dashed";
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowLabels = false;
+                    }
+
+                    if (kind == DrawingKind.BarsPattern)
+                    {
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowLabels = false;
+                    }
+
+                    if (kind == DrawingKind.GhostFeed)
+                    {
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowLabels = false;
+                    }
+
+                    if (kind == DrawingKind.Sector)
+                    {
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowLabels = false;
+                    }
+
+                    if (drawingEl.TryGetProperty("points", out var pts))
+                    {
+                        newDrawing.SecondLineColor = newDrawing.Color;
+                        foreach (var pt in pts.EnumerateArray())
+                        {
+                            newDrawing.Points.Add(new DrawingPoint
+                            {
+                                TimeUnix = pt.GetProperty("time").GetInt64(),
+                                Price = pt.GetProperty("price").GetDecimal(),
+                            });
+                        }
+                    }
+
+                    if (kind is DrawingKind.LongPosition or DrawingKind.ShortPosition)
+                    {
+                        if (newDrawing.Points.Count >= 1)
+                            newDrawing.EntryPrice = (decimal)newDrawing.Points[0].Price;
+                        if (newDrawing.Points.Count >= 2)
+                            newDrawing.StopLossPrice = (decimal)newDrawing.Points[1].Price;
+                        if (newDrawing.EntryPrice > 0 && newDrawing.StopLossPrice > 0)
+                        {
+                            var risk = Math.Abs(newDrawing.EntryPrice - newDrawing.StopLossPrice);
+                            newDrawing.TakeProfitPrice = kind == DrawingKind.LongPosition
+                                ? newDrawing.EntryPrice + 2 * risk
+                                : newDrawing.EntryPrice - 2 * risk;
+                        }
+                    }
+
+                    if (kind is DrawingKind.CyclicLines or DrawingKind.TimeCycles)
+                    {
+                        if (newDrawing.Points.Count >= 2)
+                            newDrawing.CycleIntervalSeconds = Math.Abs(newDrawing.Points[1].TimeUnix - newDrawing.Points[0].TimeUnix);
+                    }
+
                     if (newDrawing.Points.Count > 0)
                     {
                         CaptureSnapshot();
                         _drawingsFile.Drawings.Add(newDrawing);
                         DrawingStorageService.Save(_drawingsFile);
                     }
+
                     _activeDrawingMode = null;
                     SetActiveTool(null);
                     _ = SendDrawingModeToChartAsync("none");
@@ -1803,14 +1844,12 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Phase 27 — Draggable points: snapshot before drag modifies the drawing
         if (msgType == "captureSnapshot")
         {
             CaptureSnapshot();
             return;
         }
 
-        // Phase 27 — Draggable points: persist the moved handle
         if (msgType == "updateDrawing")
         {
             try
@@ -2023,7 +2062,6 @@ public partial class MainWindow : Window
             var period = root.TryGetProperty("period", out var pProp) ? pProp.GetInt32() : 14;
             var color = root.TryGetProperty("color", out var cProp) ? cProp.GetString() : null;
             var width = root.TryGetProperty("lineWidth", out var wProp) ? wProp.GetInt32() : 2;
-
             var list = GetActiveIndicators(_chartSymbol);
             var item = list.FirstOrDefault(x => x.Type == id);
             if (item is not null)
@@ -2050,57 +2088,8 @@ public partial class MainWindow : Window
                     .ToList();
                 foreach (var item in list.Where(x => !order.Contains(x.Type)))
                     reordered.Add(item);
-
                 list.Clear();
                 foreach (var x in reordered) list.Add(x);
-                IndicatorSettingsStorageService.Save(_indicatorSettings);
-            }
-            return;
-        }
-
-        if (msgType == "removeIndicator")
-        {
-            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
-            var list = GetActiveIndicators(_chartSymbol);
-            var item = list.FirstOrDefault(a => a.Type == id);
-            if (item is not null)
-            {
-                list.Remove(item);
-                IndicatorSettingsStorageService.Save(_indicatorSettings);
-                IndicatorPanelControl.RefreshActiveTypes(list.Select(a => a.Type));
-            }
-            return;
-        }
-
-        if (msgType == "updateIndicator")
-        {
-            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() ?? "" : "";
-            var period = root.TryGetProperty("period", out var pProp) ? pProp.GetInt32() : 0;
-            var list = GetActiveIndicators(_chartSymbol);
-            var item = list.FirstOrDefault(a => a.Type == id);
-            if (item is not null && period > 0)
-            {
-                item.Period = period;
-                IndicatorSettingsStorageService.Save(_indicatorSettings);
-                _ = RefreshIndicatorsOnChartAsync();
-            }
-            return;
-        }
-
-        if (msgType == "reorderIndicators")
-        {
-            if (root.TryGetProperty("order", out var orderEl) && orderEl.ValueKind == JsonValueKind.Array)
-            {
-                var order = orderEl.EnumerateArray().Select(x => x.GetString() ?? "").ToList();
-                var list = GetActiveIndicators(_chartSymbol);
-                var sorted = order
-                    .Select(id => list.FirstOrDefault(a => a.Type == id))
-                    .Where(a => a is not null)
-                    .Cast<ActiveIndicator>()
-                    .ToList();
-                foreach (var a in list.Where(a => !order.Contains(a.Type))) sorted.Add(a);
-                list.Clear();
-                foreach (var a in sorted) list.Add(a);
                 IndicatorSettingsStorageService.Save(_indicatorSettings);
             }
             return;
@@ -2261,11 +2250,8 @@ public partial class MainWindow : Window
     }
 
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
-
     private void OpenJournalButton_Click(object sender, RoutedEventArgs e) => new JournalWindow().ShowDialog();
-
     private void OpenPortfolioButton_Click(object sender, RoutedEventArgs e) => new PortfolioWindow().ShowDialog();
-
     private void ColorPickerButton_Click(object sender, RoutedEventArgs e) => ColorPopup.IsOpen = !ColorPopup.IsOpen;
 
     private async void DefaultColor_Click(object sender, RoutedEventArgs e)
@@ -2311,7 +2297,6 @@ public partial class MainWindow : Window
         {
             var drawing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
             if (drawing is null) return;
-            // Snapshot first so Ctrl+Z can revert the property changes
             CaptureSnapshot();
             var win = new DrawingPropertiesWindow(drawing) { Owner = this };
             if (win.ShowDialog() == true)
@@ -2515,39 +2500,51 @@ public partial class MainWindow : Window
 
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
-        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         if (!CursorPopup.IsOpen) RefreshCursorMenuHighlight();
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
+
     private void LineGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         LinePopup.IsOpen = !LinePopup.IsOpen;
     }
+
     private void FibGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         FibPopup.IsOpen = !FibPopup.IsOpen;
     }
+
     private void PatternsGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         PatternsPopup.IsOpen = !PatternsPopup.IsOpen;
     }
+
     private void ShapesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         ShapesPopup.IsOpen = !ShapesPopup.IsOpen;
     }
+
     private void BrushGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         BrushPopup.IsOpen = !BrushPopup.IsOpen;
     }
+
     private void AnnotGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         AnnotPopup.IsOpen = !AnnotPopup.IsOpen;
+    }
+
+    private void ForecastGroup_Click(object sender, RoutedEventArgs e)
+    {
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        ForecastPopup.IsOpen = !ForecastPopup.IsOpen;
     }
 
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
@@ -2587,9 +2584,8 @@ public partial class MainWindow : Window
         ShapesPopup.IsOpen = false;
         BrushPopup.IsOpen = false;
         AnnotPopup.IsOpen = false;
+        ForecastPopup.IsOpen = false;
 
-        // Cursor tools (TradingView-style Cursors menu): switch the pointer mode,
-        // do not activate a drawing tool.
         var cursorMap = new Dictionary<string, string>
         {
             ["cur_cross"] = "cross",
@@ -2609,19 +2605,22 @@ public partial class MainWindow : Window
             return;
         }
 
-        // Highlight the group button that owns this tool
         var group = tag switch
         {
             "fib" or "fibextension" or "fibchannel" or "fibtimezone" or "trendbasedfibtime" or "fibcircles" or "fibspiral"
-                  or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan"
-                  or "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => FibGroupButton,
+                or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan"
+                or "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => FibGroupButton,
+
             "xabcdpattern" or "cypherpattern" or "headandshoulders" or "abcdpattern" or "trianglepattern" or "threedrivespattern"
-or "elliottimpulswave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave"
-or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
+                or "elliottimpulsewave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave"
+                or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
+
+            "longposition" or "shortposition" or "positionforecast" or "barspattern" or "ghostfeed" or "sector" => ForecastGroupButton,
+
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" => ShapesGroupButton,
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
-            "cursor" or "dot" or "arrow" or "eraser" => CursorGroupButton,
+            "cur_cross" or "cur_dot" or "cur_arrow" or "cur_demo" or "cur_magic" or "cur_eraser" => CursorGroupButton,
             _ => LineGroupButton,
         };
 
@@ -2637,7 +2636,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ShapesGroupButton, BrushGroupButton, AnnotGroupButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, ShapesGroupButton, BrushGroupButton, AnnotGroupButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");
@@ -2676,7 +2675,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         await SendLongPressTooltipAsync(on);
     }
 
-    // The main Cursors button shows the icon of the currently active sub-mode.
     private void UpdateCursorButtonIcon()
     {
         var key = _activeCursorMode switch
@@ -2691,7 +2689,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         CursorGroupIcon.Content = FindResource(key);
     }
 
-    // Highlights the active item inside the Cursors popup.
     private void RefreshCursorMenuHighlight()
     {
         var items = new (Button Btn, string Mode)[]
@@ -2715,10 +2712,8 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
     {
         try { await _chartPageReady.Task; } catch { return; }
         if (ChartWebView.CoreWebView2 is null) return;
-
         var symbolClean = _chartSymbol.Replace("/", "");
 
-        // Phase 27 — Eye toggle: send empty list when drawings are hidden
         if (SettingsStorageService.Load().DrawingsHidden)
         {
             ChartWebView.CoreWebView2.PostWebMessageAsJson(
@@ -2727,53 +2722,66 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         }
 
         var drawings = _drawingsFile.Drawings
-    .Where(d => d.Symbol == symbolClean && d.IsVisible)
-    .Select(d => new
-    {
-        id = d.Id,
-        kind = d.Kind.ToString().ToLowerInvariant(),
-        color = d.Color,
-        label = d.Label,
-        alert = d.AlertOnCross,
-        locked = d.IsLocked,
-        lineWidth = d.LineWidth,
-        lineStyle = d.LineStyle,
-        groupId = d.GroupId,
-        zIndex = d.ZIndex,
-        fontSize = d.FontSize,
-        fontFamily = d.FontFamily,
-        gannRatios = d.GannRatios,
-        extendLeft = d.ExtendLeft,
-        extendRight = d.ExtendRight,
-        showPriceLabels = d.ShowPriceLabels,
-        showTimeLabel = d.ShowTimeLabel,
-        showPriceChange = d.ShowPriceChange,
-        showBarCount = d.ShowBarCount,
-        showTimeElapsed = d.ShowTimeElapsed,
-        showAngle = d.ShowAngle,
-        fillBackground = d.FillBackground,
-        fillOpacity = d.FillOpacity,
-        showMedianLine = d.ShowMedianLine,
-        medianLineColor = d.MedianLineColor,
-        medianLineStyle = d.MedianLineStyle,
-        stdDevMultiplier = d.StdDevMultiplier,
-        secondLineColor = d.SecondLineColor,
-        pitchforkUseSameColor = d.PitchforkUseSameColor,
-        pitchforkMedianColor = d.PitchforkMedianColor,
-        pitchforkArm1Color = d.PitchforkArm1Color,
-        pitchforkArm2Color = d.PitchforkArm2Color,
-        showRatios = d.ShowRatios,
-        necklineColor = d.NecklineColor,
-        showLabels = d.ShowLabels,
-        showApex = d.ShowApex,
-        labelColor = d.LabelColor,
-        cycleCount = d.CycleCount,
-        cycleIntervalSeconds = d.CycleIntervalSeconds,
-        sineAmplitudePercent = d.SineAmplitudePercent,
-        sineRepeatCount = d.SineRepeatCount,
-        fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
-        points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
-    }).ToArray();
+            .Where(d => d.Symbol == symbolClean && d.IsVisible)
+            .Select(d => new
+            {
+                id = d.Id,
+                kind = d.Kind.ToString().ToLowerInvariant(),
+                color = d.Color,
+                label = d.Label,
+                alert = d.AlertOnCross,
+                locked = d.IsLocked,
+                lineWidth = d.LineWidth,
+                lineStyle = d.LineStyle,
+                groupId = d.GroupId,
+                zIndex = d.ZIndex,
+                fontSize = d.FontSize,
+                fontFamily = d.FontFamily,
+                gannRatios = d.GannRatios,
+                extendLeft = d.ExtendLeft,
+                extendRight = d.ExtendRight,
+                showPriceLabels = d.ShowPriceLabels,
+                showTimeLabel = d.ShowTimeLabel,
+                showPriceChange = d.ShowPriceChange,
+                showBarCount = d.ShowBarCount,
+                showTimeElapsed = d.ShowTimeElapsed,
+                showAngle = d.ShowAngle,
+                fillBackground = d.FillBackground,
+                fillOpacity = d.FillOpacity,
+                showMedianLine = d.ShowMedianLine,
+                medianLineColor = d.MedianLineColor,
+                medianLineStyle = d.MedianLineStyle,
+                stdDevMultiplier = d.StdDevMultiplier,
+                secondLineColor = d.SecondLineColor,
+                pitchforkUseSameColor = d.PitchforkUseSameColor,
+                pitchforkMedianColor = d.PitchforkMedianColor,
+                pitchforkArm1Color = d.PitchforkArm1Color,
+                pitchforkArm2Color = d.PitchforkArm2Color,
+                showRatios = d.ShowRatios,
+                necklineColor = d.NecklineColor,
+                showLabels = d.ShowLabels,
+                showApex = d.ShowApex,
+                labelColor = d.LabelColor,
+                positionSide = d.PositionSide,
+                entryPrice = (double)d.EntryPrice,
+                stopLossPrice = (double)d.StopLossPrice,
+                takeProfitPrice = (double)d.TakeProfitPrice,
+                positionSizePercent = (double)d.PositionSizePercent,
+                profitZoneColor = d.ProfitZoneColor,
+                lossZoneColor = d.LossZoneColor,
+                ghostSymbol = d.GhostSymbol,
+                ghostDataSource = d.GhostDataSource,
+                ghostOpacity = d.GhostOpacity,
+                ghostCandles = d.GhostCandles?.Select(c => new { time = c.Timestamp, open = (double)c.Open, high = (double)c.High, low = (double)c.Low, close = (double)c.Close }).ToArray(),
+                barsPatternOpacity = d.BarsPatternOpacity,
+                sectorFillOpacity = d.SectorFillOpacity,
+                cycleCount = d.CycleCount,
+                cycleIntervalSeconds = d.CycleIntervalSeconds,
+                sineAmplitudePercent = d.SineAmplitudePercent,
+                sineRepeatCount = d.SineRepeatCount,
+                fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
+                points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
+            }).ToArray();
 
         ChartWebView.CoreWebView2.PostWebMessageAsJson(
             JsonSerializer.Serialize(new { type = "setDrawings", drawings }));
@@ -2836,6 +2844,12 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         DrawingKind.CyclicLines => "Cyclic Lines",
         DrawingKind.TimeCycles => "Time Cycles",
         DrawingKind.SineLine => "Sine Line",
+        DrawingKind.LongPosition => "Long Position",
+        DrawingKind.ShortPosition => "Short Position",
+        DrawingKind.PositionForecast => "Position Forecast",
+        DrawingKind.BarsPattern => "Bars Pattern",
+        DrawingKind.GhostFeed => "Ghost Feed",
+        DrawingKind.Sector => "Sector",
         DrawingKind.Rectangle => "Rectangle",
         DrawingKind.RotatedRectangle => "Rotated Rectangle",
         DrawingKind.Circle => "Circle",
@@ -2862,7 +2876,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         ObjectsListPanel.Children.Clear();
         var symbolClean = _chartSymbol.Replace("/", "");
         var items = _drawingsFile.Drawings.Where(d => d.Symbol == symbolClean).ToList();
-
         if (items.Count == 0)
         {
             ObjectsListPanel.Children.Add(new TextBlock
@@ -2874,7 +2887,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             });
             return;
         }
-
         foreach (var d in items)
         {
             var row = new Grid { Margin = new Thickness(0, 0, 0, 4) };
@@ -2882,6 +2894,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
 
             var label = string.IsNullOrWhiteSpace(d.Label) ? KindLabel(d.Kind) : $"{KindLabel(d.Kind)} — {d.Label}";
+
             var leftSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
             Border dot;
             try
@@ -2903,6 +2916,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 dot = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 0, 8, 0), Background = new SolidColorBrush(Colors.Gray), VerticalAlignment = VerticalAlignment.Center };
             }
             leftSp.Children.Add(dot);
+
             var nameText = new TextBlock
             {
                 Text = label,
@@ -2924,6 +2938,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 FontSize = 11
             };
             editBtn.Click += ObjectEdit_Click;
+
             var lockBtn = new Button
             {
                 Content = d.IsLocked ? "🔒" : "🔓",
@@ -2934,6 +2949,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 FontSize = 11
             };
             lockBtn.Click += ObjectLock_Click;
+
             var hideBtn = new Button
             {
                 Content = d.IsVisible ? "👁️" : "🚫",
@@ -2944,6 +2960,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 FontSize = 11
             };
             hideBtn.Click += ObjectHide_Click;
+
             var delBtn = new Button
             {
                 Content = "🗑️",
@@ -2955,6 +2972,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 Foreground = (Brush)FindResource("Down")
             };
             delBtn.Click += ObjectDelete_Click;
+
             rightSp.Children.Add(editBtn);
             rightSp.Children.Add(lockBtn);
             rightSp.Children.Add(hideBtn);
@@ -3029,7 +3047,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             FileName = $"template_{symbolClean}_{DateTime.Now:yyyyMMdd_HHmmss}.meowtmpl.json"
         };
         if (dialog.ShowDialog() != true) return;
-
         var template = new DrawingTemplate
         {
             Name = Path.GetFileNameWithoutExtension(dialog.FileName),
@@ -3050,14 +3067,12 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             Filter = "Drawing template (*.meowtmpl.json)|*.meowtmpl.json"
         };
         if (dialog.ShowDialog() != true) return;
-
         var template = TemplateService.Import(dialog.FileName);
         if (template is null || template.Drawings.Count == 0)
         {
             NotificationService.ShowToast("Meowgnal", "Could not read template.");
             return;
         }
-
         var symbolClean = _chartSymbol.Replace("/", "");
         foreach (var d in template.Drawings)
         {
@@ -3098,12 +3113,11 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         }
         return list;
     }
-    // Unified payload builder: every indicator becomes id + displayMode + series list.
+
     private object? BuildIndicatorPayload(string type, int period, string? customColor, int lineWidth)
     {
         var bars = _currentBars;
         if (bars.Count == 0) return null;
-
         var tk = type.ToLowerInvariant();
         var displayMode = IsOverlayIndicator(tk) ? "Overlay" : "Pane";
         var color = string.IsNullOrWhiteSpace(customColor) ? DefaultIndicatorColor(tk) : customColor;
@@ -3111,7 +3125,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         GetPaneScale(tk, out var range, out var guides);
 
         var series = new List<object>();
-
         if (tk == "macd")
         {
             var m = IndicatorCalculator.MACD(bars);
@@ -3134,11 +3147,9 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 DisplayMode = displayMode,
                 Params = new Dictionary<string, double> { ["period"] = period }
             };
-
             Dictionary<string, double?[]> multi;
             try { multi = IndicatorEngine.CalculateMulti(bars, def); }
             catch { return null; }
-
             foreach (var kv in multi.OrderBy(k => k.Key))
             {
                 var sub = kv.Key.Length > tk.Length ? kv.Key.Substring(tk.Length + 1) : "";
@@ -3248,7 +3259,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         _ => null
     };
 
-    // Fixed Y ranges + horizontal guide levels for bounded oscillators.
     private static void GetPaneScale(string tk, out double[]? range, out double[]? guides)
     {
         switch (tk)
@@ -3270,7 +3280,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         }
     }
 
-    // Price-scale indicators draw on top of candles; everything else gets its own pane.
     private static bool IsOverlayIndicator(string type)
     {
         switch (type)
@@ -3296,7 +3305,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         }
     }
 
-    // Redraws all saved indicators for the active symbol (also after data updates).
     private async Task RefreshIndicatorsOnChartAsync()
     {
         try
@@ -3304,7 +3312,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             await _chartPageReady.Task;
             if (ChartWebView.CoreWebView2 is null || _currentBars.Count == 0) return;
 
-            // Prefetch any fundamental indicators active on this chart
             var activeDefs = GetActiveIndicators(_chartSymbol)
                 .Select(a => new IndicatorDefinition
                 {
@@ -3329,7 +3336,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         catch { }
     }
 
-    // Clicking an indicator toggles it: adds if missing, removes if already on the chart.
     private async void AddIndicatorToChart(IndicatorInfo info)
     {
         try
@@ -3340,7 +3346,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             if (existing is not null) list.Remove(existing);
             else list.Add(new ActiveIndicator { Type = typeKey, Period = info.DefaultPeriod });
             IndicatorSettingsStorageService.Save(_indicatorSettings);
-
             IndicatorPanelControl.RefreshActiveTypes(list.Select(a => a.Type));
             await RefreshIndicatorsOnChartAsync();
             IndicatorPopup.IsOpen = false;
@@ -3404,10 +3409,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
     {
         var ctrl = Keyboard.Modifiers.HasFlag(ModifierKeys.Control);
         if (!ctrl) return;
-
-        // Do not hijack Ctrl+Z/Ctrl+Y while typing in text boxes
         if (Keyboard.FocusedElement is TextBox or PasswordBox) return;
-
         if (e.Key == Key.Z)
         {
             var restored = _undoManager.Undo(_drawingsFile.Drawings);
@@ -3504,7 +3506,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         var strategies = StrategyStorageService.LoadAll();
         _signals.Clear();
         ActiveStrategiesText.Text = strategies.Count.ToString();
-
         if (strategies.Count == 0)
         {
             WinRateText.Text = "—";
@@ -3525,19 +3526,19 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             var htf = AccuracyService.NextHtf(strategy.Timeframe);
             if (htf is not null)
                 htfBars = await provider.GetHistoricalCandlesAsync(strategy.Symbol, htf, limit: 120);
+
             await IndicatorEngine.PrefetchFundamentalsAsync(bars, strategy.Indicators, strategy.DataSource, strategy.Symbol);
             var signals = RuleEngine.ScanForSignals(strategy, bars);
             if (SettingsStorageService.Load().AccuracyClosedCandleOnly && bars.Count > 0)
                 signals = signals.Where(s => s.Timestamp != bars[^1].Timestamp).ToList();
-            var backtest = BacktestEngine.Run(strategy, bars, startingBalance: 10000m, feePercent: 0.1m, slippagePercent: 0.05m);
 
+            var backtest = BacktestEngine.Run(strategy, bars, startingBalance: 10000m, feePercent: 0.1m, slippagePercent: 0.05m);
             totalWinRate += backtest.WinRatePercent;
             totalSignalCount += signals.Count;
 
             foreach (var s in signals)
             {
                 _knownSignalKeys.Add(MakeSignalKey(strategy.StrategyId, s));
-
                 var quality = AccuracyService.CalculateQuality(s, bars, htfBars, settings);
                 allSignals.Add((new SignalDisplayItem
                 {
@@ -3553,10 +3554,8 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         }
 
         _baselineSeeded = true;
-
         WinRateText.Text = $"{totalWinRate / strategies.Count:N0}%";
         SignalCountText.Text = totalSignalCount.ToString();
-
         foreach (var (item, _) in allSignals.OrderByDescending(x => x.Time).Take(15))
             _signals.Add(item);
     }
@@ -3587,7 +3586,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             return;
         }
         if (ChartWebView.CoreWebView2 is null) return;
-
         var payload = new
         {
             type = "setCandles",
@@ -3607,18 +3605,11 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
 
     private sealed record FoundSignal(StrategyDefinition Strategy, SignalEvent Signal);
 
-    /// <summary>
-    /// Captures a snapshot of current drawings before any modification.
-    /// Call this BEFORE every change to _drawingsFile.Drawings.
-    /// </summary>
     private void CaptureSnapshot()
     {
         _undoManager.PushSnapshot(_drawingsFile.Drawings);
     }
 
-    /// <summary>
-    /// Restores drawings list from a snapshot and refreshes the chart display.
-    /// </summary>
     private async Task RestoreSnapshotAsync(List<Drawing> restoredDrawings)
     {
         _drawingsFile.Drawings = restoredDrawings;
@@ -3634,7 +3625,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
     {
         var seconds = Math.Clamp(SettingsStorageService.Load().SignalCheckIntervalSeconds, 10, 3600);
         var interval = TimeSpan.FromSeconds(seconds);
-
         if (_monitorTimer is null)
         {
             _monitorTimer = new DispatcherTimer { Interval = interval };
@@ -3654,13 +3644,11 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             IDataProvider provider = f.Strategy.DataSource == "hyperliquid"
                 ? new HyperliquidDataProvider()
                 : new BinanceDataProvider();
-
             if (settings.AccuracyClosedCandleOnly)
             {
                 var bars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, f.Strategy.Timeframe, limit: 5);
                 if (AccuracyService.IsFormingCandleSignal(f.Signal, bars)) return false;
             }
-
             if (f.Signal.Type == SignalType.Entry)
             {
                 if (settings.AccuracyMtfFilter)
@@ -3672,7 +3660,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                         if (!AccuracyService.HtfTrendOk(htfBars, f.Signal.Type)) return false;
                     }
                 }
-
                 if (settings.AccuracyVolumeFilter || settings.AccuracyRegimeFilter)
                 {
                     var bars = await provider.GetHistoricalCandlesAsync(f.Strategy.Symbol, f.Strategy.Timeframe, limit: 150);
@@ -3680,12 +3667,11 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                     if (settings.AccuracyRegimeFilter && !AccuracyService.RegimeOk(bars)) return false;
                 }
             }
-
             return true;
         }
         catch
         {
-            return true; // on data failure, do not block the signal
+            return true;
         }
     }
 
@@ -3697,7 +3683,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         {
             var settings = SettingsStorageService.Load();
             var found = await ScanAllStrategiesAsync();
-
             if (!_baselineSeeded)
             {
                 _baselineSeeded = true;
@@ -3709,7 +3694,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 .Where(f => !_knownSignalKeys.Contains(MakeSignalKey(f.Strategy.StrategyId, f.Signal)))
                 .ToList();
 
-            // Phase 34 — Accuracy Engine filters
             var passed = new List<FoundSignal>();
             foreach (var f in fresh)
                 if (await AccuracyPassAsync(f, settings)) passed.Add(f);
@@ -3721,7 +3705,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             {
                 _knownSignalKeys.Add(MakeSignalKey(f.Strategy.StrategyId, f.Signal));
 
-                // Phase 26 — calculate quality score for live signals
                 IDataProvider provider = f.Strategy.DataSource == "hyperliquid"
                     ? new HyperliquidDataProvider()
                     : new BinanceDataProvider();
@@ -3763,6 +3746,7 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                         $"{(f.Signal.Type == SignalType.Entry ? "BUY" : "SELL")} signal: {f.Strategy.Name}");
                 }
             }
+
             if (settings.SoundNotificationsEnabled)
                 NotificationService.PlayAlertSound();
 
@@ -3821,21 +3805,16 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
                 NotificationService.ShowToast("Meowgnal", "Not enough history for replay on this symbol/timeframe.");
                 return;
             }
-
             _replayBars = bars;
             _replayMode = true;
             ReplayBar.Visibility = Visibility.Visible;
             ReplayButton.Background = (Brush)FindResource("Accent");
-
-            // Replay is candle-reading practice: force candle view and hide indicators
             ApplyChartType("candles");
             _ = SendChartTypeAsync("candles");
             _ = SendClearIndicatorsAsync();
-
             ReplayDatePicker.DisplayDateStart = bars[0].Timestamp;
             ReplayDatePicker.DisplayDateEnd = bars[^1].Timestamp;
             ReplayDatePicker.SelectedDate = bars[(int)(bars.Count * 0.6)].Timestamp;
-
             UpdateReplayProgress();
             ResetReplaySession();
         }
@@ -3856,7 +3835,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         if (_guessTotal > 0)
             NotificationService.ShowToast("Meowgnal — Replay Summary",
                 $"Session finished: {_guessCorrect}/{_guessTotal} correct guesses ({(double)_guessCorrect / _guessTotal * 100:N0}%).");
-
         _replayMode = false;
         StopReplayPlayback();
         ReplayBar.Visibility = Visibility.Collapsed;
@@ -3996,20 +3974,17 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
     private void GuessShort_Click(object sender, RoutedEventArgs e) => StartGuess("short");
     private void GuessSkip_Click(object sender, RoutedEventArgs e) => StartGuess("skip");
 
-    // Records the guess, jumps 10 candles forward, then evaluates the outcome.
     private void StartGuess(string choice)
     {
         GuessPopup.IsOpen = false;
         if (!_replayMode || _replayShown <= 0) return;
         StopReplayPlayback();
-
         _pendingGuess = new ReplayGuess
         {
             Choice = choice,
             BarIndex = _replayShown - 1,
             EntryPrice = _replayBars[_replayShown - 1].Close
         };
-
         ReplayStep(10);
         ResolvePendingGuess();
     }
@@ -4019,11 +3994,9 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
         if (_pendingGuess is null || _replayBars.Count == 0) return;
         var guess = _pendingGuess;
         _pendingGuess = null;
-
         var exit = _replayBars[_replayShown - 1].Close;
         var longPct = guess.EntryPrice != 0 ? (exit - guess.EntryPrice) / guess.EntryPrice * 100m : 0m;
         var shortPct = -longPct;
-
         string resultText;
         if (guess.Choice == "skip")
         {
@@ -4038,7 +4011,6 @@ or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             if (correct) _guessCorrect++;
             resultText = $"{(guess.Choice == "long" ? "🟢 Long" : "🔴 Short")}: {pct:+0.00;-0.00}% — {(correct ? "correct ✅" : "wrong ❌")}";
         }
-
         UpdateSessionText();
         NotificationService.ShowToast("Meowgnal — Replay", resultText);
     }

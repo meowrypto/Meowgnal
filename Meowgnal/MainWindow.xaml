@@ -714,6 +714,36 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
+                        <Button x:Name="ForecastGroupButton" Style="{StaticResource RailButton}" Click="ForecastGroup_Click">
+                            <Image Source="/Assets/icons/forecast.png" Width="20" Height="20"/>
+                        </Button>
+                        <Popup x:Name="ForecastPopup" Placement="Right" PlacementTarget="{Binding ElementName=ForecastGroupButton}" StaysOpen="False">
+                            <Border Background="{DynamicResource BgDark}" BorderBrush="{DynamicResource BorderLine}" BorderThickness="1" CornerRadius="6" Padding="4">
+                                <StackPanel Width="260">
+                                    <TextBlock Text="FORECASTING" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="longposition" Click="ToolButton_Click">
+                                        <TextBlock Text="Long Position (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="shortposition" Click="ToolButton_Click">
+                                        <TextBlock Text="Short Position (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="positionforecast" Click="ToolButton_Click">
+                                        <TextBlock Text="Position Forecast (4 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="PATTERN &amp; GHOST" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="barspattern" Click="ToolButton_Click">
+                                        <TextBlock Text="Bars Pattern (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="ghostfeed" Click="ToolButton_Click">
+                                        <TextBlock Text="Ghost Feed (1 click)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="sector" Click="ToolButton_Click">
+                                        <TextBlock Text="Sector (5 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
                         <Rectangle Width="24" Height="1" Fill="{DynamicResource BorderLine}" Margin="0,6,0,6"/>
                         <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
 Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">

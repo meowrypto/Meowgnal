@@ -976,7 +976,7 @@
 
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
-            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [], pfRoles: null, neckline: null };
+            const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [], rects: [], polygons: [], pfRoles: null, neckline: null };
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return g;
             const X = i => px(pts[i].time), Y = i => py(pts[i].price);
@@ -1213,6 +1213,101 @@
                     if (m === null) break;
                     const ratios = d.gannRatios || [0.25, 0.5, 1, 2, 4];
                     for (const r of ratios) { const yAt = x => y1 + m * r * (x - x1); g.lines.push([x1, y1, W, yAt(W)]); }
+                    break;
+                }
+                case 'longposition':
+                case 'shortposition': {
+                    if (pts.length < 1) break;
+                    const entry = d.entryPrice || pts[0].price;
+                    const sl = d.stopLossPrice || (pts.length >= 2 ? pts[1].price : entry);
+                    const tp = d.takeProfitPrice || entry;
+                    const entryY = py(entry);
+                    const slY = py(sl);
+                    const tpY = py(tp);
+                    if (entryY === null) break;
+                    g.lines.push([0, entryY, W, entryY]);
+                    g.labels.push(['Entry ' + entry.toFixed(2), 6, entryY - 4]);
+                    if (tpY !== null) {
+                        const profitColor = d.profitZoneColor || '#089981';
+                        const minY = Math.min(entryY, tpY);
+                        const maxY = Math.max(entryY, tpY);
+                        g.rects.push({ x: 0, y: minY, w: W, h: maxY - minY, color: profitColor, opacity: 0.2 });
+                    }
+                    if (slY !== null) {
+                        const lossColor = d.lossZoneColor || '#F23645';
+                        const minY = Math.min(entryY, slY);
+                        const maxY = Math.max(entryY, slY);
+                        g.rects.push({ x: 0, y: minY, w: W, h: maxY - minY, color: lossColor, opacity: 0.2 });
+                    }
+                    break;
+                }
+                case 'positionforecast': {
+                    for (let i = 0; i < pts.length - 1; i++) {
+                        const xa = px(pts[i].time), ya = py(pts[i].price);
+                        const xb = px(pts[i + 1].time), yb = py(pts[i + 1].price);
+                        if (xa !== null && ya !== null && xb !== null && yb !== null) g.lines.push([xa, ya, xb, yb]);
+                    }
+                    break;
+                }
+                case 'barspattern': {
+                    if (pts.length < 2 || !allCandles || allCandles.length === 0) break;
+                    const t1 = Math.min(pts[0].time, pts[1].time);
+                    const t2 = Math.max(pts[0].time, pts[1].time);
+                    const selectedCandles = allCandles.filter(c => c.time >= t1 && c.time <= t2);
+                    if (selectedCandles.length === 0) break;
+                    const opacity = d.barsPatternOpacity || 0.5;
+                    const duration = t2 - t1;
+                    const offset = duration;
+                    for (const c of selectedCandles) {
+                        const newTime = c.time + offset;
+                        const x = px(newTime);
+                        const o = py(c.open), h = py(c.high), l = py(c.low), cl = py(c.close);
+                        if (x === null || o === null || h === null || l === null || cl === null) continue;
+                        const bw = Math.max(1, (px(t1 + 60) - px(t1)) * 0.7);
+                        const color = cl >= o ? '#089981' : '#F23645';
+                        g.rects.push({ x: x - bw / 2, y: Math.min(o, cl), w: bw, h: Math.abs(cl - o) || 1, color: color, opacity: opacity });
+                        g.lines.push([x, h, x, l]);
+                    }
+                    break;
+                }
+                case 'ghostfeed': {
+                    if (!d.ghostSymbol || !allCandles || allCandles.length === 0) break;
+                    if (!d.ghostCandles || d.ghostCandles.length === 0) break;
+                    const opacity = d.ghostOpacity || 0.5;
+                    const mainMin = Math.min(...allCandles.map(c => c.low));
+                    const mainMax = Math.max(...allCandles.map(c => c.high));
+                    const ghostMin = Math.min(...d.ghostCandles.map(c => c.low));
+                    const ghostMax = Math.max(...d.ghostCandles.map(c => c.high));
+                    const mainRange = mainMax - mainMin || 1;
+                    const ghostRange = ghostMax - ghostMin || 1;
+                    const scale = mainRange / ghostRange;
+                    const offset = mainMin - ghostMin * scale;
+                    for (const c of d.ghostCandles) {
+                        const x = px(c.time);
+                        const o = py(c.open * scale + offset);
+                        const h = py(c.high * scale + offset);
+                        const l = py(c.low * scale + offset);
+                        const cl = py(c.close * scale + offset);
+                        if (x === null || o === null || h === null || l === null || cl === null) continue;
+                        const bw = Math.max(1, (px(c.time + 60) - px(c.time)) * 0.7);
+                        const color = cl >= o ? '#089981' : '#F23645';
+                        g.rects.push({ x: x - bw / 2, y: Math.min(o, cl), w: bw, h: Math.abs(cl - o) || 1, color: color, opacity: opacity });
+                        g.lines.push([x, h, x, l]);
+                    }
+                    break;
+                }
+                case 'sector': {
+                    if (pts.length < 3) break;
+                    const polygon = [];
+                    for (const p of pts) {
+                        const x = px(p.time), y = py(p.price);
+                        if (x !== null && y !== null) polygon.push([x, y]);
+                    }
+                    if (polygon.length >= 3) g.polygons.push({ points: polygon, color: d.color, opacity: d.sectorFillOpacity || 0.3 });
+                    for (let i = 0; i < polygon.length; i++) {
+                        const next = (i + 1) % polygon.length;
+                        g.lines.push([polygon[i][0], polygon[i][1], polygon[next][0], polygon[next][1]]);
+                    }
                     break;
                 }
                 case 'cycliclines': {
@@ -1542,6 +1637,8 @@
                 'elliotttrianglewave': 'Elliott Triangle Wave',
                 'elliottdoublecombowave': 'Elliott Double Combo Wave',
                 'elliotttriplecombowave': 'Elliott Triple Combo Wave',
+                'longposition': 'Long Position', 'shortposition': 'Short Position', 'positionforecast': 'Position Forecast',
+                'barspattern': 'Bars Pattern', 'ghostfeed': 'Ghost Feed', 'sector': 'Sector',
                 'cycliclines': 'Cyclic Lines', 'timecycles': 'Time Cycles', 'sineline': 'Sine Line',
                 'xabcdpattern': 'XABCD Pattern', 'cypherpattern': 'Cypher Pattern', 'headandshoulders': 'Head and Shoulders', 'abcdpattern': 'ABCD Pattern', 'trianglepattern': 'Triangle Pattern', 'threedrivespattern': 'Three Drives Pattern', 'rectangle': 'Rectangle',
                 'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle', 'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
@@ -1610,7 +1707,21 @@
                 }
                 for (const c of g.circles) { ctx.beginPath(); ctx.arc(c[0], c[1], c[2], 0, Math.PI * 2); ctx.stroke(); }
                 for (const a of g.arcs) { ctx.beginPath(); ctx.arc(a[0], a[1], a[2], a[3], a[4]); ctx.stroke(); }
-
+                for (const r of g.rects) {
+                    ctx.fillStyle = r.color;
+                    ctx.globalAlpha = r.opacity || 0.2;
+                    ctx.fillRect(r.x, r.y, r.w, r.h);
+                }
+                for (const p of g.polygons) {
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.opacity || 0.3;
+                    ctx.beginPath();
+                    ctx.moveTo(p.points[0][0], p.points[0][1]);
+                    for (let i = 1; i < p.points.length; i++) ctx.lineTo(p.points[i][0], p.points[i][1]);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
                 ctx.font = '11px Trebuchet MS';
                 ctx.fillStyle = d.labelColor || mainColor;
                 for (const t of g.labels) ctx.fillText(t[0], t[1], t[2]);
@@ -2167,6 +2278,7 @@
 
         // ---------- Click / crosshair ----------
         const NEED = {
+            longposition: 2, shortposition: 2, positionforecast: 4, barspattern: 2, ghostfeed: 1, sector: 5,
             cycliclines: 2, timecycles: 2, sineline: 2,
             elliottimpulsewave: 6, elliottcorrectionwave: 4, elliotttrianglewave: 6, elliottdoublecombowave: 4, elliotttriplecombowave: 6,
             xabcdpattern: 5, cypherpattern: 5, headandshoulders: 5, abcdpattern: 4, trianglepattern: 4, threedrivespattern: 7,
