@@ -622,63 +622,68 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-                        <Button x:Name="ShapesGroupButton" Style="{StaticResource RailButton}"
-Click="ShapesGroup_Click" ToolTip="Geometric shapes">
+                        <Button x:Name="BrushesShapesGroupButton" Style="{StaticResource RailButton}"
+Click="BrushesShapesGroup_Click" ToolTip="Brushes &amp; shapes">
                             <ContentControl Content="{StaticResource Icon_shapes}" Width="18" Height="18"/>
                         </Button>
-                        <Popup x:Name="ShapesPopup" StaysOpen="False" AllowsTransparency="True"
-Placement="Right" PlacementTarget="{Binding ElementName=ShapesGroupButton}">
+                        <Popup x:Name="BrushesShapesPopup" StaysOpen="False" AllowsTransparency="True"
+Placement="Right" PlacementTarget="{Binding ElementName=BrushesShapesGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
 BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
+                                    <TextBlock Text="BRUSHES" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="brush" Click="ToolButton_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_brush}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock Text="Brush (freehand drag)" VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="highlighter" Click="ToolButton_Click">
+                                        <TextBlock Text="Highlighter (freehand drag)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrow" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrowmarker" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow Marker (1 click)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrowmarkup" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow Mark Up (1 click)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrowmarkdown" Click="ToolButton_Click">
+                                        <TextBlock Text="Arrow Mark Down (1 click)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="SHAPES" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="rectangle" Click="ToolButton_Click">
                                         <TextBlock Text="Rectangle (2 clicks)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="rotatedrectangle" Click="ToolButton_Click">
-                                        <TextBlock Text="Rotated Rectangle" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Rotated Rectangle (3 clicks)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="circle" Click="ToolButton_Click">
                                         <TextBlock Text="Circle (center + radius)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="ellipse" Click="ToolButton_Click">
-                                        <TextBlock Text="Ellipse" VerticalAlignment="Center"/>
+                                        <TextBlock Text="Ellipse (2 clicks)" VerticalAlignment="Center"/>
                                     </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="triangle" Click="ToolButton_Click">
                                         <TextBlock Text="Triangle (3 clicks)" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="polyline" Click="ToolButton_Click">
-                                        <TextBlock Text="Polyline (multi-click, right-click to finish)" VerticalAlignment="Center"/>
-                                    </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="arc" Click="ToolButton_Click">
                                         <TextBlock Text="Arc (3 clicks)" VerticalAlignment="Center"/>
                                     </Button>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                        <Button x:Name="BrushGroupButton" Style="{StaticResource RailButton}"
-Click="BrushGroup_Click" ToolTip="Arrows and brush">
-                            <ContentControl Content="{StaticResource Icon_brush}" Width="18" Height="18"/>
-                        </Button>
-                        <Popup x:Name="BrushPopup" StaysOpen="False" AllowsTransparency="True"
-Placement="Right" PlacementTarget="{Binding ElementName=BrushGroupButton}">
-                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
-                                <StackPanel>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrow" Click="ToolButton_Click">
-                                        <TextBlock Text="Arrow (2 clicks)" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="path" Click="ToolButton_Click">
+                                        <TextBlock Text="Path (multi-click, double-click to finish)" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrowmarkup" Click="ToolButton_Click">
-                                        <TextBlock Text="Arrow Mark Up" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="polyline" Click="ToolButton_Click">
+                                        <TextBlock Text="Polyline (multi-click, double-click to finish)" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="arrowmarkdown" Click="ToolButton_Click">
-                                        <TextBlock Text="Arrow Mark Down" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="curve" Click="ToolButton_Click">
+                                        <TextBlock Text="Curve (3 clicks)" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="brush" Click="ToolButton_Click">
-                                        <TextBlock Text="Brush (multi-click)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="highlighter" Click="ToolButton_Click">
-                                        <TextBlock Text="Highlighter" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="doublecurve" Click="ToolButton_Click">
+                                        <TextBlock Text="Double Curve (5 clicks)" VerticalAlignment="Center"/>
                                     </Button>
                                 </StackPanel>
                             </Border>
@@ -718,7 +723,7 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                             <Image Source="/Assets/icons/forecast.png" Width="20" Height="20"/>
                         </Button>
                         <Popup x:Name="ForecastPopup" Placement="Right" PlacementTarget="{Binding ElementName=ForecastGroupButton}" StaysOpen="False">
-                            <Border Background="{DynamicResource BgDark}" BorderBrush="{DynamicResource BorderLine}" BorderThickness="1" CornerRadius="6" Padding="4">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}" BorderThickness="1" CornerRadius="6" Padding="4">
                                 <StackPanel Width="260">
                                     <TextBlock Text="FORECASTING" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="longposition" Click="ToolButton_Click">

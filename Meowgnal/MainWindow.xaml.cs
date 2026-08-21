@@ -1598,7 +1598,7 @@ public partial class MainWindow : Window
             await ChartWebView.EnsureCoreWebView2Async();
             var core = ChartWebView.CoreWebView2;
             core.Settings.AreDefaultContextMenusEnabled = false;
-            core.Settings.AreDevToolsEnabled = false;
+            core.Settings.AreDevToolsEnabled = true;
             core.Settings.IsStatusBarEnabled = false;
             core.Settings.IsZoomControlEnabled = false;
             core.NavigationCompleted += (_, _) =>
@@ -2508,50 +2508,44 @@ public partial class MainWindow : Window
 
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
-        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         if (!CursorPopup.IsOpen) RefreshCursorMenuHighlight();
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
 
     private void LineGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         LinePopup.IsOpen = !LinePopup.IsOpen;
     }
 
     private void FibGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         FibPopup.IsOpen = !FibPopup.IsOpen;
     }
 
     private void PatternsGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         PatternsPopup.IsOpen = !PatternsPopup.IsOpen;
     }
 
-    private void ShapesGroup_Click(object sender, RoutedEventArgs e)
+    private void BrushesShapesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
-        ShapesPopup.IsOpen = !ShapesPopup.IsOpen;
-    }
-
-    private void BrushGroup_Click(object sender, RoutedEventArgs e)
-    {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
-        BrushPopup.IsOpen = !BrushPopup.IsOpen;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        BrushesShapesPopup.IsOpen = !BrushesShapesPopup.IsOpen;
     }
 
     private void AnnotGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         AnnotPopup.IsOpen = !AnnotPopup.IsOpen;
     }
 
     private void ForecastGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; ShapesPopup.IsOpen = false; BrushPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false;
         ForecastPopup.IsOpen = !ForecastPopup.IsOpen;
     }
 
@@ -2589,8 +2583,7 @@ public partial class MainWindow : Window
         LinePopup.IsOpen = false;
         FibPopup.IsOpen = false;
         PatternsPopup.IsOpen = false;
-        ShapesPopup.IsOpen = false;
-        BrushPopup.IsOpen = false;
+        BrushesShapesPopup.IsOpen = false;
         AnnotPopup.IsOpen = false;
         ForecastPopup.IsOpen = false;
 
@@ -2627,8 +2620,8 @@ public partial class MainWindow : Window
 or "anchoredvwap" or "fixedrangevolumeprofile" or "anchoredvolumeprofile"
 or "pricerange" or "daterange" or "dateandpricerange" => ForecastGroupButton,
 
-            "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" => ShapesGroupButton,
-            "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
+            "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" or "path" or "curve" or "doublecurve"
+or "arrow" or "arrowmarkup" or "arrowmarkdown" or "arrowmarker" or "brush" or "highlighter" => BrushesShapesGroupButton,
             "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
             "cur_cross" or "cur_dot" or "cur_arrow" or "cur_demo" or "cur_magic" or "cur_eraser" => CursorGroupButton,
             _ => LineGroupButton,
@@ -2646,7 +2639,7 @@ or "pricerange" or "daterange" or "dateandpricerange" => ForecastGroupButton,
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, ShapesGroupButton, BrushGroupButton, AnnotGroupButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, BrushesShapesGroupButton, AnnotGroupButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");
@@ -2795,6 +2788,8 @@ or "pricerange" or "daterange" or "dateandpricerange" => ForecastGroupButton,
                 cycleIntervalSeconds = d.CycleIntervalSeconds,
                 sineAmplitudePercent = d.SineAmplitudePercent,
                 sineRepeatCount = d.SineRepeatCount,
+                arrowHeadStyle = d.ArrowHeadStyle,
+                arrowMarkerDirection = d.ArrowMarkerDirection,
                 fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
                 points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
             }).ToArray();
@@ -2880,8 +2875,12 @@ or "pricerange" or "daterange" or "dateandpricerange" => ForecastGroupButton,
         DrawingKind.Polyline => "Polyline",
         DrawingKind.Arc => "Arc",
         DrawingKind.Arrow => "Arrow",
+        DrawingKind.ArrowMarker => "Arrow Marker",
         DrawingKind.ArrowMarkUp => "Arrow Mark Up",
         DrawingKind.ArrowMarkDown => "Arrow Mark Down",
+        DrawingKind.Path => "Path",
+        DrawingKind.Curve => "Curve",
+        DrawingKind.DoubleCurve => "Double Curve",
         DrawingKind.Brush => "Brush",
         DrawingKind.Highlighter => "Highlighter",
         DrawingKind.Text => "Text",

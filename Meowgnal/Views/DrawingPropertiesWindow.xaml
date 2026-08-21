@@ -350,6 +350,24 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock x:Name="TimeUnitLabel" Text="Time unit:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="TimeUnitCombo" Margin="0,0,0,10"/>
                         </StackPanel>
+                        <!-- Arrow section (visible for arrow tools) -->
+                        <StackPanel x:Name="ArrowSection" Visibility="Collapsed">
+                            <TextBlock Text="ARROW SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Arrow head style:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="ArrowHeadStyleCombo" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="ArrowDirectionLabel" Text="Direction (Arrow Marker):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="ArrowDirectionCombo" Margin="0,0,0,10"/>
+                        </StackPanel>
+                        <!-- Shape fill section (visible for closed shapes) -->
+                        <StackPanel x:Name="ShapeFillSection" Visibility="Collapsed">
+                            <TextBlock Text="SHAPE FILL" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <CheckBox x:Name="ShapeFillBgCheck" Content="Fill background" Checked="ShapeFillBgCheck_Changed" Unchecked="ShapeFillBgCheck_Changed"/>
+                            <StackPanel x:Name="ShapeFillOpacityPanel" Orientation="Horizontal" Margin="24,0,0,8">
+                                <TextBlock Text="Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <Slider x:Name="ShapeFillOpacitySlider" Width="120" Minimum="0.05" Maximum="0.8" Value="0.15" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="ShapeFillOpacityLabel" Text="15%" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
                         <!-- Gann section (visible only for Gann Fan) -->
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>

@@ -432,6 +432,7 @@
         let isCtrlPressed = false;
         let dragState = null;
         let isDragging = false;
+        let freehand = null;
         const HANDLE_SIZE = 10;
         let clipboardDrawing = null;
 
@@ -957,7 +958,27 @@
             return { a, b, nn, stdDev, xa, xb, t1: bars[0].time, t2: bars[nn - 1].time };
         }
 
+        function addSmoothPath(g, P) {
+            if (P.length < 2) return;
+            if (P.length === 2) { g.lines.push([P[0][0], P[0][1], P[1][0], P[1][1]]); return; }
+            let prevX = P[0][0], prevY = P[0][1];
+            for (let i = 1; i < P.length - 1; i++) {
+                const cX = P[i][0], cY = P[i][1];
+                const midX = (cX + P[i + 1][0]) / 2, midY = (cY + P[i + 1][1]) / 2;
+                for (let s = 1; s <= 12; s++) {
+                    const t = s / 12;
+                    const nx = (1 - t) * (1 - t) * prevX + 2 * (1 - t) * t * cX + t * t * midX;
+                    const ny = (1 - t) * (1 - t) * prevY + 2 * (1 - t) * t * cY + t * t * midY;
+                    g.lines.push([prevX, prevY, nx, ny]);
+                    prevX = nx; prevY = ny;
+                }
+            }
+            const lastP = P[P.length - 1];
+            g.lines.push([prevX, prevY, lastP[0], lastP[1]]);
+        }
         function addElliottGeometry(g, d, labels) {
+
+        
             const pts = d.points || [];
             if (!pts.length || !activeSeries) return;
             for (let i = 0; i < pts.length - 1; i++) {
@@ -1609,6 +1630,7 @@
                 }
                 case 'rectangle': {
                     const xL = Math.min(x1, x2), xR = Math.max(x1, x2), yT = Math.min(y1, y2), yB = Math.max(y1, y2);
+                    if (d.fillBackground) g.fills.push({ pts: [[xL, yT], [xR, yT], [xR, yB], [xL, yB]], color: d.color, opacity: d.fillOpacity || 0.15 });
                     g.lines.push([xL, yT, xR, yT], [xR, yT, xR, yB], [xR, yB, xL, yB], [xL, yB, xL, yT]); break;
                 }
                 case 'rotatedrectangle': {
@@ -1620,11 +1642,24 @@
                     const x2p = x2 + pxr * dist, y2p = y2 + pyr * dist, x1p = x1 + pxr * dist, y1p = y1 + pyr * dist;
                     g.lines.push([x1, y1, x2, y2], [x2, y2, x2p, y2p], [x2p, y2p, x1p, y1p], [x1p, y1p, x1, y1]); break;
                 }
-                case 'circle': { const r = Math.hypot(x2 - x1, y2 - y1); g.circles.push([x1, y1, r]); break; }
+                case 'circle': {
+                    const r = Math.hypot(x2 - x1, y2 - y1);
+                    if (d.fillBackground) {
+                        const pc = [];
+                        for (let i = 0; i < 48; i++) { const a = (i / 48) * Math.PI * 2; pc.push([x1 + r * Math.cos(a), y1 + r * Math.sin(a)]); }
+                        g.fills.push({ pts: pc, color: d.color, opacity: d.fillOpacity || 0.15 });
+                    }
+                    g.circles.push([x1, y1, r]); break;
+                }
                 case 'ellipse': {
                     const rx = Math.abs(x2 - x1), ry = Math.abs(y2 - y1);
                     const segs = 48;
                     const cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+                    if (d.fillBackground) {
+                        const pc = [];
+                        for (let i = 0; i < segs; i++) { const a = (i / segs) * Math.PI * 2; pc.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]); }
+                        g.fills.push({ pts: pc, color: d.color, opacity: d.fillOpacity || 0.15 });
+                    }
                     let pxp = cx + rx, pyp = cy;
                     for (let i = 1; i <= segs; i++) {
                         const a = (i / segs) * Math.PI * 2;
@@ -1633,7 +1668,7 @@
                     }
                     break;
                 }
-                case 'triangle': { if (x3 === null) break; g.lines.push([x1, y1, x2, y2], [x2, y2, x3, y3], [x3, y3, x1, y1]); break; }
+                case 'triangle': { if (x3 === null) break; if (d.fillBackground) g.fills.push({ pts: [[x1, y1], [x2, y2], [x3, y3]], color: d.color, opacity: d.fillOpacity || 0.15 }); g.lines.push([x1, y1, x2, y2], [x2, y2, x3, y3], [x3, y3, x1, y1]); break; }
                 case 'polyline': {
                     for (let i = 0; i < pts.length - 1; i++) {
                         const xa = px(pts[i].time), ya = py(pts[i].price);
@@ -1653,7 +1688,53 @@
                 case 'arrow': {
                     g.lines.push([x1, y1, x2, y2]);
                     const ang = Math.atan2(y2 - y1, x2 - x1);
-                    g.glyphs.push({ t: 'arrowhead', x: x2, y: y2, a: ang, l: 10 }); break;
+                    g.glyphs.push({ t: 'arrowhead', x: x2, y: y2, a: ang, l: 10, style: d.arrowHeadStyle || 'open' }); break;
+                }
+                case 'arrowmarker': {
+                    const dir = d.arrowMarkerDirection || 'up';
+                    const ang = dir === 'up' ? -Math.PI / 2 : dir === 'down' ? Math.PI / 2 : dir === 'left' ? Math.PI : 0;
+                    const len = 26;
+                    const tx = x1 + Math.cos(ang) * len, ty = y1 + Math.sin(ang) * len;
+                    g.lines.push([x1, y1, tx, ty]);
+                    g.glyphs.push({ t: 'arrowhead', x: tx, y: ty, a: ang, l: 10, style: d.arrowHeadStyle || 'open' });
+                    g.anchors.push([x1, y1, 14]);
+                    break;
+                }
+                case 'path': {
+                    const P = pts.map(p => [px(p.time), py(p.price)]).filter(p => p[0] !== null && p[1] !== null);
+                    addSmoothPath(g, P);
+                    break;
+                }
+                case 'curve': {
+                    if (x3 === null) break;
+                    for (let s = 0; s <= 24; s++) {
+                        const t0 = s / 24, t1 = (s + 1) / 24;
+                        if (t1 > 1) break;
+                        const ax = (1 - t0) * (1 - t0) * x1 + 2 * (1 - t0) * t0 * x2 + t0 * t0 * x3;
+                        const ay = (1 - t0) * (1 - t0) * y1 + 2 * (1 - t0) * t0 * y2 + t0 * t0 * y3;
+                        const bx = (1 - t1) * (1 - t1) * x1 + 2 * (1 - t1) * t1 * x2 + t1 * t1 * x3;
+                        const by = (1 - t1) * (1 - t1) * y1 + 2 * (1 - t1) * t1 * y2 + t1 * t1 * y3;
+                        g.lines.push([ax, ay, bx, by]);
+                    }
+                    break;
+                }
+                case 'doublecurve': {
+                    if (pts.length < 5) break;
+                    const Q = pts.map(p => [px(p.time), py(p.price)]);
+                    if (Q.some(p => p[0] === null || p[1] === null)) break;
+                    for (let half = 0; half < 2; half++) {
+                        const a = Q[half * 2], c = Q[half * 2 + 1], b = Q[half * 2 + 2];
+                        for (let s = 0; s <= 24; s++) {
+                            const t0 = s / 24, t1 = (s + 1) / 24;
+                            if (t1 > 1) break;
+                            const ax = (1 - t0) * (1 - t0) * a[0] + 2 * (1 - t0) * t0 * c[0] + t0 * t0 * b[0];
+                            const ay = (1 - t0) * (1 - t0) * a[1] + 2 * (1 - t0) * t0 * c[1] + t0 * t0 * b[1];
+                            const bx = (1 - t1) * (1 - t1) * a[0] + 2 * (1 - t1) * t1 * c[0] + t1 * t1 * b[0];
+                            const by = (1 - t1) * (1 - t1) * a[1] + 2 * (1 - t1) * t1 * c[1] + t1 * t1 * b[1];
+                            g.lines.push([ax, ay, bx, by]);
+                        }
+                    }
+                    break;
                 }
                 case 'arrowmarkup': g.glyphs.push({ t: 'markup', x: x1, y: y1 }); g.anchors.push([x1, y1, 14]); break;
                 case 'arrowmarkdown': g.glyphs.push({ t: 'markdown', x: x1, y: y1 }); g.anchors.push([x1, y1, 14]); break;
@@ -1772,7 +1853,8 @@
                 'cycliclines': 'Cyclic Lines', 'timecycles': 'Time Cycles', 'sineline': 'Sine Line',
                 'xabcdpattern': 'XABCD Pattern', 'cypherpattern': 'Cypher Pattern', 'headandshoulders': 'Head and Shoulders', 'abcdpattern': 'ABCD Pattern', 'trianglepattern': 'Triangle Pattern', 'threedrivespattern': 'Three Drives Pattern', 'rectangle': 'Rectangle',
                 'circle': 'Circle', 'ellipse': 'Ellipse', 'triangle': 'Triangle', 'polyline': 'Polyline', 'arc': 'Arc', 'arrow': 'Arrow',
-                'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down', 'brush': 'Brush', 'highlighter': 'Highlighter',
+                'arrowmarker': 'Arrow Marker', 'arrowmarkup': 'Arrow Up', 'arrowmarkdown': 'Arrow Down', 'brush': 'Brush', 'highlighter': 'Highlighter',
+                'path': 'Path', 'curve': 'Curve', 'doublecurve': 'Double Curve',
                 'text': 'Text', 'note': 'Note', 'pricelabel': 'Price Label', 'pin': 'Pin', 'flag': 'Flag', 'sticker': 'Sticker'
             };
             return labels[kind] || kind;
@@ -1874,12 +1956,29 @@
 
                 for (const gl of g.glyphs) {
                     if (gl.t === 'arrowhead') {
-                        ctx.beginPath();
-                        ctx.moveTo(gl.x, gl.y);
-                        ctx.lineTo(gl.x - gl.l * Math.cos(gl.a - 0.4), gl.y - gl.l * Math.sin(gl.a - 0.4));
-                        ctx.moveTo(gl.x, gl.y);
-                        ctx.lineTo(gl.x - gl.l * Math.cos(gl.a + 0.4), gl.y - gl.l * Math.sin(gl.a + 0.4));
-                        ctx.stroke();
+                        const st = gl.style || 'open';
+                        if (st === 'solid') {
+                            ctx.beginPath();
+                            ctx.moveTo(gl.x, gl.y);
+                            ctx.lineTo(gl.x - gl.l * Math.cos(gl.a - 0.4), gl.y - gl.l * Math.sin(gl.a - 0.4));
+                            ctx.lineTo(gl.x - gl.l * Math.cos(gl.a + 0.4), gl.y - gl.l * Math.sin(gl.a + 0.4));
+                            ctx.closePath();
+                            ctx.fill();
+                        } else if (st === 'stealth') {
+                            ctx.beginPath();
+                            ctx.moveTo(gl.x, gl.y);
+                            ctx.lineTo(gl.x - gl.l * 1.2 * Math.cos(gl.a - 0.22), gl.y - gl.l * 1.2 * Math.sin(gl.a - 0.22));
+                            ctx.moveTo(gl.x, gl.y);
+                            ctx.lineTo(gl.x - gl.l * 1.2 * Math.cos(gl.a + 0.22), gl.y - gl.l * 1.2 * Math.sin(gl.a + 0.22));
+                            ctx.stroke();
+                        } else {
+                            ctx.beginPath();
+                            ctx.moveTo(gl.x, gl.y);
+                            ctx.lineTo(gl.x - gl.l * Math.cos(gl.a - 0.4), gl.y - gl.l * Math.sin(gl.a - 0.4));
+                            ctx.moveTo(gl.x, gl.y);
+                            ctx.lineTo(gl.x - gl.l * Math.cos(gl.a + 0.4), gl.y - gl.l * Math.sin(gl.a + 0.4));
+                            ctx.stroke();
+                        }
                     } else if (gl.t === 'markup') {
                         ctx.beginPath(); ctx.moveTo(gl.x, gl.y - 8); ctx.lineTo(gl.x - 6, gl.y + 4); ctx.lineTo(gl.x + 6, gl.y + 4); ctx.closePath(); ctx.fill();
                         ctx.beginPath(); ctx.moveTo(gl.x, gl.y - 2); ctx.lineTo(gl.x, gl.y + 10); ctx.stroke();
@@ -2105,7 +2204,7 @@
                 } else if (msg.type === 'setDrawingMode') {
                     const m = msg.mode;
                     if (msg.color) defaultColor = msg.color;
-                    const multiKinds = ['polyline', 'brush', 'highlighter'];
+                    const multiKinds = ['polyline', 'path'];
                     if (multiKinds.includes(drawingMode) && !multiKinds.includes(m) && pendingPoints.length >= 2) {
                         post({
                             type: 'drawingCompleted', drawing: {
@@ -2237,7 +2336,7 @@
                     const b = pendingPoints[pendingPoints.length - 2];
                     if (a.time === b.time && a.price === b.price) pendingPoints.pop();
                 }
-                const multiKinds = ['polyline', 'brush', 'highlighter'];
+                const multiKinds = ['polyline', 'path'];
                 if (multiKinds.includes(drawingMode) && pendingPoints.length >= 2) {
                     post({
                         type: 'drawingCompleted', drawing: {
@@ -2267,9 +2366,22 @@
             }
         });
 
-        chartEl.addEventListener('mousedown', function (e) {
-            if (drawingMode) return;
-            if (e.button !== 0) return;
+            chartEl.addEventListener('mousedown', function (e) {
+                if (drawingMode === 'brush' || drawingMode === 'highlighter') {
+                    if (e.button !== 0) return;
+                    const rect = chartEl.getBoundingClientRect();
+                    freehand = { points: [] };
+                    const t = chart.timeScale().coordinateToTime(e.clientX - rect.left);
+                    const p = activeSeries ? activeSeries.coordinateToPrice(e.clientY - rect.top) : null;
+                    if (t !== null && p !== null && p !== undefined) freehand.points.push({ time: snapToBarTime(t), price: p });
+                    isDragging = true;
+                    chart.applyOptions({ handleScroll: false, handleScale: false });
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                if (drawingMode) return;
+                if (e.button !== 0) return;
             const rect = chartEl.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
@@ -2314,8 +2426,21 @@
             e.stopPropagation();
         });
 
-        window.addEventListener('mousemove', function (e) {
-            if (!dragState) {
+            window.addEventListener('mousemove', function (e) {
+                if (freehand) {
+                    const rect = chartEl.getBoundingClientRect();
+                    const t = chart.timeScale().coordinateToTime(e.clientX - rect.left);
+                    const p = activeSeries ? activeSeries.coordinateToPrice(e.clientY - rect.top) : null;
+                    if (t !== null && p !== null && p !== undefined) {
+                        const pt = { time: snapToBarTime(t), price: p };
+                        const lastPt = freehand.points[freehand.points.length - 1];
+                        if (!lastPt || lastPt.time !== pt.time || lastPt.price !== pt.price) freehand.points.push(pt);
+                        pendingPoints = freehand.points;
+                        renderCustomDrawings();
+                    }
+                    return;
+                }
+                if (!dragState) {
                 const rect = chartEl.getBoundingClientRect();
                 const mx = e.clientX - rect.left;
                 const my = e.clientY - rect.top;
@@ -2381,8 +2506,26 @@
             renderCustomDrawings();
         });
 
-        window.addEventListener('mouseup', function () {
-            if (!dragState) return;
+            window.addEventListener('mouseup', function () {
+                if (freehand) {
+                    const pts = freehand.points;
+                    freehand = null;
+                    isDragging = false;
+                    chart.applyOptions({ handleScroll: true, handleScale: true });
+                    if (pts.length >= 2) {
+                        post({
+                            type: 'drawingCompleted', drawing: {
+                                id: Date.now().toString(36) + Math.random().toString(36).substr(2),
+                                kind: drawingMode, color: defaultColor, label: '', alert: false,
+                                points: pts.map(p => ({ time: p.time, price: p.price }))
+                            }
+                        });
+                    }
+                    pendingPoints = [];
+                    renderCustomDrawings();
+                    return;
+                }
+                if (!dragState) return;
             const d = customDrawings.find(d => d.id === dragState.drawingId);
             if (d && dragState.committed) {
                 if (dragState.groupId) {
@@ -2419,8 +2562,8 @@
             fibextension: 3, fibchannel: 3, fibspeedfan: 3, fibwedge: 3, trendbasedfibtime: 3,
             disjointchannel: 4,
             rectangle: 2, circle: 2, ellipse: 2, arc: 3, triangle: 3,
-            polyline: 20, rotatedrectangle: 3,
-            arrow: 2, arrowmarkup: 1, arrowmarkdown: 1, brush: 20, highlighter: 20,
+            polyline: 20, path: 20, rotatedrectangle: 3, curve: 3, doublecurve: 5,
+            arrow: 2, arrowmarker: 1, arrowmarkup: 1, arrowmarkdown: 1, brush: 20, highlighter: 20,
             text: 1, note: 1, pricelabel: 1, pin: 1, flag: 1, sticker: 1
         };
 
@@ -2439,6 +2582,7 @@
                 return;
             }
 
+            if (drawingMode === 'brush' || drawingMode === 'highlighter') return;
             if (!drawingMode) {
                 let found = null;
                 for (let i = customDrawings.length - 1; i >= 0; i--) {
@@ -2462,7 +2606,7 @@
             pendingPoints.push({ time: snappedTime, price: snappedPrice });
 
             const need = NEED[drawingMode] || 2;
-            const isMulti = drawingMode === 'polyline' || drawingMode === 'brush' || drawingMode === 'highlighter';
+            const isMulti = drawingMode === 'polyline' || drawingMode === 'path';
 
             if (!isMulti && pendingPoints.length >= need) {
                 const drawing = {

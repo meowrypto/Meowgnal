@@ -77,6 +77,10 @@ public enum DrawingKind
     BarsPattern,
     GhostFeed,
     Sector,
+    ArrowMarker,
+    Path,
+    Curve,
+    DoubleCurve,
     AnchoredVwap,
     FixedRangeVolumeProfile,
     AnchoredVolumeProfile,
@@ -85,10 +89,6 @@ public enum DrawingKind
     DateAndPriceRange
 }
 
-
-
-// Fibonacci defaults are now handled by the FibLevel.cs file (FibonacciDefaults class).
-
 /// <summary>A single point of a drawing; time-based (Unix UTC) so it appears on all timeframes of the same symbol.</summary>
 public sealed class DrawingPoint
 {
@@ -96,87 +96,61 @@ public sealed class DrawingPoint
     public decimal Price { get; set; }
 }
 
-/// <summary>A drawing saved in drawings.dat.</summary>
+/// <summary>A drawing saved in drawings.dat (encrypted with DPAPI).</summary>
 public sealed class Drawing
 {
     public string Id { get; set; } = Guid.NewGuid().ToString("N");
-
     /// <summary>Normalized symbol, e.g., BTCUSDT.</summary>
     public string Symbol { get; set; } = "";
-
     /// <summary>Exchange data source for this drawing: "binance" or "hyperliquid".</summary>
     public string DataSource { get; set; } = "binance";
-
     public DrawingKind Kind { get; set; } = DrawingKind.HorizontalLine;
-
     /// <summary>One point for horizontal line; two points (start/end) for trendline and fibonacci.</summary>
     public List<DrawingPoint> Points { get; set; } = new();
-
     /// <summary>Hex color with #, e.g., #2962FF.</summary>
     public string Color { get; set; } = "#2962FF";
-
     /// <summary>Line thickness in pixels (1-4).</summary>
     public int LineWidth { get; set; } = 2;
-
     /// <summary>Line style: "solid" | "dashed" | "dotted".</summary>
     public string LineStyle { get; set; } = "solid";
-
     /// <summary>Optional label next to the drawing (e.g., 61.8% or Support).</summary>
     public string Label { get; set; } = "";
-
     /// <summary>Level 2 alert: Alert on cross — Toast and sound only at the exact moment of price crossing.</summary>
     public bool AlertOnCross { get; set; }
-
     /// <summary>If true, the drawing was created by the auto support-resistance detector.</summary>
     public bool IsAutoDetected { get; set; }
-
     /// <summary>If true, the drawing cannot be moved or deleted by the eraser.</summary>
     public bool IsLocked { get; set; }
-
     /// <summary>If false, the drawing is hidden (but still saved).</summary>
     public bool IsVisible { get; set; } = true;
-
     /// <summary>If set, this drawing belongs to a group. All drawings with the same GroupId move and delete together.</summary>
     public string? GroupId { get; set; }
-
     /// <summary>Z-index for layering. Higher values render on top.</summary>
     public int ZIndex { get; set; } = 0;
-
     /// <summary>Font size for Text/Note/Sticker drawings (in pixels).</summary>
     public int FontSize { get; set; } = 13;
-
     /// <summary>Font family for Text/Note/Sticker drawings.</summary>
     public string FontFamily { get; set; } = "Trebuchet MS";
-
     /// <summary>Custom Gann Fan ratios. If null, defaults [0.125, 0.25, 0.333, 0.5, 1, 2, 3, 4, 8] are used.</summary>
     public List<double>? GannRatios { get; set; }
-
     /// <summary>Number of grid divisions for Gann Square tools (default 4).</summary>
     public int GannSquareDivisions { get; set; } = 4;
 
     // ----- Line-tool display options (TradingView-style) -----
-
     /// <summary>Trendline: extend the segment beyond the left anchor.</summary>
     public bool ExtendLeft { get; set; }
-
     /// <summary>Trendline: extend the segment beyond the right anchor.</summary>
     public bool ExtendRight { get; set; }
-
     /// <summary>Trendline / Horizontal / HorizontalRay / Crossline: show price label(s).</summary>
     public bool ShowPriceLabels { get; set; } = true;
-
     /// <summary>VerticalLine / Crossline: show date-time label.</summary>
     public bool ShowTimeLabel { get; set; } = true;
-
     /// <summary>InfoLine: include percent change in the info label.</summary>
     public bool ShowPriceChange { get; set; } = true;
-
     /// <summary>InfoLine: include bar count in the info label.</summary>
     public bool ShowBarCount { get; set; }
-
     /// <summary>InfoLine: include elapsed time in the info label.</summary>
     public bool ShowTimeElapsed { get; set; }
-
     /// <summary>InfoLine / TrendAngle: include slope angle in the info label.</summary>
     public bool ShowAngle { get; set; }
 
@@ -199,6 +173,7 @@ public sealed class Drawing
     public int StdDevMultiplier { get; set; } = 2;
     /// <summary>DisjointChannel: color of the second line (empty = use main color).</summary>
     public string SecondLineColor { get; set; } = "";
+
     // ----- Pitchfork settings -----
     /// <summary>Pitchfork: if true, all 3 lines use the same Color. If false, each line has its own color.</summary>
     public bool PitchforkUseSameColor { get; set; } = true;
@@ -216,49 +191,38 @@ public sealed class Drawing
     public string NecklineColor { get; set; } = "#FF9800";
     /// <summary>Show labels (Head/Shoulders, Drive numbers, etc.).</summary>
     public bool ShowLabels { get; set; } = true;
-
     /// <summary>Optional separate color for pattern/Elliott labels. Empty means use main line color.</summary>
     public string LabelColor { get; set; } = "";
 
     // ----- Forecasting & Measurement settings -----
     /// <summary>Position side: "long" or "short".</summary>
     public string PositionSide { get; set; } = "long";
-
     /// <summary>Long/Short position: entry price.</summary>
     public decimal EntryPrice { get; set; }
-
     /// <summary>Long/Short position: stop loss price.</summary>
     public decimal StopLossPrice { get; set; }
-
     /// <summary>Long/Short position: take profit price.</summary>
     public decimal TakeProfitPrice { get; set; }
-
     /// <summary>Position size as percentage of account (0-100).</summary>
     public decimal PositionSizePercent { get; set; } = 10;
-
     /// <summary>Color for profit zone (default green).</summary>
     public string ProfitZoneColor { get; set; } = "#089981";
-
     /// <summary>Color for loss zone (default red).</summary>
     public string LossZoneColor { get; set; } = "#F23645";
-
     /// <summary>Ghost feed: symbol to overlay.</summary>
     public string GhostSymbol { get; set; } = "";
-
     /// <summary>Ghost feed: data source (binance/hyperliquid).</summary>
     public string GhostDataSource { get; set; } = "binance";
-
     /// <summary>Ghost feed: cached candles for overlay (not serialized).</summary>
     [JsonIgnore]
     public List<Bar> GhostCandles { get; set; } = new();
-
     /// <summary>Ghost feed opacity (0-1).</summary>
     public double GhostOpacity { get; set; } = 0.5;
-
     /// <summary>Bars pattern: opacity (0-1).</summary>
     public double BarsPatternOpacity { get; set; } = 0.5;
     /// <summary>Sector: fill opacity (0-1).</summary>
     public double SectorFillOpacity { get; set; } = 0.3;
+
     // ----- Volume-based & measurer tool settings -----
     /// <summary>Anchored VWAP: show +/-1 and +/-2 standard deviation bands.</summary>
     public bool ShowVwapBands { get; set; } = true;
@@ -272,19 +236,23 @@ public sealed class Drawing
     public string PriceRangeMode { get; set; } = "both";
     /// <summary>Date range tool: "days" | "hours" | "bars".</summary>
     public string DateRangeUnit { get; set; } = "days";
+
+    // ----- Brushes & Shapes settings -----
+    /// <summary>Arrow head style: "open" | "solid" | "stealth".</summary>
+    public string ArrowHeadStyle { get; set; } = "open";
+    /// <summary>Arrow Marker direction: "up" | "down" | "left" | "right".</summary>
+    public string ArrowMarkerDirection { get; set; } = "up";
+
     /// <summary>Triangle pattern: Show apex point and dashed lines.</summary>
     public bool ShowApex { get; set; } = true;
 
     // ----- Cycles settings -----
     /// <summary>Cycles: number of vertical lines to display (default 10).</summary>
     public int CycleCount { get; set; } = 10;
-
     /// <summary>Cycles: interval in seconds between cycle lines. If 0, calculated from points.</summary>
     public long CycleIntervalSeconds { get; set; }
-
     /// <summary>Sine line: amplitude as percentage of price distance between two points (default 50).</summary>
     public double SineAmplitudePercent { get; set; } = 50;
-
     /// <summary>Sine line: number of wave repetitions to the right (default 3).</summary>
     public int SineRepeatCount { get; set; } = 3;
 
