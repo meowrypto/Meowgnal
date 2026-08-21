@@ -86,7 +86,15 @@ public enum DrawingKind
     AnchoredVolumeProfile,
     PriceRange,
     DateRange,
-    DateAndPriceRange
+    DateAndPriceRange,
+    AnchoredText,
+    AnchoredNote,
+    Callout,
+    Comment,
+    PriceNote,
+    Signpost,
+    FlagMark,
+    Table
 }
 
 /// <summary>A single point of a drawing; time-based (Unix UTC) so it appears on all timeframes of the same symbol.</summary>
@@ -255,6 +263,40 @@ public sealed class Drawing
     public double SineAmplitudePercent { get; set; } = 50;
     /// <summary>Sine line: number of wave repetitions to the right (default 3).</summary>
     public int SineRepeatCount { get; set; } = 3;
+
+    // ----- Text & Notes settings -----
+    /// <summary>Text/Note/Callout/Comment: bold font weight.</summary>
+    public bool IsBold { get; set; }
+    /// <summary>Text/Note/Callout/Comment: italic font style.</summary>
+    public bool IsItalic { get; set; }
+    /// <summary>Text/Note/Callout/Comment: background fill color.</summary>
+    public string TextBgColor { get; set; } = "#1E222D";
+    /// <summary>Text/Note/Callout/Comment: background fill opacity (0.0 - 1.0).</summary>
+    public double TextBgOpacity { get; set; } = 0.8;
+    /// <summary>Text/Note/Callout/Comment: enable background fill.</summary>
+    public bool TextBgEnabled { get; set; }
+    /// <summary>Text/Note/Callout/Comment: border color around the text box.</summary>
+    public string TextBorderColor { get; set; } = "#2A2E39";
+    /// <summary>Text/Note/Callout/Comment: enable border around the text box.</summary>
+    public bool TextBorderEnabled { get; set; }
+
+    // ----- Anchored tools settings -----
+    /// <summary>Anchored tools (AnchoredText/AnchoredNote/Signpost/FlagMark/PriceNote): X pixel offset from anchor point.</summary>
+    public double AnchoredPixelX { get; set; }
+    /// <summary>Anchored tools (AnchoredText/AnchoredNote/Signpost/FlagMark/PriceNote): Y pixel offset from anchor point.</summary>
+    public double AnchoredPixelY { get; set; }
+
+    // ----- Table settings -----
+    /// <summary>Table: number of rows (default 3).</summary>
+    public int TableRows { get; set; } = 3;
+    /// <summary>Table: number of columns (default 3).</summary>
+    public int TableCols { get; set; } = 3;
+    /// <summary>Table: background color of cells.</summary>
+    public string TableBgColor { get; set; } = "#1E222D";
+    /// <summary>Table: border color of cells.</summary>
+    public string TableBorderColor { get; set; } = "#2A2E39";
+    /// <summary>Table: cell contents serialized as JSON string of List<List<string>>.</summary>
+    public string TableData { get; set; } = "[]";
 
     public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
 }

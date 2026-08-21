@@ -143,8 +143,28 @@ public partial class DrawingPropertiesWindow : Window
             PfExtendRightCheck.IsChecked = drawing.ExtendRight;
         }
 
-        // Show the right section based on drawing kind
-        if (drawing.Kind is DrawingKind.Text or DrawingKind.Note or DrawingKind.Sticker)
+        // Show the right section based on drawing kind (Updated: Text drawings + Table)
+        if (drawing.Kind is DrawingKind.Text or DrawingKind.AnchoredText or DrawingKind.Note or DrawingKind.AnchoredNote or DrawingKind.Callout or DrawingKind.Comment or DrawingKind.PriceNote or DrawingKind.Signpost)
+        {
+            TextSection.Visibility = Visibility.Visible;
+            BoldCheck.IsChecked = drawing.IsBold;
+            ItalicCheck.IsChecked = drawing.IsItalic;
+            TextBgCheck.IsChecked = drawing.TextBgEnabled;
+            TextBgPanel.Visibility = drawing.TextBgEnabled ? Visibility.Visible : Visibility.Collapsed;
+            TextBgOpacitySlider.Value = drawing.TextBgOpacity;
+            TextBorderCheck.IsChecked = drawing.TextBorderEnabled;
+            TextBorderPanel.Visibility = drawing.TextBorderEnabled ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        if (drawing.Kind == DrawingKind.Table)
+        {
+            TableSection.Visibility = Visibility.Visible;
+            for (int i = 1; i <= 20; i++) { TableRowsCombo.Items.Add(i); TableColsCombo.Items.Add(i); }
+            TableRowsCombo.SelectedItem = drawing.TableRows is >= 1 and <= 20 ? drawing.TableRows : 3;
+            TableColsCombo.SelectedItem = drawing.TableCols is >= 1 and <= 20 ? drawing.TableCols : 3;
+        }
+
+        if (drawing.Kind == DrawingKind.Sticker)
         {
             TextSection.Visibility = Visibility.Visible;
         }
@@ -422,6 +442,39 @@ public partial class DrawingPropertiesWindow : Window
         FillOpacityPanel.Visibility = FillBgCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
     private void ShapeFillBgCheck_Changed(object sender, RoutedEventArgs e) =>
         ShapeFillOpacityPanel.Visibility = ShapeFillBgCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
+    // ===== New event handlers for Text/Table background & border =====
+    private void TextBgCheck_Changed(object sender, RoutedEventArgs e) =>
+        TextBgPanel.Visibility = TextBgCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
+    private void TextBorderCheck_Changed(object sender, RoutedEventArgs e) =>
+        TextBorderPanel.Visibility = TextBorderCheck.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
+
+    private void TextBgColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _drawing.TextBgColor = hex;
+    }
+
+    private void TextBorderColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _drawing.TextBorderColor = hex;
+    }
+
+    private void TableBgColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _drawing.TableBgColor = hex;
+    }
+
+    private void TableBorderColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _drawing.TableBorderColor = hex;
+    }
+    // =================================================================
+
     private void MedianColor_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string hex) return;
@@ -561,6 +614,22 @@ public partial class DrawingPropertiesWindow : Window
             _drawing.FontFamily = FontCombo.SelectedItem as string ?? "Trebuchet MS";
             _drawing.FontSize = FontSizeCombo.SelectedItem is int s ? s : 13;
         }
+        // ===== New: Save Text & Table properties =====
+        if (_drawing.Kind is DrawingKind.Text or DrawingKind.AnchoredText or DrawingKind.Note or DrawingKind.AnchoredNote or DrawingKind.Callout or DrawingKind.Comment or DrawingKind.PriceNote or DrawingKind.Signpost)
+        {
+            _drawing.IsBold = BoldCheck.IsChecked == true;
+            _drawing.IsItalic = ItalicCheck.IsChecked == true;
+            _drawing.TextBgEnabled = TextBgCheck.IsChecked == true;
+            _drawing.TextBgOpacity = TextBgOpacitySlider.Value;
+            _drawing.TextBorderEnabled = TextBorderCheck.IsChecked == true;
+        }
+
+        if (_drawing.Kind == DrawingKind.Table)
+        {
+            _drawing.TableRows = TableRowsCombo.SelectedItem is int r ? r : 3;
+            _drawing.TableCols = TableColsCombo.SelectedItem is int c ? c : 3;
+        }
+        // =============================================
         if (_drawing.Kind == DrawingKind.GannSquareFixed)
             _drawing.GannSquareDivisions = GannSquareDivisionsCombo.SelectedItem is int div ? div : 4;
         if (_drawing.Kind == DrawingKind.GannBox && GannBoxLevelsEditor.Levels != null)

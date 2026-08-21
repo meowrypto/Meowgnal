@@ -3,16 +3,14 @@ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 xmlns:local="clr-namespace:Meowgnal.Views"
 Title="Drawing Properties" Height="600" Width="420"
-        WindowStyle="None" WindowStartupLocation="CenterOwner"
-        Background="{StaticResource BackgroundBrush}"
-        FontFamily="Trebuchet MS" FontSize="12" ResizeMode="NoResize">
-
+WindowStyle="None" WindowStartupLocation="CenterOwner"
+Background="{StaticResource BackgroundBrush}"
+FontFamily="Trebuchet MS" FontSize="12" ResizeMode="NoResize">
     <WindowChrome.WindowChrome>
         <WindowChrome CaptionHeight="32" ResizeBorderThickness="6"
-                      GlassFrameThickness="0" CornerRadius="0"
-                      UseAeroCaptionButtons="False"/>
+GlassFrameThickness="0" CornerRadius="0"
+UseAeroCaptionButtons="False"/>
     </WindowChrome.WindowChrome>
-
     <Window.Resources>
         <SolidColorBrush x:Key="BackgroundBrush" Color="{DynamicResource ColorBackground}"/>
         <SolidColorBrush x:Key="PanelBg" Color="{DynamicResource ColorPanel}"/>
@@ -23,7 +21,6 @@ Title="Drawing Properties" Height="600" Width="420"
         <SolidColorBrush x:Key="AccentColor" Color="{DynamicResource ColorAccent}"/>
         <SolidColorBrush x:Key="DangerColor" Color="{DynamicResource ColorDown}"/>
         <SolidColorBrush x:Key="SuccessColor" Color="{DynamicResource ColorUp}"/>
-
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
@@ -52,7 +49,6 @@ Title="Drawing Properties" Height="600" Width="420"
                 </Trigger>
             </Style.Triggers>
         </Style>
-
         <Style x:Key="BaseButton" TargetType="Button">
             <Setter Property="BorderThickness" Value="0"/>
             <Setter Property="Cursor" Value="Hand"/>
@@ -61,9 +57,9 @@ Title="Drawing Properties" Height="600" Width="420"
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="4" Padding="{TemplateBinding Padding}">
+BorderBrush="{TemplateBinding BorderBrush}"
+BorderThickness="{TemplateBinding BorderThickness}"
+CornerRadius="4" Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -94,7 +90,7 @@ Title="Drawing Properties" Height="600" Width="420"
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
                         <Border x:Name="Bd" Background="{TemplateBinding Background}"
-                                BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="4"/>
+BorderBrush="{StaticResource BorderColor}" BorderThickness="1" CornerRadius="4"/>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Bd" Property="BorderBrush" Value="{StaticResource AccentColor}"/>
@@ -133,52 +129,42 @@ Title="Drawing Properties" Height="600" Width="420"
             <Setter Property="Margin" Value="0,0,0,8"/>
         </Style>
     </Window.Resources>
-
     <Border Background="{StaticResource BackgroundBrush}" BorderBrush="{StaticResource BorderColor}" BorderThickness="1">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="32"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-
-            <!-- Custom title bar -->
             <Border Grid.Row="0" Background="{StaticResource PanelBg}"
-                    BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1"
-                    MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+BorderBrush="{StaticResource BorderColor}" BorderThickness="0,0,0,1"
+MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}" 
-                                Click="Minimize_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32" 
-                                Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
-                                WindowChrome.IsHitTestVisibleInChrome="True"/>
-                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}" 
-                                Click="Close_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="—" Width="46" Height="32" Style="{StaticResource WindowControlButton}"
+Click="Minimize_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button x:Name="MaximizeButton" Content="⛶" Width="46" Height="32"
+Style="{StaticResource WindowControlButton}" Click="Maximize_Click"
+WindowChrome.IsHitTestVisibleInChrome="True"/>
+                        <Button Content="✕" Width="46" Height="32" Style="{StaticResource CloseButton}"
+Click="Close_Click" WindowChrome.IsHitTestVisibleInChrome="True"/>
                     </StackPanel>
                     <TextBlock Text="Drawing Properties" Foreground="{StaticResource TextColor}"
-                               FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
+FontWeight="Bold" FontSize="13" VerticalAlignment="Center" Margin="14,0,0,0"/>
                 </DockPanel>
             </Border>
-
-            <!-- Main content -->
             <Grid Grid.Row="1" Margin="20">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-
                 <TextBlock Grid.Row="0" Text="🎨 Drawing Properties" FontSize="15" FontWeight="Bold"
-                           Foreground="{StaticResource TextColor}" Margin="0,0,0,14"/>
-
+Foreground="{StaticResource TextColor}" Margin="0,0,0,14"/>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel>
-                        <!-- Style section -->
                         <TextBlock Text="STYLE" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,0,0,6"/>
-
                         <TextBlock Text="Label" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                         <TextBox x:Name="LabelBox" Margin="0,0,0,10"/>
-
                         <TextBlock Text="Color" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
                             <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="Swatch_Click"/>
@@ -188,45 +174,76 @@ Title="Drawing Properties" Height="600" Width="420"
                             <Button Style="{StaticResource SwatchButton}" Tag="#9C27B0" Background="#9C27B0" Click="Swatch_Click"/>
                             <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="Swatch_Click"/>
                             <Rectangle x:Name="PreviewRect" Width="26" Height="26" RadiusX="4" RadiusY="4"
-                                       Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
+Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                         </StackPanel>
                         <TextBox x:Name="HexBox" Margin="0,0,0,10" TextChanged="HexBox_TextChanged"/>
-
                         <TextBlock Text="Thickness" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                         <ComboBox x:Name="WidthCombo" Margin="0,0,0,10"/>
-
                         <TextBlock Text="Line style" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                         <ComboBox x:Name="StyleCombo" Margin="0,0,0,10"/>
-
-                        <!-- Text section (visible only for Text/Note/Sticker) -->
                         <StackPanel x:Name="TextSection" Visibility="Collapsed">
                             <TextBlock Text="TEXT" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Font" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="FontCombo" Margin="0,0,0,10"/>
                             <TextBlock Text="Size" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="FontSizeCombo" Margin="0,0,0,10"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                                <CheckBox x:Name="BoldCheck" Content="Bold" Margin="0,0,10,0"/>
+                                <CheckBox x:Name="ItalicCheck" Content="Italic"/>
+                            </StackPanel>
+                            <CheckBox x:Name="TextBgCheck" Content="Enable background" Checked="TextBgCheck_Changed" Unchecked="TextBgCheck_Changed"/>
+                            <StackPanel x:Name="TextBgPanel" Visibility="Collapsed" Margin="24,0,0,8">
+                                <TextBlock Text="Background color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#1E222D" Background="#1E222D" Click="TextBgColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2A2E39" Background="#2A2E39" Click="TextBgColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#FFFFFF" Background="#FFFFFF" Click="TextBgColor_Click"/>
+                                </StackPanel>
+                                <TextBlock Text="Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                                <Slider x:Name="TextBgOpacitySlider" Minimum="0.1" Maximum="1.0" Value="0.8" Margin="0,0,0,8"/>
+                            </StackPanel>
+                            <CheckBox x:Name="TextBorderCheck" Content="Enable border" Checked="TextBorderCheck_Changed" Unchecked="TextBorderCheck_Changed"/>
+                            <StackPanel x:Name="TextBorderPanel" Visibility="Collapsed" Margin="24,0,0,8">
+                                <TextBlock Text="Border color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2A2E39" Background="#2A2E39" Click="TextBorderColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="TextBorderColor_Click"/>
+                                    <Button Style="{StaticResource SwatchButton}" Tag="#FFFFFF" Background="#FFFFFF" Click="TextBorderColor_Click"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
-
-                        <!-- Fibonacci section (visible only for Fibonacci tools) -->
+                        <StackPanel x:Name="TableSection" Visibility="Collapsed">
+                            <TextBlock Text="TABLE SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Rows (1-20):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="TableRowsCombo" Margin="0,0,0,10"/>
+                            <TextBlock Text="Columns (1-20):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="TableColsCombo" Margin="0,0,0,10"/>
+                            <TextBlock Text="Cell background color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Style="{StaticResource SwatchButton}" Tag="#1E222D" Background="#1E222D" Click="TableBgColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#2A2E39" Background="#2A2E39" Click="TableBgColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#FFFFFF" Background="#FFFFFF" Click="TableBgColor_Click"/>
+                            </StackPanel>
+                            <TextBlock Text="Border color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Style="{StaticResource SwatchButton}" Tag="#2A2E39" Background="#2A2E39" Click="TableBorderColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="TableBorderColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#FFFFFF" Background="#FFFFFF" Click="TableBorderColor_Click"/>
+                            </StackPanel>
+                        </StackPanel>
                         <StackPanel x:Name="FibSection" Visibility="Collapsed">
                             <TextBlock Text="FIBONACCI LEVELS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <local:FibLevelsEditorControl x:Name="FibLevelsEditor" Height="250" Margin="0,0,0,10"/>
                         </StackPanel>
-
-                        <!-- Gann Square Fixed section -->
                         <StackPanel x:Name="GannSquareFixedSection" Visibility="Collapsed">
                             <TextBlock Text="GANN SQUARE FIXED" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Grid divisions (2-10):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="GannSquareDivisionsCombo" Margin="0,0,0,10"/>
                         </StackPanel>
-
-                        <!-- Gann Box section -->
                         <StackPanel x:Name="GannBoxSection" Visibility="Collapsed">
                             <TextBlock Text="GANN BOX LEVELS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <local:FibLevelsEditorControl x:Name="GannBoxLevelsEditor" Height="200" Margin="0,0,0,10"/>
                         </StackPanel>
-
-                        <!-- Pattern section (visible for pattern tools) -->
                         <StackPanel x:Name="PatternSection" Visibility="Collapsed">
                             <TextBlock Text="PATTERN SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <CheckBox x:Name="ShowRatiosCheck" Content="Show Fibonacci ratios" Margin="0,0,0,6"/>
@@ -240,8 +257,6 @@ Title="Drawing Properties" Height="600" Width="420"
                                 <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="NecklineColor_Click"/>
                             </StackPanel>
                         </StackPanel>
-
-                        <!-- Elliott section (visible for Elliott wave tools) -->
                         <StackPanel x:Name="ElliottSection" Visibility="Collapsed">
                             <TextBlock Text="ELLIOTT SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <CheckBox x:Name="ElliottShowLabelsCheck" Content="Show labels" Margin="0,0,0,6"/>
@@ -257,7 +272,6 @@ Title="Drawing Properties" Height="600" Width="420"
 Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
-                        <!-- Cycles section (visible for Cyclic Lines and Time Cycles) -->
                         <StackPanel x:Name="CyclesSection" Visibility="Collapsed">
                             <TextBlock Text="CYCLES SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <CheckBox x:Name="CycleShowLabelsCheck" Content="Show cycle number labels" Margin="0,0,0,6"/>
@@ -266,7 +280,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock Text="Interval (seconds, empty = auto):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <TextBox x:Name="CycleIntervalBox" Margin="0,0,0,10"/>
                         </StackPanel>
-                        <!-- Sine Line section -->
                         <StackPanel x:Name="SineSection" Visibility="Collapsed">
                             <TextBlock Text="SINE LINE SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Amplitude (% of price distance):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
@@ -274,7 +287,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock Text="Repetitions to the right (1-10):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="SineRepeatCombo" Margin="0,0,0,10"/>
                         </StackPanel>
-                        <!-- Forecast Position section (visible for Long/Short Position) -->
                         <StackPanel x:Name="ForecastPositionSection" Visibility="Collapsed">
                             <TextBlock Text="POSITION SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Entry Price:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
@@ -303,8 +315,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             </StackPanel>
                             <Button x:Name="OpenAsPaperButton" Content="📈 Open as paper position" Style="{StaticResource SecondaryButton}" Margin="0,8,0,0" Click="OpenAsPaper_Click"/>
                         </StackPanel>
-
-                        <!-- Ghost Feed section -->
                         <StackPanel x:Name="GhostFeedSection" Visibility="Collapsed">
                             <TextBlock Text="GHOST FEED SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Select symbol from watchlist:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
@@ -314,19 +324,15 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock Text="Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <Slider x:Name="GhostOpacitySlider" Minimum="0.1" Maximum="1.0" Value="0.5" Margin="0,0,0,8"/>
                         </StackPanel>
-
-                        <!-- Sector section (visible for Sector and Bars Pattern) -->
                         <StackPanel x:Name="SectorSection" Visibility="Collapsed">
                             <TextBlock Text="SECTOR / BARS PATTERN SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Fill Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <Slider x:Name="SectorOpacitySlider" Minimum="0.05" Maximum="0.8" Value="0.3" Margin="0,0,0,8"/>
                         </StackPanel>
-                        <!-- Anchored VWAP section -->
                         <StackPanel x:Name="VwapSection" Visibility="Collapsed">
                             <TextBlock Text="ANCHORED VWAP" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <CheckBox x:Name="ShowVwapBandsCheck" Content="Show std dev bands (±1, ±2)" Margin="0,0,0,6"/>
                         </StackPanel>
-                        <!-- Volume profile section -->
                         <StackPanel x:Name="VolumeProfileSection" Visibility="Collapsed">
                             <TextBlock Text="VOLUME PROFILE" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Number of buckets (8-48):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
@@ -342,7 +348,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                                 <Rectangle x:Name="ProfileColorPreview" Width="26" Height="26" RadiusX="4" RadiusY="4" Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
-                        <!-- Measure section -->
                         <StackPanel x:Name="MeasureSection" Visibility="Collapsed">
                             <TextBlock Text="MEASURE SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock x:Name="PriceModeLabel" Text="Price label:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
@@ -350,7 +355,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock x:Name="TimeUnitLabel" Text="Time unit:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="TimeUnitCombo" Margin="0,0,0,10"/>
                         </StackPanel>
-                        <!-- Arrow section (visible for arrow tools) -->
                         <StackPanel x:Name="ArrowSection" Visibility="Collapsed">
                             <TextBlock Text="ARROW SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Arrow head style:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
@@ -358,7 +362,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock x:Name="ArrowDirectionLabel" Text="Direction (Arrow Marker):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <ComboBox x:Name="ArrowDirectionCombo" Margin="0,0,0,10"/>
                         </StackPanel>
-                        <!-- Shape fill section (visible for closed shapes) -->
                         <StackPanel x:Name="ShapeFillSection" Visibility="Collapsed">
                             <TextBlock Text="SHAPE FILL" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <CheckBox x:Name="ShapeFillBgCheck" Content="Fill background" Checked="ShapeFillBgCheck_Changed" Unchecked="ShapeFillBgCheck_Changed"/>
@@ -368,16 +371,14 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                                 <TextBlock x:Name="ShapeFillOpacityLabel" Text="15%" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
                             </StackPanel>
                         </StackPanel>
-                        <!-- Gann section (visible only for Gann Fan) -->
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Enter ratios separated by commas"
-                                    Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4"/>
+Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4"/>
                             <TextBlock Text="Example: 0.25, 0.5, 1, 2, 4"
-                                    Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4" FontStyle="Italic"/>
+Foreground="{StaticResource TextMuted}" FontSize="10" Margin="0,0,0,4" FontStyle="Italic"/>
                             <TextBox x:Name="GannRatiosBox" Margin="0,0,0,10"/>
                         </StackPanel>
-                        <!-- Pitchfork section (visible for pitchfork tools) -->
                         <StackPanel x:Name="PitchforkSection" Visibility="Collapsed">
                             <TextBlock Text="PITCHFORK SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <CheckBox x:Name="PfSameColorCheck" Content="Use same color for all lines" Checked="PfSameColor_Changed" Unchecked="PfSameColor_Changed"/>
@@ -406,7 +407,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             </StackPanel>
                             <CheckBox x:Name="PfExtendRightCheck" Content="Extend right (towards future)"/>
                         </StackPanel>
-                        <!-- Channel section (visible for channel tools) -->
                         <StackPanel x:Name="ChannelSection" Visibility="Collapsed">
                             <TextBlock Text="CHANNEL SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <CheckBox x:Name="FillBgCheck" Content="Fill background between lines" Checked="FillBgCheck_Changed" Unchecked="FillBgCheck_Changed"/>
@@ -415,7 +415,6 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                                 <Slider x:Name="FillOpacitySlider" Width="120" Minimum="0.05" Maximum="0.8" Value="0.15" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="FillOpacityLabel" Text="15%" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="6,0,0,0"/>
                             </StackPanel>
-                            <!-- ParallelChannel: Median line -->
                             <StackPanel x:Name="MedianSection" Visibility="Collapsed">
                                 <CheckBox x:Name="MedianCheck" Content="Show median line" Margin="0,4,0,4"/>
                                 <StackPanel Orientation="Horizontal" Margin="24,0,0,8">
@@ -426,14 +425,12 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                                     <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="MedianColor_Click"/>
                                 </StackPanel>
                             </StackPanel>
-                            <!-- RegressionTrend: StdDev multiplier -->
                             <StackPanel x:Name="StdDevSection" Visibility="Collapsed">
                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,8">
                                     <TextBlock Text="Std Dev multiplier (1-3):" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                     <ComboBox x:Name="StdDevCombo" Width="60"/>
                                 </StackPanel>
                             </StackPanel>
-                            <!-- DisjointChannel: Second line color -->
                             <StackPanel x:Name="SecondColorSection" Visibility="Collapsed">
                                 <TextBlock Text="Second line color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,4,0,4"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
@@ -444,25 +441,21 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                                     <Button Style="{StaticResource SwatchButton}" Tag="#9C27B0" Background="#9C27B0" Click="SecondColor_Click"/>
                                     <Button Style="{StaticResource SwatchButton}" Tag="#D1D4DC" Background="#D1D4DC" Click="SecondColor_Click"/>
                                     <Rectangle x:Name="SecondColorPreview" Width="26" Height="26" RadiusX="4" RadiusY="4"
-                                            Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
+Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
-                        <!-- Coordinates section -->
                         <TextBlock Text="COORDINATES" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                         <StackPanel x:Name="PointsPanel"/>
-
-                        <!-- Visibility section -->
                         <TextBlock Text="VISIBILITY" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,4"/>
                         <CheckBox x:Name="AlertCheck" Content="🔔 Alert on price cross (Toast + sound)"/>
                         <CheckBox x:Name="LockedCheck" Content="🔒 Locked (eraser cannot delete)"/>
                         <CheckBox x:Name="HiddenCheck" Content="🚫 Hidden (do not show on chart)"/>
                     </StackPanel>
                 </ScrollViewer>
-
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,14,0,0">
                     <Button Content="Cancel" Style="{StaticResource SecondaryButton}" Padding="14,6"
-                            Margin="0,0,8,0" Click="Cancel_Click"/>
+Margin="0,0,8,0" Click="Cancel_Click"/>
                     <Button Content="Save" Style="{StaticResource PrimaryButton}" Padding="16,6" Click="Ok_Click"/>
                 </StackPanel>
             </Grid>

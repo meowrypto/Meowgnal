@@ -161,6 +161,14 @@ UseAeroCaptionButtons="False"/>
             <Path Data="M3,14 L4,10 L11,3 L14,6 L7,13 Z" Fill="#B2B5BE"/>
             <Line X1="3" Y1="16" X2="15" Y2="16" Stroke="#B2B5BE" StrokeThickness="1.2"/>
         </Canvas>
+        <Canvas x:Key="Icon_forecast" x:Shared="False" Width="18" Height="18">
+            <Line X1="2" Y1="16" X2="16" Y2="16" Stroke="#B2B5BE" StrokeThickness="1.2"/>
+            <Line X1="2" Y1="16" X2="6" Y2="8" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Line X1="6" Y1="8" X2="10" Y2="11" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Line X1="10" Y1="11" X2="14" Y2="4" Stroke="#B2B5BE" StrokeThickness="1.5"/>
+            <Line X1="14" Y1="4" X2="17" Y2="7" Stroke="#B2B5BE" StrokeThickness="1.5" StrokeDashArray="2,2"/>
+            <Polyline Points="12,2 14,4 16,2" Stroke="#B2B5BE" StrokeThickness="1" Fill="Transparent"/>
+        </Canvas>
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
@@ -688,39 +696,61 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
-                        <Button x:Name="AnnotGroupButton" Style="{StaticResource RailButton}"
-Click="AnnotGroup_Click" ToolTip="Text and annotations">
+                        <Button x:Name="TextNotesGroupButton" Style="{StaticResource RailButton}"
+Click="TextNotesGroup_Click" ToolTip="Text &amp; Notes">
                             <ContentControl Content="{StaticResource Icon_annot}" Width="18" Height="18"/>
                         </Button>
-                        <Popup x:Name="AnnotPopup" StaysOpen="False" AllowsTransparency="True"
-Placement="Right" PlacementTarget="{Binding ElementName=AnnotGroupButton}">
+                        <Popup x:Name="TextNotesPopup" StaysOpen="False" AllowsTransparency="True"
+Placement="Right" PlacementTarget="{Binding ElementName=TextNotesGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
 BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <StackPanel>
+                                    <TextBlock Text="TEXT" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="text" Click="ToolButton_Click">
                                         <TextBlock Text="Text (type on chart)" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="note" Click="ToolButton_Click">
-                                        <TextBlock Text="Note (boxed text)" VerticalAlignment="Center"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="anchoredtext" Click="ToolButton_Click">
+                                        <TextBlock Text="Anchored Text (fixed to screen)" VerticalAlignment="Center"/>
                                     </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="note" Click="ToolButton_Click">
+                                        <TextBlock Text="Note (hover to see)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="anchorednote" Click="ToolButton_Click">
+                                        <TextBlock Text="Anchored Note (fixed, hover)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="callout" Click="ToolButton_Click">
+                                        <TextBlock Text="Callout (text with arrow)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="comment" Click="ToolButton_Click">
+                                        <TextBlock Text="Comment (text with pointer)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="LABELS &amp; MARKERS" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="pricelabel" Click="ToolButton_Click">
                                         <TextBlock Text="Price Label" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="pricenote" Click="ToolButton_Click">
+                                        <TextBlock Text="Price Note" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="signpost" Click="ToolButton_Click">
+                                        <TextBlock Text="Signpost" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="flagmark" Click="ToolButton_Click">
+                                        <TextBlock Text="Flag Mark" VerticalAlignment="Center"/>
+                                    </Button>
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="pin" Click="ToolButton_Click">
                                         <TextBlock Text="Pin" VerticalAlignment="Center"/>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="flag" Click="ToolButton_Click">
-                                        <TextBlock Text="Flag" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="sticker" Click="ToolButton_Click">
-                                        <TextBlock Text="Sticker / Emoji" VerticalAlignment="Center"/>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="TABLE" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="table" Click="ToolButton_Click">
+                                        <TextBlock Text="Table (editable grid)" VerticalAlignment="Center"/>
                                     </Button>
                                 </StackPanel>
                             </Border>
                         </Popup>
-                        <Button x:Name="ForecastGroupButton" Style="{StaticResource RailButton}" Click="ForecastGroup_Click">
-                            <Image Source="/Assets/icons/forecast.png" Width="20" Height="20"/>
+                        <Button x:Name="ForecastGroupButton" Style="{StaticResource RailButton}" Click="ForecastGroup_Click" ToolTip="Forecasting &amp; measurement tools">
+                            <ContentControl Content="{StaticResource Icon_forecast}" Width="18" Height="18"/>
                         </Button>
                         <Popup x:Name="ForecastPopup" Placement="Right" PlacementTarget="{Binding ElementName=ForecastGroupButton}" StaysOpen="False">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}" BorderThickness="1" CornerRadius="6" Padding="4">

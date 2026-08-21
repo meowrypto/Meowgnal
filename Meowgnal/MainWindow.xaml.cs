@@ -2103,6 +2103,22 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (msgType == "updateTableData")
+        {
+            var id = root.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+            var tableData = root.TryGetProperty("tableData", out var tdProp) ? tdProp.GetString() : "[]";
+            if (!string.IsNullOrEmpty(id))
+            {
+                var drawing = _drawingsFile.Drawings.FirstOrDefault(d => d.Id == id);
+                if (drawing != null)
+                {
+                    drawing.TableData = tableData;
+                    DrawingStorageService.Save(_drawingsFile);
+                }
+            }
+            return;
+        }
+
         if (msgType != "crosshair") return;
         if (root.TryGetProperty("hasData", out var hasData) && hasData.GetBoolean())
         {
@@ -2508,44 +2524,44 @@ public partial class MainWindow : Window
 
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
-        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         if (!CursorPopup.IsOpen) RefreshCursorMenuHighlight();
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
 
     private void LineGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         LinePopup.IsOpen = !LinePopup.IsOpen;
     }
 
     private void FibGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         FibPopup.IsOpen = !FibPopup.IsOpen;
     }
 
     private void PatternsGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         PatternsPopup.IsOpen = !PatternsPopup.IsOpen;
     }
 
     private void BrushesShapesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; AnnotPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
         BrushesShapesPopup.IsOpen = !BrushesShapesPopup.IsOpen;
     }
 
-    private void AnnotGroup_Click(object sender, RoutedEventArgs e)
+    private void TextNotesGroup_Click(object sender, RoutedEventArgs e)
     {
         CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
-        AnnotPopup.IsOpen = !AnnotPopup.IsOpen;
+        TextNotesPopup.IsOpen = !TextNotesPopup.IsOpen;
     }
 
     private void ForecastGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; AnnotPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false;
         ForecastPopup.IsOpen = !ForecastPopup.IsOpen;
     }
 
@@ -2584,7 +2600,7 @@ public partial class MainWindow : Window
         FibPopup.IsOpen = false;
         PatternsPopup.IsOpen = false;
         BrushesShapesPopup.IsOpen = false;
-        AnnotPopup.IsOpen = false;
+        TextNotesPopup.IsOpen = false;
         ForecastPopup.IsOpen = false;
 
         var cursorMap = new Dictionary<string, string>
@@ -2622,7 +2638,10 @@ or "pricerange" or "daterange" or "dateandpricerange" => ForecastGroupButton,
 
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" or "path" or "curve" or "doublecurve"
 or "arrow" or "arrowmarkup" or "arrowmarkdown" or "arrowmarker" or "brush" or "highlighter" => BrushesShapesGroupButton,
-            "text" or "note" or "pricelabel" or "pin" or "flag" or "sticker" => AnnotGroupButton,
+
+            "text" or "anchoredtext" or "note" or "anchorednote" or "callout" or "comment"
+or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" => TextNotesGroupButton,
+
             "cur_cross" or "cur_dot" or "cur_arrow" or "cur_demo" or "cur_magic" or "cur_eraser" => CursorGroupButton,
             _ => LineGroupButton,
         };
@@ -2639,7 +2658,7 @@ or "arrow" or "arrowmarkup" or "arrowmarkdown" or "arrowmarker" or "brush" or "h
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, BrushesShapesGroupButton, AnnotGroupButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, BrushesShapesGroupButton, TextNotesGroupButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");
@@ -2791,6 +2810,20 @@ or "arrow" or "arrowmarkup" or "arrowmarkdown" or "arrowmarker" or "brush" or "h
                 arrowHeadStyle = d.ArrowHeadStyle,
                 arrowMarkerDirection = d.ArrowMarkerDirection,
                 fibLevels = d.FibLevels?.Select(l => new { ratio = l.Ratio, enabled = l.Enabled, color = l.Color, label = l.Label }).ToArray(),
+                isBold = d.IsBold,
+                isItalic = d.IsItalic,
+                textBgColor = d.TextBgColor,
+                textBgOpacity = d.TextBgOpacity,
+                textBgEnabled = d.TextBgEnabled,
+                textBorderColor = d.TextBorderColor,
+                textBorderEnabled = d.TextBorderEnabled,
+                anchoredPixelX = d.AnchoredPixelX,
+                anchoredPixelY = d.AnchoredPixelY,
+                tableRows = d.TableRows,
+                tableCols = d.TableCols,
+                tableBgColor = d.TableBgColor,
+                tableBorderColor = d.TableBorderColor,
+                tableData = d.TableData,
                 points = d.Points.Select(p => new { time = p.TimeUnix, price = p.Price }).ToArray()
             }).ToArray();
 
@@ -2884,11 +2917,19 @@ or "arrow" or "arrowmarkup" or "arrowmarkdown" or "arrowmarker" or "brush" or "h
         DrawingKind.Brush => "Brush",
         DrawingKind.Highlighter => "Highlighter",
         DrawingKind.Text => "Text",
+        DrawingKind.AnchoredText => "Anchored Text",
         DrawingKind.Note => "Note",
+        DrawingKind.AnchoredNote => "Anchored Note",
+        DrawingKind.Callout => "Callout",
+        DrawingKind.Comment => "Comment",
         DrawingKind.PriceLabel => "Price Label",
+        DrawingKind.PriceNote => "Price Note",
+        DrawingKind.Signpost => "Signpost",
+        DrawingKind.FlagMark => "Flag Mark",
         DrawingKind.Pin => "Pin",
         DrawingKind.Flag => "Flag",
         DrawingKind.Sticker => "Sticker",
+        DrawingKind.Table => "Table",
         _ => k.ToString()
     };
 
