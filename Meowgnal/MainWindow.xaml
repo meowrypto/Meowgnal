@@ -741,6 +741,28 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                     <Button Style="{StaticResource TvButtonLeft}" Tag="sector" Click="ToolButton_Click">
                                         <TextBlock Text="Sector (5 clicks)" VerticalAlignment="Center"/>
                                     </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="VOLUME-BASED" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="anchoredvwap" Click="ToolButton_Click">
+                                        <TextBlock Text="Anchored VWAP (1 click)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fixedrangevolumeprofile" Click="ToolButton_Click">
+                                        <TextBlock Text="Fixed Range Volume Profile (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="anchoredvolumeprofile" Click="ToolButton_Click">
+                                        <TextBlock Text="Anchored Volume Profile (1 click)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
+                                    <TextBlock Text="MEASURERS" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="pricerange" Click="ToolButton_Click">
+                                        <TextBlock Text="Price Range (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="daterange" Click="ToolButton_Click">
+                                        <TextBlock Text="Date Range (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Tag="dateandpricerange" Click="ToolButton_Click">
+                                        <TextBlock Text="Date and Price Range (2 clicks)" VerticalAlignment="Center"/>
+                                    </Button>
                                 </StackPanel>
                             </Border>
                         </Popup>

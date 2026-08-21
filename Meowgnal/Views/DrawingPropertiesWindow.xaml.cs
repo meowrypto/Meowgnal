@@ -50,6 +50,8 @@ public partial class DrawingPropertiesWindow : Window
     private long _cycleIntervalSeconds = 0;
     private double _sineAmplitudePercent = 50;
     private int _sineRepeatCount = 3;
+    // Volume profile state
+    private string _profileColor = "#2962FF";
 
     public DrawingPropertiesWindow(Drawing drawing)
     {
@@ -243,6 +245,36 @@ public partial class DrawingPropertiesWindow : Window
         {
             SectorSection.Visibility = Visibility.Visible;
             SectorOpacitySlider.Value = drawing.Kind == DrawingKind.Sector ? drawing.SectorFillOpacity : drawing.BarsPatternOpacity;
+        }
+        if (drawing.Kind == DrawingKind.AnchoredVwap)
+        {
+            VwapSection.Visibility = Visibility.Visible;
+            ShowVwapBandsCheck.IsChecked = drawing.ShowVwapBands;
+        }
+        if (drawing.Kind is DrawingKind.FixedRangeVolumeProfile or DrawingKind.AnchoredVolumeProfile)
+        {
+            VolumeProfileSection.Visibility = Visibility.Visible;
+            for (int i = 8; i <= 48; i += 4) BucketCountCombo.Items.Add(i);
+            BucketCountCombo.SelectedItem = drawing.VolumeBucketCount is >= 8 and <= 48 ? drawing.VolumeBucketCount : 24;
+            ProfileWidthSlider.Value = drawing.VolumeProfileWidthPercent;
+            _profileColor = drawing.VolumeProfileColor;
+            UpdateProfileColorPreview();
+        }
+        if (drawing.Kind is DrawingKind.PriceRange or DrawingKind.DateRange or DrawingKind.DateAndPriceRange)
+        {
+            MeasureSection.Visibility = Visibility.Visible;
+            var isPriceKind = drawing.Kind is DrawingKind.PriceRange or DrawingKind.DateAndPriceRange;
+            var isTimeKind = drawing.Kind is DrawingKind.DateRange or DrawingKind.DateAndPriceRange;
+            PriceModeLabel.Visibility = PriceModeCombo.Visibility = isPriceKind ? Visibility.Visible : Visibility.Collapsed;
+            TimeUnitLabel.Visibility = TimeUnitCombo.Visibility = isTimeKind ? Visibility.Visible : Visibility.Collapsed;
+            PriceModeCombo.Items.Add("both");
+            PriceModeCombo.Items.Add("absolute");
+            PriceModeCombo.Items.Add("percent");
+            PriceModeCombo.SelectedItem = drawing.PriceRangeMode is "absolute" or "percent" ? drawing.PriceRangeMode : "both";
+            TimeUnitCombo.Items.Add("days");
+            TimeUnitCombo.Items.Add("hours");
+            TimeUnitCombo.Items.Add("bars");
+            TimeUnitCombo.SelectedItem = drawing.DateRangeUnit is "hours" or "bars" ? drawing.DateRangeUnit : "days";
         }
 
         // Initialize Fibonacci levels editor if this is a Fibonacci tool
@@ -518,6 +550,17 @@ public partial class DrawingPropertiesWindow : Window
         try { LossZoneColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_lossZoneColor)); }
         catch { LossZoneColorPreview.Fill = new SolidColorBrush(Colors.Red); }
     }
+    private void ProfileColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string hex) return;
+        _profileColor = hex;
+        UpdateProfileColorPreview();
+    }
+    private void UpdateProfileColorPreview()
+    {
+        try { ProfileColorPreview.Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString(_profileColor)); }
+        catch { ProfileColorPreview.Fill = new SolidColorBrush(Colors.Blue); }
+    }
 
     private async void OpenAsPaper_Click(object sender, RoutedEventArgs e)
     {
@@ -663,6 +706,18 @@ public partial class DrawingPropertiesWindow : Window
             else
                 _drawing.BarsPatternOpacity = SectorOpacitySlider.Value;
         }
+        if (_drawing.Kind == DrawingKind.AnchoredVwap)
+            _drawing.ShowVwapBands = ShowVwapBandsCheck.IsChecked == true;
+        if (_drawing.Kind is DrawingKind.FixedRangeVolumeProfile or DrawingKind.AnchoredVolumeProfile)
+        {
+            _drawing.VolumeBucketCount = BucketCountCombo.SelectedItem is int bc ? bc : 24;
+            _drawing.VolumeProfileWidthPercent = ProfileWidthSlider.Value;
+            _drawing.VolumeProfileColor = _profileColor;
+        }
+        if (_drawing.Kind is DrawingKind.PriceRange or DrawingKind.DateAndPriceRange)
+            _drawing.PriceRangeMode = PriceModeCombo.SelectedItem as string ?? "both";
+        if (_drawing.Kind is DrawingKind.DateRange or DrawingKind.DateAndPriceRange)
+            _drawing.DateRangeUnit = TimeUnitCombo.SelectedItem as string ?? "days";
 
         var isPfKind = _drawing.Kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
         or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork;

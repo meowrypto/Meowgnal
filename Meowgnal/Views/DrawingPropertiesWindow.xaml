@@ -321,7 +321,35 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                             <TextBlock Text="Fill Opacity:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
                             <Slider x:Name="SectorOpacitySlider" Minimum="0.05" Maximum="0.8" Value="0.3" Margin="0,0,0,8"/>
                         </StackPanel>
-
+                        <!-- Anchored VWAP section -->
+                        <StackPanel x:Name="VwapSection" Visibility="Collapsed">
+                            <TextBlock Text="ANCHORED VWAP" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <CheckBox x:Name="ShowVwapBandsCheck" Content="Show std dev bands (±1, ±2)" Margin="0,0,0,6"/>
+                        </StackPanel>
+                        <!-- Volume profile section -->
+                        <StackPanel x:Name="VolumeProfileSection" Visibility="Collapsed">
+                            <TextBlock Text="VOLUME PROFILE" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Number of buckets (8-48):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="BucketCountCombo" Margin="0,0,0,10"/>
+                            <TextBlock Text="Max width (% of chart):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <Slider x:Name="ProfileWidthSlider" Minimum="5" Maximum="60" Value="25" Margin="0,0,0,10"/>
+                            <TextBlock Text="Bar color:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button Style="{StaticResource SwatchButton}" Tag="#2962FF" Background="#2962FF" Click="ProfileColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#089981" Background="#089981" Click="ProfileColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#F23645" Background="#F23645" Click="ProfileColor_Click"/>
+                                <Button Style="{StaticResource SwatchButton}" Tag="#FF9800" Background="#FF9800" Click="ProfileColor_Click"/>
+                                <Rectangle x:Name="ProfileColorPreview" Width="26" Height="26" RadiusX="4" RadiusY="4" Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <!-- Measure section -->
+                        <StackPanel x:Name="MeasureSection" Visibility="Collapsed">
+                            <TextBlock Text="MEASURE SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock x:Name="PriceModeLabel" Text="Price label:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="PriceModeCombo" Margin="0,0,0,10"/>
+                            <TextBlock x:Name="TimeUnitLabel" Text="Time unit:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <ComboBox x:Name="TimeUnitCombo" Margin="0,0,0,10"/>
+                        </StackPanel>
                         <!-- Gann section (visible only for Gann Fan) -->
                         <StackPanel x:Name="GannSection" Visibility="Collapsed">
                             <TextBlock Text="GANN RATIOS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>

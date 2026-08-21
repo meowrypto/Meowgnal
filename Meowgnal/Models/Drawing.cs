@@ -76,7 +76,13 @@ public enum DrawingKind
     PositionForecast,
     BarsPattern,
     GhostFeed,
-    Sector
+    Sector,
+    AnchoredVwap,
+    FixedRangeVolumeProfile,
+    AnchoredVolumeProfile,
+    PriceRange,
+    DateRange,
+    DateAndPriceRange
 }
 
 
@@ -251,10 +257,21 @@ public sealed class Drawing
 
     /// <summary>Bars pattern: opacity (0-1).</summary>
     public double BarsPatternOpacity { get; set; } = 0.5;
-
     /// <summary>Sector: fill opacity (0-1).</summary>
     public double SectorFillOpacity { get; set; } = 0.3;
-
+    // ----- Volume-based & measurer tool settings -----
+    /// <summary>Anchored VWAP: show +/-1 and +/-2 standard deviation bands.</summary>
+    public bool ShowVwapBands { get; set; } = true;
+    /// <summary>Volume profile: number of price buckets (default 24).</summary>
+    public int VolumeBucketCount { get; set; } = 24;
+    /// <summary>Volume profile: max bar width as percent of chart width.</summary>
+    public double VolumeProfileWidthPercent { get; set; } = 25;
+    /// <summary>Volume profile: bar color.</summary>
+    public string VolumeProfileColor { get; set; } = "#2962FF";
+    /// <summary>Price range tool: "both" | "absolute" | "percent".</summary>
+    public string PriceRangeMode { get; set; } = "both";
+    /// <summary>Date range tool: "days" | "hours" | "bars".</summary>
+    public string DateRangeUnit { get; set; } = "days";
     /// <summary>Triangle pattern: Show apex point and dashed lines.</summary>
     public bool ShowApex { get; set; } = true;
 

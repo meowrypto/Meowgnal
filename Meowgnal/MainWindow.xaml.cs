@@ -1789,7 +1789,15 @@ public partial class MainWindow : Window
                     if (kind == DrawingKind.Sector)
                     {
                         newDrawing.ShowRatios = false;
+                        newDrawing.ShowApex = false;
                         newDrawing.ShowLabels = false;
+                    }
+                    if (kind is DrawingKind.AnchoredVwap or DrawingKind.FixedRangeVolumeProfile or DrawingKind.AnchoredVolumeProfile
+                    or DrawingKind.PriceRange or DrawingKind.DateRange or DrawingKind.DateAndPriceRange)
+                    {
+                        newDrawing.ShowRatios = false;
+                        newDrawing.ShowApex = false;
+                        newDrawing.ShowLabels = true;
                     }
 
                     if (drawingEl.TryGetProperty("points", out var pts))
@@ -2615,7 +2623,9 @@ public partial class MainWindow : Window
                 or "elliottimpulsewave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave"
                 or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
 
-            "longposition" or "shortposition" or "positionforecast" or "barspattern" or "ghostfeed" or "sector" => ForecastGroupButton,
+            "longposition" or "shortposition" or "positionforecast" or "barspattern" or "ghostfeed" or "sector"
+or "anchoredvwap" or "fixedrangevolumeprofile" or "anchoredvolumeprofile"
+or "pricerange" or "daterange" or "dateandpricerange" => ForecastGroupButton,
 
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" => ShapesGroupButton,
             "arrow" or "arrowmarkup" or "arrowmarkdown" or "brush" or "highlighter" => BrushGroupButton,
@@ -2775,6 +2785,12 @@ public partial class MainWindow : Window
                 ghostCandles = d.GhostCandles?.Select(c => new { time = c.Timestamp, open = (double)c.Open, high = (double)c.High, low = (double)c.Low, close = (double)c.Close }).ToArray(),
                 barsPatternOpacity = d.BarsPatternOpacity,
                 sectorFillOpacity = d.SectorFillOpacity,
+                showVwapBands = d.ShowVwapBands,
+                volumeBucketCount = d.VolumeBucketCount,
+                volumeProfileWidthPercent = d.VolumeProfileWidthPercent,
+                volumeProfileColor = d.VolumeProfileColor,
+                priceRangeMode = d.PriceRangeMode,
+                dateRangeUnit = d.DateRangeUnit,
                 cycleCount = d.CycleCount,
                 cycleIntervalSeconds = d.CycleIntervalSeconds,
                 sineAmplitudePercent = d.SineAmplitudePercent,
@@ -2850,6 +2866,12 @@ public partial class MainWindow : Window
         DrawingKind.BarsPattern => "Bars Pattern",
         DrawingKind.GhostFeed => "Ghost Feed",
         DrawingKind.Sector => "Sector",
+        DrawingKind.AnchoredVwap => "Anchored VWAP",
+        DrawingKind.FixedRangeVolumeProfile => "Fixed Range Volume Profile",
+        DrawingKind.AnchoredVolumeProfile => "Anchored Volume Profile",
+        DrawingKind.PriceRange => "Price Range",
+        DrawingKind.DateRange => "Date Range",
+        DrawingKind.DateAndPriceRange => "Date and Price Range",
         DrawingKind.Rectangle => "Rectangle",
         DrawingKind.RotatedRectangle => "Rotated Rectangle",
         DrawingKind.Circle => "Circle",

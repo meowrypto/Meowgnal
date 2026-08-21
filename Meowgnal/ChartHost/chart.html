@@ -974,6 +974,62 @@
             }
         }
 
+        function addVolumeProfile(g, d, t1, t2) {
+            const bars = rawData.filter(c => c.time >= t1 && c.time <= t2);
+            if (!bars.length) return;
+            let min = Infinity, max = -Infinity;
+            for (const c of bars) { if (c.low < min) min = c.low; if (c.high > max) max = c.high; }
+            if (!(max > min)) return;
+            const buckets = Math.max(4, Math.min(64, d.volumeBucketCount || 24));
+            const bs = (max - min) / buckets;
+            const vols = new Array(buckets).fill(0);
+            for (const c of bars) {
+                const typ = (c.high + c.low + c.close) / 3;
+                let bi = Math.floor((typ - min) / bs);
+                if (bi < 0) bi = 0;
+                if (bi >= buckets) bi = buckets - 1;
+                vols[bi] += c.volume;
+            }
+            let mv = 0;
+            for (const v of vols) if (v > mv) mv = v;
+            if (mv <= 0) return;
+            const x1 = px(t1);
+            if (x1 === null) return;
+            const maxW = drawCanvas.width * ((d.volumeProfileWidthPercent || 25) / 100);
+            const color = d.volumeProfileColor || '#2962FF';
+            for (let i = 0; i < buckets; i++) {
+                if (vols[i] <= 0) continue;
+                const yTop = py(min + (i + 1) * bs), yBot = py(min + i * bs);
+                if (yTop === null || yBot === null) continue;
+                const h = Math.max(1, yBot - yTop - 1);
+                const w = Math.max(1, (vols[i] / mv) * maxW);
+                g.rects.push({ x: x1, y: yTop, w: w, h: h, color: color, opacity: 0.5 });
+            }
+            const yT = py(max), yB = py(min);
+            if (yT !== null && yB !== null) {
+                g.lines.push([x1, yT, x1, yB]);
+                g.lines.push([x1, yT, x1 + maxW, yT]);
+                g.lines.push([x1, yB, x1 + maxW, yB]);
+            }
+        }
+        function fmtTimeDiff(d, pts) {
+            const sec = Math.abs(pts[1].time - pts[0].time);
+            const barSec = rawData.length > 1 ? (rawData[1].time - rawData[0].time) : 3600;
+            const unit = d.dateRangeUnit || 'days';
+            if (unit === 'bars') return Math.round(sec / barSec) + ' bars';
+            if (unit === 'hours') return (sec / 3600).toFixed(1) + 'h';
+            return (sec / 86400).toFixed(1) + 'd';
+        }
+        function drawMeasureBox(g, d, pts, texts) {
+            const x1 = px(pts[0].time), y1 = py(pts[0].price);
+            const x2 = px(pts[1].time), y2 = py(pts[1].price);
+            if (x1 === null || y1 === null || x2 === null || y2 === null) return;
+            const xL = Math.min(x1, x2), xR = Math.max(x1, x2), yT = Math.min(y1, y2), yB = Math.max(y1, y2);
+            g.rects.push({ x: xL, y: yT, w: Math.max(1, xR - xL), h: Math.max(1, yB - yT), color: d.color, opacity: 0.15 });
+            g.lines.push([xL, yT, xR, yT], [xR, yT, xR, yB], [xR, yB, xL, yB], [xL, yB, xL, yT]);
+            for (let i = 0; i < texts.length; i++)
+                g.labels.push([texts[i], (xL + xR) / 2, (yT + yB) / 2 + (i - (texts.length - 1) / 2) * 14]);
+        }
         function geometry(d) {
             const W = drawCanvas.width, H = drawCanvas.height;
             const g = { lines: [], dashed: [], circles: [], arcs: [], labels: [], glyphs: [], anchors: [], boxes: [], texts: [], fills: [], rects: [], polygons: [], pfRoles: null, neckline: null };
@@ -1363,6 +1419,78 @@
                 case 'elliotttrianglewave': addElliottGeometry(g, d, ['', 'A', 'B', 'C', 'D', 'E']); break;
                 case 'elliottdoublecombowave': addElliottGeometry(g, d, ['', 'W', 'X', 'Y']); break;
                 case 'elliotttriplecombowave': addElliottGeometry(g, d, ['', 'W', 'X1', 'Y', 'X2', 'Z']); break;
+                case 'anchoredvwap': {
+                    if (pts.length < 1) break;
+                    const at = pts[0].time;
+                    let cumPV = 0, cumPV2 = 0, cumV = 0;
+                    let lx = null, ly = null;
+                    let b1ux = null, b1uy = null, b1lx = null, b1ly = null;
+                    let b2ux = null, b2uy = null, b2lx = null, b2ly = null;
+                    for (const c of rawData) {
+                        if (c.time < at) continue;
+                        const typ = (c.high + c.low + c.close) / 3;
+                        const vol = c.volume;
+                        cumPV += typ * vol;
+                        cumPV2 += typ * typ * vol;
+                        cumV += vol;
+                        if (cumV <= 0) continue;
+                        const vwap = cumPV / cumV;
+                        const sd = Math.sqrt(Math.max(0, cumPV2 / cumV - vwap * vwap));
+                        const x = px(c.time), y = py(vwap);
+                        if (x === null || y === null) continue;
+                        if (lx !== null) g.lines.push([lx, ly, x, y]);
+                        lx = x; ly = y;
+                        if (d.showVwapBands !== false) {
+                            const u1 = py(vwap + sd), l1 = py(vwap - sd);
+                            const u2 = py(vwap + 2 * sd), l2 = py(vwap - 2 * sd);
+                            if (u1 !== null && l1 !== null) {
+                                if (b1ux !== null) { g.dashed.push([b1ux, b1uy, x, u1]); g.dashed.push([b1lx, b1ly, x, l1]); }
+                                b1ux = x; b1uy = u1; b1lx = x; b1ly = l1;
+                            }
+                            if (u2 !== null && l2 !== null) {
+                                if (b2ux !== null) { g.dashed.push([b2ux, b2uy, x, u2]); g.dashed.push([b2lx, b2ly, x, l2]); }
+                                b2ux = x; b2uy = u2; b2lx = x; b2ly = l2;
+                            }
+                        }
+                    }
+                    break;
+                }
+                case 'fixedrangevolumeprofile': {
+                    if (pts.length < 2) break;
+                    addVolumeProfile(g, d, Math.min(pts[0].time, pts[1].time), Math.max(pts[0].time, pts[1].time));
+                    break;
+                }
+                case 'anchoredvolumeprofile': {
+                    if (pts.length < 1) break;
+                    const lastT = rawData.length ? rawData[rawData.length - 1].time : pts[0].time;
+                    addVolumeProfile(g, d, pts[0].time, lastT);
+                    break;
+                }
+                case 'pricerange': {
+                    if (pts.length < 2) break;
+                    const p1 = pts[0].price, p2 = pts[1].price;
+                    const diff = Math.abs(p2 - p1);
+                    const pct = p1 !== 0 ? (p2 - p1) / p1 * 100 : 0;
+                    const mode = d.priceRangeMode || 'both';
+                    const txt = mode === 'absolute' ? fmtPrice(diff)
+                        : mode === 'percent' ? ((pct >= 0 ? '+' : '') + pct.toFixed(2) + '%')
+                            : fmtPrice(diff) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)';
+                    drawMeasureBox(g, d, pts, [txt]);
+                    break;
+                }
+                case 'daterange': {
+                    if (pts.length < 2) break;
+                    drawMeasureBox(g, d, pts, [fmtTimeDiff(d, pts)]);
+                    break;
+                }
+                case 'dateandpricerange': {
+                    if (pts.length < 2) break;
+                    const p1 = pts[0].price, p2 = pts[1].price;
+                    const diff = Math.abs(p2 - p1);
+                    const pct = p1 !== 0 ? (p2 - p1) / p1 * 100 : 0;
+                    drawMeasureBox(g, d, pts, [fmtPrice(diff) + ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%)', fmtTimeDiff(d, pts)]);
+                    break;
+                }
                 case 'xabcdpattern': {
                     if (pts.length < 5) break;
                     const labelsX = ['X', 'A', 'B', 'C', 'D'];
@@ -1637,6 +1765,8 @@
                 'elliotttrianglewave': 'Elliott Triangle Wave',
                 'elliottdoublecombowave': 'Elliott Double Combo Wave',
                 'elliotttriplecombowave': 'Elliott Triple Combo Wave',
+                'anchoredvwap': 'Anchored VWAP', 'fixedrangevolumeprofile': 'Fixed Range Volume Profile', 'anchoredvolumeprofile': 'Anchored Volume Profile',
+                'pricerange': 'Price Range', 'daterange': 'Date Range', 'dateandpricerange': 'Date and Price Range',
                 'longposition': 'Long Position', 'shortposition': 'Short Position', 'positionforecast': 'Position Forecast',
                 'barspattern': 'Bars Pattern', 'ghostfeed': 'Ghost Feed', 'sector': 'Sector',
                 'cycliclines': 'Cyclic Lines', 'timecycles': 'Time Cycles', 'sineline': 'Sine Line',
@@ -2278,6 +2408,7 @@
 
         // ---------- Click / crosshair ----------
         const NEED = {
+            anchoredvwap: 1, fixedrangevolumeprofile: 2, anchoredvolumeprofile: 1, pricerange: 2, daterange: 2, dateandpricerange: 2,
             longposition: 2, shortposition: 2, positionforecast: 4, barspattern: 2, ghostfeed: 1, sector: 5,
             cycliclines: 2, timecycles: 2, sineline: 2,
             elliottimpulsewave: 6, elliottcorrectionwave: 4, elliotttrianglewave: 6, elliottdoublecombowave: 4, elliotttriplecombowave: 6,
