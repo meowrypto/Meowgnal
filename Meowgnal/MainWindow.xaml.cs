@@ -67,6 +67,7 @@ public partial class MainWindow : Window
 
     // Drawing tools state
     private DrawingsFile _drawingsFile = new();
+    private bool _alwaysRemoveLocked = false;
     private readonly DrawingUndoManager _undoManager = new();
     private string? _activeDrawingMode = null;
     private string _activeCursorMode = "cross";
@@ -506,7 +507,6 @@ public partial class MainWindow : Window
         _ = SendChartTypeAsync(_chartType);
         await LoadChartAsync();
         RebuildObjectList();
-        ObjectsSymbolText.Text = _chartSymbol;
     }
 
     private void SetRightTab(string which)
@@ -2316,19 +2316,7 @@ public partial class MainWindow : Window
     private void OpenBacktestButton_Click(object sender, RoutedEventArgs e) => new BacktestWindow().ShowDialog();
     private void OpenJournalButton_Click(object sender, RoutedEventArgs e) => new JournalWindow().ShowDialog();
     private void OpenPortfolioButton_Click(object sender, RoutedEventArgs e) => new PortfolioWindow().ShowDialog();
-    private void ColorPickerButton_Click(object sender, RoutedEventArgs e) => ColorPopup.IsOpen = !ColorPopup.IsOpen;
-
-    private async void DefaultColor_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button btn || btn.Tag is not string hex) return;
-        _drawingsFile.DefaultColor = hex;
-        DrawingStorageService.Save(_drawingsFile);
-        ColorPopup.IsOpen = false;
-        await SendDrawingModeToChartAsync(_activeDrawingMode ?? "none");
-        NotificationService.ShowToast("Meowgnal", $"New drawings will use color {hex}.");
-    }
-
-    private void TrashButton_Click(object sender, RoutedEventArgs e) => TrashPopup.IsOpen = true;
+    
 
     private void HideDrawingsButton_Click(object sender, RoutedEventArgs e)
     {
@@ -2353,33 +2341,57 @@ public partial class MainWindow : Window
 
     private void RemoveObjectsGroup_Click(object sender, RoutedEventArgs e)
     {
-        RemoveObjectsPopup.IsOpen = !RemoveObjectsPopup.IsOpen;
+        if (RemoveObjectsPopup.IsOpen)
+        {
+            RemoveObjectsPopup.IsOpen = false;
+            return;
+        }
+        RefreshRemoveObjectsMenu();
+        RemoveObjectsPopup.IsOpen = true;
     }
-
+    private void RefreshRemoveObjectsMenu()
+    {
+        var symbolClean = _chartSymbol.Replace("/", "");
+        var drawingCount = _drawingsFile.Drawings.Count(d => d.Symbol == symbolClean);
+        var indicatorCount = GetActiveIndicators(_chartSymbol).Count;
+        RemoveDrawingsText.Text = $"Remove {drawingCount} drawing(s)";
+        RemoveIndicatorsText.Text = $"Remove {indicatorCount} indicator(s)";
+        RemoveAllObjectsText.Text = $"Remove {drawingCount} drawing(s) & {indicatorCount} indicator(s)";
+        RemoveDrawingsItem.Visibility = drawingCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        RemoveIndicatorsItem.Visibility = indicatorCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        RemoveAllObjectsItem.Visibility = drawingCount > 0 && indicatorCount > 0 ? Visibility.Visible : Visibility.Collapsed;
+        AlwaysRemoveLockedCheck.IsChecked = _alwaysRemoveLocked;
+    }
+    private void AlwaysRemoveLocked_Click(object sender, RoutedEventArgs e)
+    {
+        _alwaysRemoveLocked = AlwaysRemoveLockedCheck.IsChecked == true;
+    }
     private async void RemoveDrawings_Click(object sender, RoutedEventArgs e)
     {
         RemoveObjectsPopup.IsOpen = false;
         var symbolClean = _chartSymbol.Replace("/", "");
-        var drawingCount = _drawingsFile.Drawings.Count(d => d.Symbol == symbolClean);
-        if (drawingCount == 0)
+        var targets = _drawingsFile.Drawings
+        .Where(d => d.Symbol == symbolClean && (_alwaysRemoveLocked || !d.IsLocked))
+        .ToList();
+        if (targets.Count == 0)
         {
             NotificationService.ShowToast("Meowgnal", "No drawings to remove.");
             return;
         }
         var res = MessageBox.Show(
-            $"Are you sure you want to remove all {drawingCount} drawings? This action cannot be undone.",
-            "Remove Drawings",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        $"Are you sure you want to remove {targets.Count} drawing(s)? This action cannot be undone.",
+        "Remove Drawings",
+        MessageBoxButton.YesNo,
+        MessageBoxImage.Warning);
         if (res != MessageBoxResult.Yes) return;
         CaptureSnapshot();
-        _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
+        var ids = new HashSet<string>(targets.Select(t => t.Id));
+        _drawingsFile.Drawings.RemoveAll(d => ids.Contains(d.Id));
         DrawingStorageService.Save(_drawingsFile);
         await SendDrawingsToChartAsync();
         RebuildObjectList();
-        NotificationService.ShowToast("Meowgnal", $"Removed {drawingCount} drawings.");
+        NotificationService.ShowToast("Meowgnal", $"Removed {targets.Count} drawing(s).");
     }
-
     private void RemoveIndicators_Click(object sender, RoutedEventArgs e)
     {
         RemoveObjectsPopup.IsOpen = false;
@@ -2391,10 +2403,10 @@ public partial class MainWindow : Window
             return;
         }
         var res = MessageBox.Show(
-            $"Are you sure you want to remove all {count} indicators? This action cannot be undone.",
-            "Remove Indicators",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        $"Are you sure you want to remove all {count} indicators? This action cannot be undone.",
+        "Remove Indicators",
+        MessageBoxButton.YesNo,
+        MessageBoxImage.Warning);
         if (res != MessageBoxResult.Yes) return;
         list.Clear();
         IndicatorSettingsStorageService.Save(_indicatorSettings);
@@ -2402,28 +2414,30 @@ public partial class MainWindow : Window
         _ = SendClearIndicatorsToChartAsync();
         NotificationService.ShowToast("Meowgnal", $"Removed {count} indicators.");
     }
-
     private async void RemoveAllObjects_Click(object sender, RoutedEventArgs e)
     {
         RemoveObjectsPopup.IsOpen = false;
         var symbolClean = _chartSymbol.Replace("/", "");
-        var drawingCount = _drawingsFile.Drawings.Count(d => d.Symbol == symbolClean);
+        var targets = _drawingsFile.Drawings
+        .Where(d => d.Symbol == symbolClean && (_alwaysRemoveLocked || !d.IsLocked))
+        .ToList();
         var indicatorCount = GetActiveIndicators(_chartSymbol).Count;
-        if (drawingCount == 0 && indicatorCount == 0)
+        if (targets.Count == 0 && indicatorCount == 0)
         {
             NotificationService.ShowToast("Meowgnal", "No objects to remove.");
             return;
         }
         var res = MessageBox.Show(
-            $"Are you sure you want to remove all {drawingCount} drawings and {indicatorCount} indicators? This action cannot be undone.",
-            "Remove All Objects",
-            MessageBoxButton.YesNo,
-            MessageBoxImage.Warning);
+        $"Are you sure you want to remove {targets.Count} drawing(s) and {indicatorCount} indicator(s)? This action cannot be undone.",
+        "Remove All Objects",
+        MessageBoxButton.YesNo,
+        MessageBoxImage.Warning);
         if (res != MessageBoxResult.Yes) return;
-        if (drawingCount > 0)
+        if (targets.Count > 0)
         {
             CaptureSnapshot();
-            _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
+            var ids = new HashSet<string>(targets.Select(t => t.Id));
+            _drawingsFile.Drawings.RemoveAll(d => ids.Contains(d.Id));
             DrawingStorageService.Save(_drawingsFile);
             await SendDrawingsToChartAsync();
             RebuildObjectList();
@@ -2435,9 +2449,8 @@ public partial class MainWindow : Window
             IndicatorPanelControl.RefreshActiveTypes(new List<string>());
             _ = SendClearIndicatorsToChartAsync();
         }
-        NotificationService.ShowToast("Meowgnal", $"Removed {drawingCount} drawings and {indicatorCount} indicators.");
+        NotificationService.ShowToast("Meowgnal", $"Removed {targets.Count} drawing(s) and {indicatorCount} indicator(s).");
     }
-
     private async Task SendClearIndicatorsToChartAsync()
     {
         try { await _chartPageReady.Task; } catch { return; }
@@ -2446,22 +2459,7 @@ public partial class MainWindow : Window
             JsonSerializer.Serialize(new { type = "clearIndicators" }));
     }
 
-    private void ClearAllDrawings_Click(object sender, RoutedEventArgs e)
-    {
-        CaptureSnapshot();
-        var symbolClean = _chartSymbol.Replace("/", "");
-        _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
-        DrawingStorageService.Save(_drawingsFile);
-        _ = SendDrawingsToChartAsync();
-        RebuildObjectList();
-    }
-
-    private void ChooseDeleteDrawings_Click(object sender, RoutedEventArgs e)
-    {
-        TrashPopup.IsOpen = false;
-        RebuildObjectList();
-        ObjectsPopup.IsOpen = true;
-    }
+    
 
     private async void OnOpenDrawingProperties(string id)
     {
@@ -3158,12 +3156,7 @@ public partial class MainWindow : Window
 
     #region Object Tree
 
-    private void ObjectsButton_Click(object sender, RoutedEventArgs e)
-    {
-        RebuildObjectList();
-        ObjectsSymbolText.Text = _chartSymbol;
-        ObjectsPopup.IsOpen = !ObjectsPopup.IsOpen;
-    }
+    
 
     private string KindLabel(DrawingKind k) => k switch
     {
@@ -3258,121 +3251,10 @@ public partial class MainWindow : Window
         _ => k.ToString()
     };
 
+    // Object list UI was removed from the left rail; kept as no-op so existing call sites still compile.
     private void RebuildObjectList()
     {
-        ObjectsListPanel.Children.Clear();
-        var symbolClean = _chartSymbol.Replace("/", "");
-        var items = _drawingsFile.Drawings.Where(d => d.Symbol == symbolClean).ToList();
-        if (items.Count == 0)
-        {
-            ObjectsListPanel.Children.Add(new TextBlock
-            {
-                Text = "No drawings yet. Use the tools on the left rail.",
-                Foreground = (Brush)FindResource("TextMuted"),
-                FontSize = 11,
-                Margin = new Thickness(0, 8, 0, 8)
-            });
-            return;
-        }
-        foreach (var d in items)
-        {
-            var row = new Grid { Margin = new Thickness(0, 0, 0, 4) };
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-
-            var label = string.IsNullOrWhiteSpace(d.Label) ? KindLabel(d.Kind) : $"{KindLabel(d.Kind)} — {d.Label}";
-
-            var leftSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            Border dot;
-            try
-            {
-                dot = new Border
-                {
-                    Width = 12,
-                    Height = 12,
-                    CornerRadius = new CornerRadius(2),
-                    Margin = new Thickness(0, 0, 8, 0),
-                    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(d.Color)),
-                    BorderBrush = (Brush)FindResource("BorderLine"),
-                    BorderThickness = new Thickness(1),
-                    VerticalAlignment = VerticalAlignment.Center
-                };
-            }
-            catch
-            {
-                dot = new Border { Width = 12, Height = 12, CornerRadius = new CornerRadius(2), Margin = new Thickness(0, 0, 8, 0), Background = new SolidColorBrush(Colors.Gray), VerticalAlignment = VerticalAlignment.Center };
-            }
-            leftSp.Children.Add(dot);
-
-            var nameText = new TextBlock
-            {
-                Text = label,
-                Foreground = d.IsVisible ? (Brush)FindResource("TextPrimary") : (Brush)FindResource("TextMuted"),
-                FontSize = 12,
-                FontStyle = d.IsVisible ? FontStyles.Normal : FontStyles.Italic,
-                VerticalAlignment = VerticalAlignment.Center
-            };
-            leftSp.Children.Add(nameText);
-
-            var rightSp = new StackPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
-            var editBtn = new Button
-            {
-                Content = "✏️",
-                Style = (Style)FindResource("TvButton"),
-                ToolTip = "Edit properties (label, color, alert)",
-                Tag = d,
-                Padding = new Thickness(4, 2, 4, 2),
-                FontSize = 11
-            };
-            editBtn.Click += ObjectEdit_Click;
-
-            var lockBtn = new Button
-            {
-                Content = d.IsLocked ? "🔒" : "🔓",
-                Style = (Style)FindResource("TvButton"),
-                ToolTip = d.IsLocked ? "Unlock (eraser can delete)" : "Lock (eraser cannot delete)",
-                Tag = d,
-                Padding = new Thickness(4, 2, 4, 2),
-                FontSize = 11
-            };
-            lockBtn.Click += ObjectLock_Click;
-
-            var hideBtn = new Button
-            {
-                Content = d.IsVisible ? "👁️" : "🚫",
-                Style = (Style)FindResource("TvButton"),
-                ToolTip = d.IsVisible ? "Hide drawing" : "Show drawing",
-                Tag = d,
-                Padding = new Thickness(4, 2, 4, 2),
-                FontSize = 11
-            };
-            hideBtn.Click += ObjectHide_Click;
-
-            var delBtn = new Button
-            {
-                Content = "🗑️",
-                Style = (Style)FindResource("TvButton"),
-                ToolTip = "Delete drawing",
-                Tag = d,
-                Padding = new Thickness(4, 2, 4, 2),
-                FontSize = 11,
-                Foreground = (Brush)FindResource("Down")
-            };
-            delBtn.Click += ObjectDelete_Click;
-
-            rightSp.Children.Add(editBtn);
-            rightSp.Children.Add(lockBtn);
-            rightSp.Children.Add(hideBtn);
-            rightSp.Children.Add(delBtn);
-
-            Grid.SetColumn(leftSp, 0);
-            Grid.SetColumn(rightSp, 1);
-            row.Children.Add(leftSp);
-            row.Children.Add(rightSp);
-            ObjectsListPanel.Children.Add(row);
-        }
     }
-
     private void ObjectLock_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not Drawing d) return;

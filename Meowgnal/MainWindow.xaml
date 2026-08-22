@@ -1267,91 +1267,30 @@ Click="LockAllDrawingsButton_Click" ToolTip="Lock All Drawings — prevent selec
                             <ContentControl x:Name="HideDrawingsIcon" Content="{StaticResource Icon_hide}" Width="18" Height="18"/>
                         </Button>
                         <Button x:Name="RemoveObjectsGroupButton" Style="{StaticResource RailButton}"
-        Click="RemoveObjectsGroup_Click" ToolTip="Remove Objects — delete drawings and/or indicators">
-                            <ContentControl Content="{StaticResource Icon_removeobjects}" Width="18" Height="18"/>
-                        </Button>
-                        <Popup x:Name="RemoveObjectsPopup" StaysOpen="False" AllowsTransparency="True"
-        Placement="Right" PlacementTarget="{Binding ElementName=RemoveObjectsGroupButton}">
-                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-            BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
-                                <StackPanel>
-                                    <Button Style="{StaticResource TvButtonLeft}" Click="RemoveDrawings_Click">
-                                        <TextBlock Text="🗑 Remove Drawings" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Click="RemoveIndicators_Click">
-                                        <TextBlock Text="📉 Remove Indicators" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
-                                    <Button Style="{StaticResource TvButtonLeft}" Click="RemoveAllObjects_Click">
-                                        <TextBlock Text="❌ Remove Drawings &amp; Indicators" VerticalAlignment="Center"/>
-                                    </Button>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                        <Button x:Name="ObjectsRailButton" Style="{StaticResource RailButton}"
-        Click="ObjectsButton_Click" ToolTip="Objects list — manage drawings">
-                            <TextBlock Text="📋" FontSize="15"/>
-                        </Button>
-                        <Button x:Name="ColorPickerButton" Style="{StaticResource RailButton}"
-Click="ColorPickerButton_Click" ToolTip="Default color for new drawings">
-                            <TextBlock Text="🎨" FontSize="15"/>
-                        </Button>
-                        <Button x:Name="ToolClearButton" Style="{StaticResource RailButton}" Tag="clear"
-Click="TrashButton_Click" ToolTip="Delete drawings">
+Click="RemoveObjectsGroup_Click" ToolTip="Remove Objects — delete drawings and/or indicators">
                             <ContentControl Content="{StaticResource Icon_trash}" Width="18" Height="18"/>
                         </Button>
-                        <Popup x:Name="TrashPopup" StaysOpen="False" AllowsTransparency="True"
-Placement="Right" PlacementTarget="{Binding ElementName=ToolClearButton}">
+                        <Popup x:Name="RemoveObjectsPopup" StaysOpen="False" AllowsTransparency="True"
+Placement="Right" PlacementTarget="{Binding ElementName=RemoveObjectsGroupButton}">
                             <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0" Width="280">
                                 <StackPanel>
-                                    <Button Style="{StaticResource TvButtonLeft}" Click="ClearAllDrawings_Click">
-                                        <TextBlock Text="🗑 Delete ALL drawings" VerticalAlignment="Center"/>
+                                    <Button x:Name="RemoveDrawingsItem" Style="{StaticResource TvButtonLeft}" Click="RemoveDrawings_Click">
+                                        <StackPanel Orientation="Horizontal">
+                                            <ContentControl Content="{StaticResource Icon_trash}" Width="18" Height="18" Margin="0,0,8,0"/>
+                                            <TextBlock x:Name="RemoveDrawingsText" Text="Remove 0 drawing(s)" VerticalAlignment="Center"/>
+                                        </StackPanel>
                                     </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Click="ChooseDeleteDrawings_Click">
-                                        <TextBlock Text="✂ Choose drawings to delete" VerticalAlignment="Center"/>
+                                    <Button x:Name="RemoveIndicatorsItem" Style="{StaticResource TvButtonLeft}" Click="RemoveIndicators_Click">
+                                        <TextBlock x:Name="RemoveIndicatorsText" Text="Remove 0 indicator(s)" VerticalAlignment="Center"/>
                                     </Button>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                        <Popup x:Name="ColorPopup" StaysOpen="False" AllowsTransparency="True"
-Placement="Right" PlacementTarget="{Binding ElementName=ColorPickerButton}">
-                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-BorderThickness="1" CornerRadius="4" Padding="10" Margin="4,0,0,0">
-                                <StackPanel>
-                                    <TextBlock Text="Default drawing color" Foreground="{DynamicResource TextSecondary}"
-FontSize="11" Margin="0,0,0,8"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#2962FF" Tag="#2962FF" Click="DefaultColor_Click"/>
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#089981" Tag="#089981" Click="DefaultColor_Click"/>
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#F23645" Tag="#F23645" Click="DefaultColor_Click"/>
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#FF9800" Tag="#FF9800" Click="DefaultColor_Click"/>
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#9C27B0" Tag="#9C27B0" Click="DefaultColor_Click"/>
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#00BCD4" Tag="#00BCD4" Click="DefaultColor_Click"/>
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Margin="0,0,6,0" Background="#F7A600" Tag="#F7A600" Click="DefaultColor_Click"/>
-                                        <Button Style="{StaticResource RailButton}" Width="26" Height="26" Background="#D1D4DC" Tag="#D1D4DC" Click="DefaultColor_Click"/>
-                                    </StackPanel>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
-                        <Popup x:Name="ObjectsPopup" StaysOpen="False" AllowsTransparency="True"
-Placement="Right" PlacementTarget="{Binding ElementName=ObjectsRailButton}">
-                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
-BorderThickness="1" CornerRadius="4" Padding="8" Margin="4,0,0,0" Width="360">
-                                <StackPanel>
-                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                                        <TextBlock Text="📋 Objects — " Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                                        <TextBlock x:Name="ObjectsSymbolText" Text="" Foreground="{DynamicResource TextPrimary}" FontWeight="Bold" FontSize="13" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="0,0,0,8"/>
-                                    <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
-                                        <StackPanel x:Name="ObjectsListPanel"/>
-                                    </ScrollViewer>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="0,8,0,8"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <Button Content="📤 Export template" Style="{StaticResource TvButton}" Click="ExportTemplate_Click" Margin="0,0,6,0"/>
-                                        <Button Content="📥 Import template" Style="{StaticResource TvButton}" Click="ImportTemplate_Click"/>
-                                    </StackPanel>
+                                    <Button x:Name="RemoveAllObjectsItem" Style="{StaticResource TvButtonLeft}" Click="RemoveAllObjects_Click">
+                                        <TextBlock x:Name="RemoveAllObjectsText" Text="Remove 0 drawing(s) &amp; 0 indicator(s)" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <CheckBox x:Name="AlwaysRemoveLockedCheck" Content="Always remove locked drawings"
+Foreground="{DynamicResource TextSecondary}" FontSize="12"
+Margin="8,4,4,4" Click="AlwaysRemoveLocked_Click"/>
                                 </StackPanel>
                             </Border>
                         </Popup>
