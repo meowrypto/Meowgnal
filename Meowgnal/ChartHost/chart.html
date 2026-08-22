@@ -350,6 +350,7 @@
         let syncingRange = false;
         let syncingCrosshair = false;
         let blindMode = false;
+        let lockAllDrawings = false;
         const primarySeriesByChart = new Map();
         const valueByTimeByChart = new Map();
         function allCharts() { return [chart].concat(panes.map(p => p.chart)); }
@@ -1844,6 +1845,7 @@
             return handles;
         }
         function hitTestHandle(d, x, y) {
+            if (lockAllDrawings) return null;
             if (d.locked) return null;
             const handles = getHandles(d);
             for (const h of handles)
@@ -1851,6 +1853,7 @@
             return null;
         }
         function hitTest(d, x, y) {
+            if (lockAllDrawings) return false;
             const tol = 8;
             const g = geometry(d);
             for (const L of g.lines.concat(g.dashed))
@@ -2071,7 +2074,7 @@
                         if (alertY !== null) { ctx.font = '14px Trebuchet MS'; ctx.fillText('🔔', 10, alertY + 5); }
                     }
                 }
-                if (selectedDrawingIds.has(d.id) && !d.locked) {
+                if (selectedDrawingIds.has(d.id) && !d.locked && !lockAllDrawings) {
                     const handles = getHandles(d);
                     for (const h of handles) {
                         ctx.fillStyle = COLORS.accent;
@@ -2265,10 +2268,22 @@
                 if (!msg || !msg.type) return;
                 if (msg.type === 'setCursorMode') { applyCursorMode(msg.mode); return; }
                 if (msg.type === 'setLongPressTooltip') { setLongPressTooltipEnabled(msg.enabled === true); return; }
+                if (msg.type === 'setLockAllDrawings') {
+                    lockAllDrawings = msg.enabled === true;
+                    selectedDrawingIds.clear();
+                    dragState = null;
+                    renderCustomDrawings();
+                    return;
+                }
                 if (msg.type === 'setMagnet') { magnetEnabled = msg.enabled === true; magnetMode = msg.mode === 'strong' ? 'strong' : 'weak'; return; }
                 if (msg.type === 'addIndicator') { addIndicatorToChart(msg); return; }
                 if (msg.type === 'clearIndicators') { clearIndicators(); return; }
                 if (msg.type === 'setBlindMode') { blindMode = msg.blind === true; updateTimeScaleVisibility(); return; }
+                if (msg.type === 'setLockAllDrawings') {
+                    lockAllDrawings = msg.enabled === true;
+                    if (lockAllDrawings) { selectedDrawingIds.clear(); renderCustomDrawings(); }
+                    return;
+                }
                 if (msg.type === 'appendCandle') { appendCandle(msg.candle); return; }
                 if (msg.type === 'setCandles') {
                     clearIndicators();

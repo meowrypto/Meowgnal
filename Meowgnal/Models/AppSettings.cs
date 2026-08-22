@@ -67,6 +67,8 @@ public sealed class AppSettings
     // Magnet tool: snap new drawing points to OHLC values (weak = near only, strong = always)
     public bool MagnetEnabled { get; set; } = false;
     public string MagnetMode { get; set; } = "weak";
+    // Lock All Drawings: global toggle that locks every drawing on the chart
+    public bool LockAllDrawingsEnabled { get; set; } = false;
     // Keep Drawing: stay in the active drawing tool after each completed drawing
     public bool KeepDrawingEnabled { get; set; } = false;
     // Cursor tools: show an OHLC tooltip while the mouse button is held down.

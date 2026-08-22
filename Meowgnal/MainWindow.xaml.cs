@@ -137,6 +137,7 @@ public partial class MainWindow : Window
         UpdateCursorButtonIcon();
         UpdateKeepDrawingButtonVisual();
         UpdateMagnetButtonVisual();
+        UpdateLockAllDrawingsButtonVisual();
         LongPressTooltipToggle.IsChecked = SettingsStorageService.Load().LongPressTooltipEnabled;
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
@@ -2669,6 +2670,27 @@ public partial class MainWindow : Window
         }
         await SendDrawingModeToChartAsync("zoom");
     }
+    private void LockAllDrawingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = SettingsStorageService.Load();
+        settings.LockAllDrawingsEnabled = !settings.LockAllDrawingsEnabled;
+        SettingsStorageService.Save(settings);
+        UpdateLockAllDrawingsButtonVisual();
+        _ = SendLockAllToChartAsync();
+    }
+    private void UpdateLockAllDrawingsButtonVisual()
+    {
+        var settings = SettingsStorageService.Load();
+        LockAllDrawingsButton.Background = settings.LockAllDrawingsEnabled ? (Brush)FindResource("Accent") : Brushes.Transparent;
+        LockAllIcon.Content = FindResource(settings.LockAllDrawingsEnabled ? "Icon_lockall_active" : "Icon_lockall");
+    }
+    private async Task SendLockAllToChartAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+        JsonSerializer.Serialize(new { type = "setLockAllDrawings", enabled = SettingsStorageService.Load().LockAllDrawingsEnabled }));
+    }
     private async void MagnetButton_Click(object sender, RoutedEventArgs e)
     {
         var settings = SettingsStorageService.Load();
@@ -3792,7 +3814,7 @@ or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" =
         _ = SendThemeToChartAsync();
         _ = SendCursorModeToChartAsync(_activeCursorMode);
         _ = SendLongPressTooltipAsync(SettingsStorageService.Load().LongPressTooltipEnabled);
-        _ = SendMagnetToChartAsync();
+        _ = SendLockAllToChartAsync();
     }
 
     private async Task SendCandlesToChartAsync(List<Bar> bars)
