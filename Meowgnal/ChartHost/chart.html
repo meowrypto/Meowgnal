@@ -1760,7 +1760,7 @@
                 case 'pin': g.glyphs.push({ t: 'pin', x: x1, y: y1 }); g.anchors.push([x1, y1, 14]); break;
                 case 'flag':
                 case 'flagmark': g.glyphs.push({ t: 'flag', x: x1, y: y1 }); g.anchors.push([x1, y1, 16]); break;
-                case 'sticker': g.texts.push({ x: x1, y: y1, s: d.label || '🐱', size: d.fontSize || 22, family: 'Trebuchet MS' }); g.anchors.push([x1, y1, 16]); break;
+                case 'sticker': g.texts.push({ x: x1, y: y1, s: d.label || '🐱', size: d.fontSize || 22, family: d.fontFamily || 'Trebuchet MS' }); g.anchors.push([x1, y1, 16]); break;
             }
             return g;
         }

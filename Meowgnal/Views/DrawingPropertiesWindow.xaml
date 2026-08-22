@@ -212,6 +212,14 @@ Stroke="{StaticResource BorderColor}" StrokeThickness="1" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
+                        <StackPanel x:Name="StickerSection" Visibility="Collapsed">
+                            <TextBlock Text="STICKER SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
+                            <TextBlock Text="Size:" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Slider x:Name="StickerSizeSlider" Minimum="12" Maximum="72" Value="22" Width="200" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="StickerSizeLabel" Text="22" Foreground="{StaticResource TextMuted}" FontSize="11" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
                         <StackPanel x:Name="TableSection" Visibility="Collapsed">
                             <TextBlock Text="TABLE SETTINGS" Foreground="{StaticResource TextMuted}" FontSize="10" FontWeight="SemiBold" Margin="0,8,0,6"/>
                             <TextBlock Text="Rows (1-20):" Foreground="{StaticResource TextMuted}" FontSize="11" Margin="0,0,0,4"/>

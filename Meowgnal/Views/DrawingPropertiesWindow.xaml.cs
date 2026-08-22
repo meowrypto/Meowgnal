@@ -65,7 +65,7 @@ public partial class DrawingPropertiesWindow : Window
         StyleCombo.SelectedItem = drawing.LineStyle;
 
         // Font family options for text drawings
-        var fonts = new[] { "Trebuchet MS", "Arial", "Courier New", "Georgia", "Verdana", "Times New Roman", "Segoe UI" };
+        var fonts = new[] { "Trebuchet MS", "Arial", "Courier New", "Georgia", "Verdana", "Times New Roman", "Segoe UI", "Segoe UI Emoji", "Segoe MDL2 Assets" };
         foreach (var f in fonts) FontCombo.Items.Add(f);
         FontCombo.SelectedItem = string.IsNullOrEmpty(drawing.FontFamily) ? "Trebuchet MS" : drawing.FontFamily;
 
@@ -166,7 +166,10 @@ public partial class DrawingPropertiesWindow : Window
 
         if (drawing.Kind == DrawingKind.Sticker)
         {
-            TextSection.Visibility = Visibility.Visible;
+            StickerSection.Visibility = Visibility.Visible;
+            StickerSizeSlider.Value = drawing.FontSize;
+            StickerSizeLabel.Text = drawing.FontSize.ToString();
+            StickerSizeSlider.ValueChanged += (_, _) => StickerSizeLabel.Text = ((int)StickerSizeSlider.Value).ToString();
         }
         else if (drawing.Kind == DrawingKind.GannFan)
         {
@@ -613,6 +616,10 @@ public partial class DrawingPropertiesWindow : Window
         {
             _drawing.FontFamily = FontCombo.SelectedItem as string ?? "Trebuchet MS";
             _drawing.FontSize = FontSizeCombo.SelectedItem is int s ? s : 13;
+        }
+        if (_drawing.Kind == DrawingKind.Sticker)
+        {
+            _drawing.FontSize = (int)StickerSizeSlider.Value;
         }
         // ===== New: Save Text & Table properties =====
         if (_drawing.Kind is DrawingKind.Text or DrawingKind.AnchoredText or DrawingKind.Note or DrawingKind.AnchoredNote or DrawingKind.Callout or DrawingKind.Comment or DrawingKind.PriceNote or DrawingKind.Signpost)

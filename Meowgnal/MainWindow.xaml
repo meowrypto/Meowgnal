@@ -161,6 +161,11 @@ UseAeroCaptionButtons="False"/>
             <Path Data="M3,14 L4,10 L11,3 L14,6 L7,13 Z" Fill="#B2B5BE"/>
             <Line X1="3" Y1="16" X2="15" Y2="16" Stroke="#B2B5BE" StrokeThickness="1.2"/>
         </Canvas>
+        <Canvas x:Key="Icon_stamp" x:Shared="False" Width="18" Height="18">
+            <Rectangle Canvas.Left="3" Canvas.Top="10" Width="12" Height="6" RadiusX="1" RadiusY="1" Fill="#B2B5BE"/>
+            <Path Data="M6,10 L6,6 L7.5,3 L10.5,3 L12,6 L12,10" Stroke="#B2B5BE" StrokeThickness="1.5" Fill="Transparent"/>
+            <Ellipse Canvas.Left="7" Canvas.Top="1" Width="4" Height="3" Fill="#B2B5BE"/>
+        </Canvas>
         <Canvas x:Key="Icon_forecast" x:Shared="False" Width="18" Height="18">
             <Line X1="2" Y1="16" X2="16" Y2="16" Stroke="#B2B5BE" StrokeThickness="1.2"/>
             <Line X1="2" Y1="16" X2="6" Y2="8" Stroke="#B2B5BE" StrokeThickness="1.5"/>
@@ -747,6 +752,287 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                         <TextBlock Text="Table (editable grid)" VerticalAlignment="Center"/>
                                     </Button>
                                 </StackPanel>
+                            </Border>
+                        </Popup>
+                        <Button x:Name="IconStampGroupButton" Style="{StaticResource RailButton}" Click="IconStampGroup_Click" ToolTip="Icons &amp; Stickers">
+                            <ContentControl Content="{StaticResource Icon_stamp}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="IconStampPopup" StaysOpen="False" AllowsTransparency="True"
+       Placement="Right" PlacementTarget="{Binding ElementName=IconStampGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+            BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0" Width="340">
+                                <TabControl TabStripPlacement="Bottom" Background="Transparent" BorderThickness="0">
+                                    <TabItem Header="EMOJI">
+                                        <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                                            <UniformGrid Columns="8" Margin="4">
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🚀" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🚀" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:📈" Click="IconStampItem_Click">
+                                                    <TextBlock Text="📈" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:📉" Click="IconStampItem_Click">
+                                                    <TextBlock Text="📉" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔥" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔥" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:⚠️" Click="IconStampItem_Click">
+                                                    <TextBlock Text="⚠️" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:✅" Click="IconStampItem_Click">
+                                                    <TextBlock Text="✅" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:❌" Click="IconStampItem_Click">
+                                                    <TextBlock Text="❌" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🎯" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🎯" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:💰" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💰" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🐂" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🐂" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🐻" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🐻" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:⭐" Click="IconStampItem_Click">
+                                                    <TextBlock Text="⭐" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:💎" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💎" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🏆" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🏆" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:💣" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💣" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:📊" Click="IconStampItem_Click">
+                                                    <TextBlock Text="📊" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:📋" Click="IconStampItem_Click">
+                                                    <TextBlock Text="📋" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔔" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔔" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔕" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔕" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:💡" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💡" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🧠" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🧠" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:👁️" Click="IconStampItem_Click">
+                                                    <TextBlock Text="👁️" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🤑" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🤑" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:😱" Click="IconStampItem_Click">
+                                                    <TextBlock Text="😱" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:😰" Click="IconStampItem_Click">
+                                                    <TextBlock Text="😰" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:📱" Click="IconStampItem_Click">
+                                                    <TextBlock Text="📱" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:💻" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💻" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🌐" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🌐" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔑" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔑" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔒" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔒" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:📌" Click="IconStampItem_Click">
+                                                    <TextBlock Text="📌" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:📍" Click="IconStampItem_Click">
+                                                    <TextBlock Text="📍" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🏷️" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🏷️" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:💹" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💹" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🗓️" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🗓️" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:⏰" Click="IconStampItem_Click">
+                                                    <TextBlock Text="⏰" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🎉" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🎉" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🎊" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🎊" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:💫" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💫" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:✨" Click="IconStampItem_Click">
+                                                    <TextBlock Text="✨" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🌟" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🌟" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔶" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔶" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔷" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔷" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔴" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔴" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🟢" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🟢" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🟡" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🟡" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🔵" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔵" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🟣" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🟣" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🟤" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🟤" FontSize="18"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="e:🦈" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🦈" FontSize="18"/>
+                                                </Button>
+                                            </UniformGrid>
+                                        </ScrollViewer>
+                                    </TabItem>
+                                    <TabItem Header="ICON">
+                                        <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                                            <UniformGrid Columns="5" Margin="4">
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE70E;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE70E;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE70D;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE70D;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE7C1;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7C1;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE7B3;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7B3;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE72E;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE72E;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE734;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE734;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE7E8;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE7E8;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE73E;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE73E;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE711;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE711;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE897;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE897;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE783;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE783;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE8C7;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8C7;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE9D2;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE9D2;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE725;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE725;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE945;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE945;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE774;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE774;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE823;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE823;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE718;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE718;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE8EC;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE8EC;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="32" Height="32" Tag="i:&#xE70F;" Click="IconStampItem_Click">
+                                                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE70F;" FontSize="18" Foreground="{DynamicResource TextPrimary}"/>
+                                                </Button>
+                                            </UniformGrid>
+                                        </ScrollViewer>
+                                    </TabItem>
+                                    <TabItem Header="STICKER">
+                                        <ScrollViewer MaxHeight="360" VerticalScrollBarVisibility="Auto">
+                                            <UniformGrid Columns="4" Margin="4">
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🐂" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🐂" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🐻" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🐻" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🚀" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🚀" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:💣" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💣" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:👑" Click="IconStampItem_Click">
+                                                    <TextBlock Text="👑" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🔥" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🔥" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:💎" Click="IconStampItem_Click">
+                                                    <TextBlock Text="💎" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🙌" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🙌" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🏆" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🏆" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🎯" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🎯" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:⚡" Click="IconStampItem_Click">
+                                                    <TextBlock Text="⚡" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🌊" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🌊" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🦈" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🦈" FontSize="32"/>
+                                                </Button>
+                                                <Button Style="{StaticResource RailButton}" Width="48" Height="48" Tag="s:🐋" Click="IconStampItem_Click">
+                                                    <TextBlock Text="🐋" FontSize="32"/>
+                                                </Button>
+                                            </UniformGrid>
+                                        </ScrollViewer>
+                                    </TabItem>
+                                </TabControl>
                             </Border>
                         </Popup>
                         <Button x:Name="ForecastGroupButton" Style="{StaticResource RailButton}" Click="ForecastGroup_Click" ToolTip="Forecasting &amp; measurement tools">

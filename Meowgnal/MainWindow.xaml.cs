@@ -70,6 +70,9 @@ public partial class MainWindow : Window
     private readonly DrawingUndoManager _undoManager = new();
     private string? _activeDrawingMode = null;
     private string _activeCursorMode = "cross";
+    private string? _pendingStickerLabel = null;
+    private int _pendingStickerFontSize = 22;
+    private string _pendingStickerFontFamily = "Segoe UI Emoji";
 
     // Price alerts state
     private PriceAlertsFile _alerts = new();
@@ -1732,6 +1735,13 @@ public partial class MainWindow : Window
                         newDrawing.Label = tLabelEl.GetString() ?? "";
                     if (drawingEl.TryGetProperty("color", out var tColorEl))
                         newDrawing.Color = tColorEl.GetString() ?? "#2962FF";
+                    if (kind == DrawingKind.Sticker && _pendingStickerLabel is not null)
+                    {
+                        newDrawing.Label = _pendingStickerLabel;
+                        newDrawing.FontSize = _pendingStickerFontSize;
+                        newDrawing.FontFamily = _pendingStickerFontFamily;
+                        _pendingStickerLabel = null;
+                    }
 
                     if (kind is DrawingKind.Pitchfork or DrawingKind.SchiffPitchfork
                         or DrawingKind.ModifiedSchiffPitchfork or DrawingKind.InsidePitchfork)
@@ -2524,47 +2534,90 @@ public partial class MainWindow : Window
 
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
-        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         if (!CursorPopup.IsOpen) RefreshCursorMenuHighlight();
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
 
     private void LineGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         LinePopup.IsOpen = !LinePopup.IsOpen;
     }
 
     private void FibGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         FibPopup.IsOpen = !FibPopup.IsOpen;
     }
 
     private void PatternsGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         PatternsPopup.IsOpen = !PatternsPopup.IsOpen;
     }
 
     private void BrushesShapesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         BrushesShapesPopup.IsOpen = !BrushesShapesPopup.IsOpen;
     }
 
     private void TextNotesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         TextNotesPopup.IsOpen = !TextNotesPopup.IsOpen;
     }
 
+    private void IconStampGroup_Click(object sender, RoutedEventArgs e)
+    {
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false;
+        PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false;
+        TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        IconStampPopup.IsOpen = !IconStampPopup.IsOpen;
+    }
+    private async void IconStampItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string tag) return;
+        string label;
+        int fontSize;
+        string fontFamily;
+        if (tag.StartsWith("e:"))
+        {
+            label = tag.Substring(2);
+            fontSize = 22;
+            fontFamily = "Segoe UI Emoji";
+        }
+        else if (tag.StartsWith("i:"))
+        {
+            label = tag.Substring(2);
+            fontSize = 22;
+            fontFamily = "Segoe MDL2 Assets";
+        }
+        else if (tag.StartsWith("s:"))
+        {
+            label = tag.Substring(2);
+            fontSize = 36;
+            fontFamily = "Segoe UI Emoji";
+        }
+        else return;
+        _pendingStickerLabel = label;
+        _pendingStickerFontSize = fontSize;
+        _pendingStickerFontFamily = fontFamily;
+        IconStampPopup.IsOpen = false;
+        SetActiveTool(IconStampGroupButton);
+        _activeDrawingMode = "sticker";
+        if (_activeCursorMode != "cross")
+        {
+            _activeCursorMode = "cross";
+            UpdateCursorButtonIcon();
+        }
+        await SendDrawingModeToChartAsync("sticker");
+    }
     private void ForecastGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false;
-        ForecastPopup.IsOpen = !ForecastPopup.IsOpen;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
     }
-
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
@@ -2658,7 +2711,7 @@ or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" =
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, BrushesShapesGroupButton, TextNotesGroupButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, BrushesShapesGroupButton, TextNotesGroupButton, IconStampGroupButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");
