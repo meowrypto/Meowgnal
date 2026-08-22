@@ -135,6 +135,7 @@ public partial class MainWindow : Window
         ApplyChartType("candles");
         SetActiveTool(null);
         UpdateCursorButtonIcon();
+        UpdateMagnetButtonVisual();
         LongPressTooltipToggle.IsChecked = SettingsStorageService.Load().LongPressTooltipEnabled;
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
@@ -2654,6 +2655,46 @@ public partial class MainWindow : Window
         }
         await SendDrawingModeToChartAsync("zoom");
     }
+    private async void MagnetButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = SettingsStorageService.Load();
+        settings.MagnetEnabled = !settings.MagnetEnabled;
+        SettingsStorageService.Save(settings);
+        UpdateMagnetButtonVisual();
+        await SendMagnetToChartAsync();
+    }
+    private void MagnetButton_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        UpdateMagnetButtonVisual();
+        MagnetPopup.IsOpen = true;
+    }
+    private async void MagnetModeItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button btn || btn.Tag is not string mode) return;
+        var settings = SettingsStorageService.Load();
+        settings.MagnetMode = mode == "strong" ? "strong" : "weak";
+        settings.MagnetEnabled = true;
+        SettingsStorageService.Save(settings);
+        MagnetPopup.IsOpen = false;
+        UpdateMagnetButtonVisual();
+        await SendMagnetToChartAsync();
+    }
+    private void UpdateMagnetButtonVisual()
+    {
+        var settings = SettingsStorageService.Load();
+        MagnetButton.Background = settings.MagnetEnabled ? (Brush)FindResource("Accent") : Brushes.Transparent;
+        MagnetIcon.Content = FindResource(settings.MagnetEnabled ? "Icon_magnet_active" : "Icon_magnet");
+        MagnetWeakItem.Foreground = settings.MagnetMode == "weak" ? (Brush)FindResource("Accent") : (Brush)FindResource("TextSecondary");
+        MagnetStrongItem.Foreground = settings.MagnetMode == "strong" ? (Brush)FindResource("Accent") : (Brush)FindResource("TextSecondary");
+    }
+    private async Task SendMagnetToChartAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        var settings = SettingsStorageService.Load();
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+        JsonSerializer.Serialize(new { type = "setMagnet", enabled = settings.MagnetEnabled, mode = settings.MagnetMode }));
+    }
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
@@ -3724,6 +3765,7 @@ or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" =
         _ = SendThemeToChartAsync();
         _ = SendCursorModeToChartAsync(_activeCursorMode);
         _ = SendLongPressTooltipAsync(SettingsStorageService.Load().LongPressTooltipEnabled);
+        _ = SendMagnetToChartAsync();
     }
 
     private async Task SendCandlesToChartAsync(List<Bar> bars)

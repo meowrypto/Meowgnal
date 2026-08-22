@@ -447,6 +447,9 @@
         let zoomState = null;
         let zoomPriceLock = null;
         let suppressNextClick = false;
+        let magnetEnabled = false;
+        let magnetMode = 'weak';
+        const MAGNET_WEAK_THRESHOLD_PX = 12;
         const HANDLE_SIZE = 10;
         let clipboardDrawing = null;
         const drawCanvas = document.createElement('canvas');
@@ -861,6 +864,27 @@
             const threshold = Math.abs(price) * 0.005;
             if (minDist <= threshold) return closest;
             return price;
+        }
+        // Ctrl temporarily inverts the magnet state while drawing
+        function magnetEffective() {
+            return isCtrlPressed ? !magnetEnabled : magnetEnabled;
+        }
+        function magnetSnapPrice(rawPrice, barTime, yPix) {
+            if (!magnetEffective() || !activeSeries) return rawPrice;
+            const bar = rawData.find(c => c.time === barTime);
+            if (!bar) return rawPrice;
+            const candidates = [bar.open, bar.high, bar.low, bar.close];
+            let best = null;
+            let bestDist = Infinity;
+            for (const v of candidates) {
+                const vy = activeSeries.priceToCoordinate(v);
+                if (vy === null || vy === undefined) continue;
+                const d = Math.abs(vy - yPix);
+                if (d < bestDist) { bestDist = d; best = v; }
+            }
+            if (best === null) return rawPrice;
+            if (magnetMode === 'strong') return best;
+            return bestDist <= MAGNET_WEAK_THRESHOLD_PX ? best : rawPrice;
         }
         function applyPositions() {
             if (activeSeries !== null) for (const l of positionLines) { try { activeSeries.removePriceLine(l); } catch (e) { } }
@@ -2240,6 +2264,7 @@
                 if (!msg || !msg.type) return;
                 if (msg.type === 'setCursorMode') { applyCursorMode(msg.mode); return; }
                 if (msg.type === 'setLongPressTooltip') { setLongPressTooltipEnabled(msg.enabled === true); return; }
+                if (msg.type === 'setMagnet') { magnetEnabled = msg.enabled === true; magnetMode = msg.mode === 'strong' ? 'strong' : 'weak'; return; }
                 if (msg.type === 'addIndicator') { addIndicatorToChart(msg); return; }
                 if (msg.type === 'clearIndicators') { clearIndicators(); return; }
                 if (msg.type === 'setBlindMode') { blindMode = msg.blind === true; updateTimeScaleVisibility(); return; }
@@ -2464,7 +2489,10 @@
                 freehand = { points: [] };
                 const t = chart.timeScale().coordinateToTime(e.clientX - rect.left);
                 const p = activeSeries ? activeSeries.coordinateToPrice(e.clientY - rect.top) : null;
-                if (t !== null && p !== null && p !== undefined) freehand.points.push({ time: snapToBarTime(t), price: p });
+                if (t !== null && p !== null && p !== undefined) {
+                    const bt = snapToBarTime(t);
+                    freehand.points.push({ time: bt, price: magnetSnapPrice(p, bt, e.clientY - rect.top) });
+                }
                 isDragging = true;
                 chart.applyOptions({ handleScroll: false, handleScale: false });
                 e.preventDefault();
@@ -2538,7 +2566,8 @@
                 const t = chart.timeScale().coordinateToTime(e.clientX - rect.left);
                 const p = activeSeries ? activeSeries.coordinateToPrice(e.clientY - rect.top) : null;
                 if (t !== null && p !== null && p !== undefined) {
-                    const pt = { time: snapToBarTime(t), price: p };
+                    const bt = snapToBarTime(t);
+                    const pt = { time: bt, price: magnetSnapPrice(p, bt, e.clientY - rect.top) };
                     const lastPt = freehand.points[freehand.points.length - 1];
                     if (!lastPt || lastPt.time !== pt.time || lastPt.price !== pt.price) freehand.points.push(pt);
                     pendingPoints = freehand.points;
@@ -2818,7 +2847,7 @@
             const price = activeSeries.coordinateToPrice(y);
             if (price === null || price === undefined) return;
             const snappedTime = snapToBarTime(param.time);
-            const snappedPrice = snapPriceToCandle(price, snappedTime);
+            const snappedPrice = magnetEffective() ? magnetSnapPrice(price, snappedTime, y) : snapPriceToCandle(price, snappedTime);
             pendingPoints.push({ time: snappedTime, price: snappedPrice });
             const need = NEED[drawingMode] || 2;
             const isMulti = drawingMode === 'polyline' || drawingMode === 'path';

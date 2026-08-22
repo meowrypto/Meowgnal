@@ -174,6 +174,16 @@ UseAeroCaptionButtons="False"/>
             <Line X1="14" Y1="4" X2="17" Y2="7" Stroke="#B2B5BE" StrokeThickness="1.5" StrokeDashArray="2,2"/>
             <Polyline Points="12,2 14,4 16,2" Stroke="#B2B5BE" StrokeThickness="1" Fill="Transparent"/>
         </Canvas>
+        <Canvas x:Key="Icon_magnet" x:Shared="False" Width="18" Height="18">
+            <Path Data="M5,2 L5,9 A4,4 0 0 0 13,9 L13,2 L10,2 L10,9 A1,1 0 0 1 8,9 L8,2 Z" Fill="#B2B5BE"/>
+            <Line X1="5" Y1="4" X2="8" Y2="4" Stroke="#131722" StrokeThickness="1"/>
+            <Line X1="10" Y1="4" X2="13" Y2="4" Stroke="#131722" StrokeThickness="1"/>
+        </Canvas>
+        <Canvas x:Key="Icon_magnet_active" x:Shared="False" Width="18" Height="18">
+            <Path Data="M5,2 L5,9 A4,4 0 0 0 13,9 L13,2 L10,2 L10,9 A1,1 0 0 1 8,9 L8,2 Z" Fill="{DynamicResource Accent}"/>
+            <Line X1="5" Y1="4" X2="8" Y2="4" Stroke="#FFFFFF" StrokeThickness="1"/>
+            <Line X1="10" Y1="4" X2="13" Y2="4" Stroke="#FFFFFF" StrokeThickness="1"/>
+        </Canvas>
         <Style x:Key="WindowControlButton" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
@@ -1105,6 +1115,24 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 <Line X1="7" Y1="5" X2="7" Y2="9" Stroke="{DynamicResource TextSecondary}" StrokeThickness="1"/>
                             </Canvas>
                         </Button>
+                        <Button x:Name="MagnetButton" Style="{StaticResource RailButton}" Click="MagnetButton_Click"
+MouseRightButtonUp="MagnetButton_RightClick" ToolTip="Magnet — snap to OHLC (click: on/off, right-click: mode)">
+                            <ContentControl x:Name="MagnetIcon" Content="{StaticResource Icon_magnet}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="MagnetPopup" StaysOpen="False" AllowsTransparency="True"
+Placement="Right" PlacementTarget="{Binding ElementName=MagnetButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button x:Name="MagnetWeakItem" Style="{StaticResource TvButtonLeft}" Tag="weak" Click="MagnetModeItem_Click">
+                                        <TextBlock Text="Weak Magnet" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button x:Name="MagnetStrongItem" Style="{StaticResource TvButtonLeft}" Tag="strong" Click="MagnetModeItem_Click">
+                                        <TextBlock Text="Strong Magnet" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
                         <Rectangle Width="24" Height="1" Fill="{DynamicResource BorderLine}" Margin="0,6,0,6"/>
                         <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
 Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">

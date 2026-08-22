@@ -64,7 +64,9 @@ public sealed class AppSettings
 
     // Phase 27 — Hide all drawings toggle (eye button)
     public bool DrawingsHidden { get; set; }
-
+    // Magnet tool: snap new drawing points to OHLC values (weak = near only, strong = always)
+    public bool MagnetEnabled { get; set; } = false;
+    public string MagnetMode { get; set; } = "weak";
     // Cursor tools: show an OHLC tooltip while the mouse button is held down.
     public bool LongPressTooltipEnabled { get; set; }
 
