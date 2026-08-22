@@ -192,6 +192,15 @@ UseAeroCaptionButtons="False"/>
             <Rectangle Canvas.Left="3" Canvas.Top="8" Width="12" Height="8" RadiusX="1.5" RadiusY="1.5" Fill="#FFFFFF"/>
             <Path Data="M6,8 L6,6 A3,3 0 0 1 12,6 L12,8" Stroke="#FFFFFF" StrokeThickness="1.5" Fill="Transparent"/>
         </Canvas>
+        <Canvas x:Key="Icon_hide" x:Shared="False" Width="18" Height="18">
+            <Path Data="M2,9 Q9,3 16,9 Q9,15 2,9 Z" Stroke="#B2B5BE" StrokeThickness="1.5" Fill="Transparent"/>
+            <Ellipse Canvas.Left="7" Canvas.Top="7" Width="4" Height="4" Fill="#B2B5BE"/>
+        </Canvas>
+        <Canvas x:Key="Icon_hide_active" x:Shared="False" Width="18" Height="18">
+            <Path Data="M2,9 Q9,3 16,9 Q9,15 2,9 Z" Stroke="#FFFFFF" StrokeThickness="1.5" Fill="Transparent"/>
+            <Ellipse Canvas.Left="7" Canvas.Top="7" Width="4" Height="4" Fill="#FFFFFF"/>
+            <Line X1="3" Y1="3" X2="15" Y2="15" Stroke="#FFFFFF" StrokeThickness="1.5"/>
+        </Canvas>
         <Canvas x:Key="Icon_magnet" x:Shared="False" Width="18" Height="18">
             <Path Data="M5,2 L5,9 A4,4 0 0 0 13,9 L13,2 L10,2 L10,9 A1,1 0 0 1 8,9 L8,2 Z" Fill="#B2B5BE"/>
             <Line X1="5" Y1="4" X2="8" Y2="4" Stroke="#131722" StrokeThickness="1"/>
@@ -1163,9 +1172,9 @@ Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important l
 Click="LockAllDrawingsButton_Click" ToolTip="Lock All Drawings — prevent selecting / moving / deleting">
                             <ContentControl x:Name="LockAllIcon" Content="{StaticResource Icon_lockall}" Width="18" Height="18"/>
                         </Button>
-                        <Button x:Name="ToggleDrawingsButton" Style="{StaticResource RailButton}"
-Click="ToggleDrawingsVisibility_Click" ToolTip="Show / hide all drawings">
-                            <TextBlock Text="👁" FontSize="15"/>
+                        <Button x:Name="HideDrawingsButton" Style="{StaticResource RailButton}"
+        Click="HideDrawingsButton_Click" ToolTip="Hide Drawings — temporarily hide all drawings from view">
+                            <ContentControl x:Name="HideDrawingsIcon" Content="{StaticResource Icon_hide}" Width="18" Height="18"/>
                         </Button>
                         <Button x:Name="ObjectsRailButton" Style="{StaticResource RailButton}"
 Click="ObjectsButton_Click" ToolTip="Objects list — manage drawings">

@@ -351,6 +351,7 @@
         let syncingCrosshair = false;
         let blindMode = false;
         let lockAllDrawings = false;
+        let hideDrawings = false;
         const primarySeriesByChart = new Map();
         const valueByTimeByChart = new Map();
         function allCharts() { return [chart].concat(panes.map(p => p.chart)); }
@@ -1905,6 +1906,12 @@
         function renderCustomDrawings() {
             if (!ctx || !activeSeries) return;
             ctx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+            if (hideDrawings) {
+                drawMeasureOverlay();
+                drawZoomOverlay();
+                renderTables();
+                return;
+            }
             for (const p of pendingPoints) {
                 const x = px(p.time), y = py(p.price);
                 if (x !== null && y !== null) {
@@ -2272,6 +2279,11 @@
                     lockAllDrawings = msg.enabled === true;
                     selectedDrawingIds.clear();
                     dragState = null;
+                    renderCustomDrawings();
+                    return;
+                }
+                if (msg.type === 'setHideDrawings') {
+                    hideDrawings = msg.enabled === true;
                     renderCustomDrawings();
                     return;
                 }

@@ -70,6 +70,7 @@ public partial class MainWindow : Window
     private readonly DrawingUndoManager _undoManager = new();
     private string? _activeDrawingMode = null;
     private string _activeCursorMode = "cross";
+    private bool _hideDrawingsEnabled = false;
     private string? _pendingStickerLabel = null;
     private int _pendingStickerFontSize = 22;
     private string _pendingStickerFontFamily = "Segoe UI Emoji";
@@ -138,6 +139,7 @@ public partial class MainWindow : Window
         UpdateKeepDrawingButtonVisual();
         UpdateMagnetButtonVisual();
         UpdateLockAllDrawingsButtonVisual();
+        UpdateHideDrawingsButtonVisual();
         LongPressTooltipToggle.IsChecked = SettingsStorageService.Load().LongPressTooltipEnabled;
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
         RebuildTimeframeBar();
@@ -2328,12 +2330,25 @@ public partial class MainWindow : Window
 
     private void TrashButton_Click(object sender, RoutedEventArgs e) => TrashPopup.IsOpen = true;
 
-    private async void ToggleDrawingsVisibility_Click(object sender, RoutedEventArgs e)
+    private void HideDrawingsButton_Click(object sender, RoutedEventArgs e)
     {
-        var settings = SettingsStorageService.Load();
-        settings.DrawingsHidden = !settings.DrawingsHidden;
-        SettingsStorageService.Save(settings);
-        await SendDrawingsToChartAsync();
+        _hideDrawingsEnabled = !_hideDrawingsEnabled;
+        UpdateHideDrawingsButtonVisual();
+        _ = SendHideDrawingsToChartAsync();
+    }
+
+    private void UpdateHideDrawingsButtonVisual()
+    {
+        HideDrawingsButton.Background = _hideDrawingsEnabled ? (Brush)FindResource("Accent") : Brushes.Transparent;
+        HideDrawingsIcon.Content = FindResource(_hideDrawingsEnabled ? "Icon_hide_active" : "Icon_hide");
+    }
+
+    private async Task SendHideDrawingsToChartAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "setHideDrawings", enabled = _hideDrawingsEnabled }));
     }
 
     private void ClearAllDrawings_Click(object sender, RoutedEventArgs e)
@@ -2734,8 +2749,13 @@ public partial class MainWindow : Window
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
+        if (_hideDrawingsEnabled && !tag.StartsWith("cur_") && tag != "clear" && tag != "auto_sr")
+        {
+            _hideDrawingsEnabled = false;
+            UpdateHideDrawingsButtonVisual();
+            _ = SendHideDrawingsToChartAsync();
+        }
         var symbolClean = _chartSymbol.Replace("/", "");
-
         if (tag == "clear")
         {
             var res = MessageBox.Show($"Delete all drawings for {_chartSymbol}?", "Meowgnal", MessageBoxButton.YesNo, MessageBoxImage.Question);
@@ -2914,16 +2934,8 @@ or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" =
         try { await _chartPageReady.Task; } catch { return; }
         if (ChartWebView.CoreWebView2 is null) return;
         var symbolClean = _chartSymbol.Replace("/", "");
-
-        if (SettingsStorageService.Load().DrawingsHidden)
-        {
-            ChartWebView.CoreWebView2.PostWebMessageAsJson(
-                JsonSerializer.Serialize(new { type = "setDrawings", drawings = Array.Empty<object>() }));
-            return;
-        }
-
         var drawings = _drawingsFile.Drawings
-            .Where(d => d.Symbol == symbolClean && d.IsVisible)
+                .Where(d => d.Symbol == symbolClean && d.IsVisible)
             .Select(d => new
             {
                 id = d.Id,
