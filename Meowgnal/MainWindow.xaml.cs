@@ -2351,6 +2351,101 @@ public partial class MainWindow : Window
             JsonSerializer.Serialize(new { type = "setHideDrawings", enabled = _hideDrawingsEnabled }));
     }
 
+    private void RemoveObjectsGroup_Click(object sender, RoutedEventArgs e)
+    {
+        RemoveObjectsPopup.IsOpen = !RemoveObjectsPopup.IsOpen;
+    }
+
+    private async void RemoveDrawings_Click(object sender, RoutedEventArgs e)
+    {
+        RemoveObjectsPopup.IsOpen = false;
+        var symbolClean = _chartSymbol.Replace("/", "");
+        var drawingCount = _drawingsFile.Drawings.Count(d => d.Symbol == symbolClean);
+        if (drawingCount == 0)
+        {
+            NotificationService.ShowToast("Meowgnal", "No drawings to remove.");
+            return;
+        }
+        var res = MessageBox.Show(
+            $"Are you sure you want to remove all {drawingCount} drawings? This action cannot be undone.",
+            "Remove Drawings",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (res != MessageBoxResult.Yes) return;
+        CaptureSnapshot();
+        _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
+        DrawingStorageService.Save(_drawingsFile);
+        await SendDrawingsToChartAsync();
+        RebuildObjectList();
+        NotificationService.ShowToast("Meowgnal", $"Removed {drawingCount} drawings.");
+    }
+
+    private void RemoveIndicators_Click(object sender, RoutedEventArgs e)
+    {
+        RemoveObjectsPopup.IsOpen = false;
+        var list = GetActiveIndicators(_chartSymbol);
+        var count = list.Count;
+        if (count == 0)
+        {
+            NotificationService.ShowToast("Meowgnal", "No indicators to remove.");
+            return;
+        }
+        var res = MessageBox.Show(
+            $"Are you sure you want to remove all {count} indicators? This action cannot be undone.",
+            "Remove Indicators",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (res != MessageBoxResult.Yes) return;
+        list.Clear();
+        IndicatorSettingsStorageService.Save(_indicatorSettings);
+        IndicatorPanelControl.RefreshActiveTypes(new List<string>());
+        _ = SendClearIndicatorsToChartAsync();
+        NotificationService.ShowToast("Meowgnal", $"Removed {count} indicators.");
+    }
+
+    private async void RemoveAllObjects_Click(object sender, RoutedEventArgs e)
+    {
+        RemoveObjectsPopup.IsOpen = false;
+        var symbolClean = _chartSymbol.Replace("/", "");
+        var drawingCount = _drawingsFile.Drawings.Count(d => d.Symbol == symbolClean);
+        var indicatorCount = GetActiveIndicators(_chartSymbol).Count;
+        if (drawingCount == 0 && indicatorCount == 0)
+        {
+            NotificationService.ShowToast("Meowgnal", "No objects to remove.");
+            return;
+        }
+        var res = MessageBox.Show(
+            $"Are you sure you want to remove all {drawingCount} drawings and {indicatorCount} indicators? This action cannot be undone.",
+            "Remove All Objects",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Warning);
+        if (res != MessageBoxResult.Yes) return;
+        if (drawingCount > 0)
+        {
+            CaptureSnapshot();
+            _drawingsFile.Drawings.RemoveAll(d => d.Symbol == symbolClean);
+            DrawingStorageService.Save(_drawingsFile);
+            await SendDrawingsToChartAsync();
+            RebuildObjectList();
+        }
+        if (indicatorCount > 0)
+        {
+            GetActiveIndicators(_chartSymbol).Clear();
+            IndicatorSettingsStorageService.Save(_indicatorSettings);
+            IndicatorPanelControl.RefreshActiveTypes(new List<string>());
+            _ = SendClearIndicatorsToChartAsync();
+        }
+        NotificationService.ShowToast("Meowgnal", $"Removed {drawingCount} drawings and {indicatorCount} indicators.");
+    }
+
+    private async Task SendClearIndicatorsToChartAsync()
+    {
+        try { await _chartPageReady.Task; } catch { return; }
+        if (ChartWebView.CoreWebView2 is null) return;
+        ChartWebView.CoreWebView2.PostWebMessageAsJson(
+            JsonSerializer.Serialize(new { type = "clearIndicators" }));
+    }
+
     private void ClearAllDrawings_Click(object sender, RoutedEventArgs e)
     {
         CaptureSnapshot();

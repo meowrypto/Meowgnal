@@ -201,6 +201,11 @@ UseAeroCaptionButtons="False"/>
             <Ellipse Canvas.Left="7" Canvas.Top="7" Width="4" Height="4" Fill="#FFFFFF"/>
             <Line X1="3" Y1="3" X2="15" Y2="15" Stroke="#FFFFFF" StrokeThickness="1.5"/>
         </Canvas>
+        <Canvas x:Key="Icon_removeobjects" x:Shared="False" Width="18" Height="18">
+            <Rectangle Canvas.Left="3" Canvas.Top="3" Width="12" Height="12" Stroke="#B2B5BE" StrokeThickness="1.2" Fill="Transparent"/>
+            <Line X1="6" Y1="6" X2="12" Y2="12" Stroke="#F23645" StrokeThickness="1.5"/>
+            <Line X1="12" Y1="6" X2="6" Y2="12" Stroke="#F23645" StrokeThickness="1.5"/>
+        </Canvas>
         <Canvas x:Key="Icon_magnet" x:Shared="False" Width="18" Height="18">
             <Path Data="M5,2 L5,9 A4,4 0 0 0 13,9 L13,2 L10,2 L10,9 A1,1 0 0 1 8,9 L8,2 Z" Fill="#B2B5BE"/>
             <Line X1="5" Y1="4" X2="8" Y2="4" Stroke="#131722" StrokeThickness="1"/>
@@ -1176,8 +1181,30 @@ Click="LockAllDrawingsButton_Click" ToolTip="Lock All Drawings — prevent selec
         Click="HideDrawingsButton_Click" ToolTip="Hide Drawings — temporarily hide all drawings from view">
                             <ContentControl x:Name="HideDrawingsIcon" Content="{StaticResource Icon_hide}" Width="18" Height="18"/>
                         </Button>
+                        <Button x:Name="RemoveObjectsGroupButton" Style="{StaticResource RailButton}"
+        Click="RemoveObjectsGroup_Click" ToolTip="Remove Objects — delete drawings and/or indicators">
+                            <ContentControl Content="{StaticResource Icon_removeobjects}" Width="18" Height="18"/>
+                        </Button>
+                        <Popup x:Name="RemoveObjectsPopup" StaysOpen="False" AllowsTransparency="True"
+        Placement="Right" PlacementTarget="{Binding ElementName=RemoveObjectsGroupButton}">
+                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}"
+            BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
+                                <StackPanel>
+                                    <Button Style="{StaticResource TvButtonLeft}" Click="RemoveDrawings_Click">
+                                        <TextBlock Text="🗑 Remove Drawings" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Style="{StaticResource TvButtonLeft}" Click="RemoveIndicators_Click">
+                                        <TextBlock Text="📉 Remove Indicators" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,4"/>
+                                    <Button Style="{StaticResource TvButtonLeft}" Click="RemoveAllObjects_Click">
+                                        <TextBlock Text="❌ Remove Drawings &amp; Indicators" VerticalAlignment="Center"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
                         <Button x:Name="ObjectsRailButton" Style="{StaticResource RailButton}"
-Click="ObjectsButton_Click" ToolTip="Objects list — manage drawings">
+        Click="ObjectsButton_Click" ToolTip="Objects list — manage drawings">
                             <TextBlock Text="📋" FontSize="15"/>
                         </Button>
                         <Button x:Name="ColorPickerButton" Style="{StaticResource RailButton}"
