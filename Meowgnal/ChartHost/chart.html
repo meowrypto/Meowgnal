@@ -488,8 +488,9 @@
             }
             if (e.key === 'Escape') {
                 if (zoomState) { zoomState = null; isDragging = false; chart.applyOptions({ handleScroll: true, handleScale: true }); drawingMode = null; post({ type: 'zoomFinished' }); renderCustomDrawings(); return; }
-                if (pendingPoints.length > 0) { pendingPoints = []; renderCustomDrawings(); return; }
-                if (selectedDrawingIds.size > 0) { selectedDrawingIds.clear(); renderCustomDrawings(); }
+                if (pendingPoints.length > 0) { pendingPoints = []; renderCustomDrawings(); post({ type: 'escapePressed' }); return; }
+                if (selectedDrawingIds.size > 0) { selectedDrawingIds.clear(); renderCustomDrawings(); post({ type: 'escapePressed' }); return; }
+                post({ type: 'escapePressed' });
             }
         });
         resizeCanvas();

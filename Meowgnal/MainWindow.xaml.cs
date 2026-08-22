@@ -135,6 +135,7 @@ public partial class MainWindow : Window
         ApplyChartType("candles");
         SetActiveTool(null);
         UpdateCursorButtonIcon();
+        UpdateKeepDrawingButtonVisual();
         UpdateMagnetButtonVisual();
         LongPressTooltipToggle.IsChecked = SettingsStorageService.Load().LongPressTooltipEnabled;
         _favoriteTfs = SettingsStorageService.Load().FavoriteTimeframes;
@@ -1852,9 +1853,12 @@ public partial class MainWindow : Window
                         DrawingStorageService.Save(_drawingsFile);
                     }
 
-                    _activeDrawingMode = null;
-                    SetActiveTool(null);
-                    _ = SendDrawingModeToChartAsync("none");
+                    if (!SettingsStorageService.Load().KeepDrawingEnabled)
+                    {
+                        _activeDrawingMode = null;
+                        SetActiveTool(null);
+                        _ = SendDrawingModeToChartAsync("none");
+                    }
                     _ = SendDrawingsToChartAsync();
                     RebuildObjectList();
                 }
@@ -2020,6 +2024,16 @@ public partial class MainWindow : Window
         {
             _activeDrawingMode = null;
             SetActiveTool(null);
+            return;
+        }
+        if (msgType == "escapePressed")
+        {
+            if (_activeDrawingMode is not null)
+            {
+                _activeDrawingMode = null;
+                SetActiveTool(null);
+                _ = SendDrawingModeToChartAsync("none");
+            }
             return;
         }
         if (msgType == "measureFinished")
@@ -2786,6 +2800,19 @@ or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" =
         await SendDrawingModeToChartAsync(mode);
     }
 
+    private void KeepDrawingButton_Click(object sender, RoutedEventArgs e)
+    {
+        var settings = SettingsStorageService.Load();
+        settings.KeepDrawingEnabled = !settings.KeepDrawingEnabled;
+        SettingsStorageService.Save(settings);
+        UpdateKeepDrawingButtonVisual();
+    }
+    private void UpdateKeepDrawingButtonVisual()
+    {
+        var settings = SettingsStorageService.Load();
+        KeepDrawingButton.Background = settings.KeepDrawingEnabled ? (Brush)FindResource("Accent") : Brushes.Transparent;
+        KeepDrawingIcon.Content = FindResource(settings.KeepDrawingEnabled ? "Icon_keepdrawing_active" : "Icon_keepdrawing");
+    }
     private void SetActiveTool(Button? active)
     {
         var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, MeasureButton, ZoomButton, BrushesShapesGroupButton, TextNotesGroupButton, IconStampGroupButton };

@@ -174,6 +174,16 @@ UseAeroCaptionButtons="False"/>
             <Line X1="14" Y1="4" X2="17" Y2="7" Stroke="#B2B5BE" StrokeThickness="1.5" StrokeDashArray="2,2"/>
             <Polyline Points="12,2 14,4 16,2" Stroke="#B2B5BE" StrokeThickness="1" Fill="Transparent"/>
         </Canvas>
+        <Canvas x:Key="Icon_keepdrawing" x:Shared="False" Width="18" Height="18">
+            <Path Data="M3,15 L9,9 L11,11 L5,17 Z" Fill="#B2B5BE"/>
+            <Path Data="M12.5,8 A4.5,4.5 0 1 1 8,3.5" Stroke="#B2B5BE" StrokeThickness="1.5" Fill="Transparent"/>
+            <Path Data="M8,1 L8,6 L12,3.5 Z" Fill="#B2B5BE"/>
+        </Canvas>
+        <Canvas x:Key="Icon_keepdrawing_active" x:Shared="False" Width="18" Height="18">
+            <Path Data="M3,15 L9,9 L11,11 L5,17 Z" Fill="#FFFFFF"/>
+            <Path Data="M12.5,8 A4.5,4.5 0 1 1 8,3.5" Stroke="#FFFFFF" StrokeThickness="1.5" Fill="Transparent"/>
+            <Path Data="M8,1 L8,6 L12,3.5 Z" Fill="#FFFFFF"/>
+        </Canvas>
         <Canvas x:Key="Icon_magnet" x:Shared="False" Width="18" Height="18">
             <Path Data="M5,2 L5,9 A4,4 0 0 0 13,9 L13,2 L10,2 L10,9 A1,1 0 0 1 8,9 L8,2 Z" Fill="#B2B5BE"/>
             <Line X1="5" Y1="4" X2="8" Y2="4" Stroke="#131722" StrokeThickness="1"/>
@@ -1133,6 +1143,9 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
+                        <Button x:Name="KeepDrawingButton" Style="{StaticResource RailButton}" Click="KeepDrawingButton_Click" ToolTip="Keep Drawing — stay in drawing mode after each drawing (Esc to exit)">
+                            <ContentControl x:Name="KeepDrawingIcon" Content="{StaticResource Icon_keepdrawing}" Width="18" Height="18"/>
+                        </Button>
                         <Rectangle Width="24" Height="1" Fill="{DynamicResource BorderLine}" Margin="0,6,0,6"/>
                         <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
 Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
