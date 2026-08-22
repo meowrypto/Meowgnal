@@ -2752,6 +2752,65 @@ public partial class MainWindow : Window
         }
         await SendDrawingModeToChartAsync("sticker");
     }
+    private async void LineGroup_DefaultTool_Click(object sender, RoutedEventArgs e)
+    {
+        await ActivateToolDirectly("trendline", LineGroupButton);
+    }
+    private async void FibGroup_DefaultTool_Click(object sender, RoutedEventArgs e)
+    {
+        await ActivateToolDirectly("fib", FibGroupButton);
+    }
+    private async void PatternsGroup_DefaultTool_Click(object sender, RoutedEventArgs e)
+    {
+        await ActivateToolDirectly("xabcdpattern", PatternsGroupButton);
+    }
+    private async void BrushesShapesGroup_DefaultTool_Click(object sender, RoutedEventArgs e)
+    {
+        await ActivateToolDirectly("rectangle", BrushesShapesGroupButton);
+    }
+    private async void TextNotesGroup_DefaultTool_Click(object sender, RoutedEventArgs e)
+    {
+        await ActivateToolDirectly("text", TextNotesGroupButton);
+    }
+    private async void IconStampGroup_DefaultTool_Click(object sender, RoutedEventArgs e)
+    {
+        _pendingStickerLabel = "🚀";
+        _pendingStickerFontSize = 22;
+        _pendingStickerFontFamily = "Segoe UI Emoji";
+        IconStampPopup.IsOpen = false;
+        SetActiveTool(IconStampGroupButton);
+        _activeDrawingMode = "sticker";
+        if (_activeCursorMode != "cross")
+        {
+            _activeCursorMode = "cross";
+            UpdateCursorButtonIcon();
+        }
+        await SendDrawingModeToChartAsync("sticker");
+    }
+    private async Task ActivateToolDirectly(string tag, Button groupButton)
+    {
+        CursorPopup.IsOpen = false;
+        LinePopup.IsOpen = false;
+        FibPopup.IsOpen = false;
+        PatternsPopup.IsOpen = false;
+        BrushesShapesPopup.IsOpen = false;
+        TextNotesPopup.IsOpen = false;
+        ForecastPopup.IsOpen = false;
+        IconStampPopup.IsOpen = false;
+        if (_hideDrawingsEnabled && !tag.StartsWith("cur_") && tag != "clear" && tag != "auto_sr")
+        {
+            _hideDrawingsEnabled = false;
+            UpdateHideDrawingsButtonVisual();
+            _ = SendHideDrawingsToChartAsync();
+        }
+        SetActiveTool(groupButton);
+        if (_activeCursorMode != "cross")
+        {
+            _activeCursorMode = "cross";
+            UpdateCursorButtonIcon();
+        }
+        await SendDrawingModeToChartAsync(tag);
+    }
     private void ForecastGroup_Click(object sender, RoutedEventArgs e)
     {
         CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
