@@ -2015,6 +2015,12 @@ public partial class MainWindow : Window
         {
             return;
         }
+        if (msgType == "measureFinished")
+        {
+            _activeDrawingMode = null;
+            SetActiveTool(null);
+            return;
+        }
 
         if (msgType == "pasteDrawing")
         {
@@ -2618,6 +2624,18 @@ public partial class MainWindow : Window
     {
         CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
     }
+    private async void MeasureButton_Click(object sender, RoutedEventArgs e)
+    {
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        SetActiveTool(MeasureButton);
+        _activeDrawingMode = "measure";
+        if (_activeCursorMode != "cross")
+        {
+            _activeCursorMode = "cross";
+            UpdateCursorButtonIcon();
+        }
+        await SendDrawingModeToChartAsync("measure");
+    }
     private async void ToolButton_Click(object sender, RoutedEventArgs e)
     {
         if (sender is not Button btn || btn.Tag is not string tag) return;
@@ -2711,7 +2729,7 @@ or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" =
 
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, BrushesShapesGroupButton, TextNotesGroupButton, IconStampGroupButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, MeasureButton, BrushesShapesGroupButton, TextNotesGroupButton, IconStampGroupButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");

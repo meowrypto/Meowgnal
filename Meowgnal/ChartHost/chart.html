@@ -443,6 +443,7 @@
         let dragState = null;
         let isDragging = false;
         let freehand = null;
+        let measureState = null;
         const HANDLE_SIZE = 10;
         let clipboardDrawing = null;
         const drawCanvas = document.createElement('canvas');
@@ -1879,6 +1880,7 @@
                     ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
                 }
             }
+            drawMeasureOverlay();
             const sortedDrawings = [...customDrawings].sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
             for (const d of sortedDrawings) {
                 const g = geometry(d);
@@ -2412,6 +2414,26 @@
             }
         });
         chartEl.addEventListener('mousedown', function (e) {
+            if (drawingMode === 'measure') {
+                if (e.button !== 0) return;
+                const rect = chartEl.getBoundingClientRect();
+                const t = chart.timeScale().coordinateToTime(e.clientX - rect.left);
+                const p = activeSeries ? activeSeries.coordinateToPrice(e.clientY - rect.top) : null;
+                if (t !== null && p !== null && p !== undefined) {
+                    measureState = {
+                        startTime: snapToBarTime(t),
+                        startPrice: p,
+                        endTime: snapToBarTime(t),
+                        endPrice: p
+                    };
+                    isDragging = true;
+                    chart.applyOptions({ handleScroll: false, handleScale: false });
+                    renderCustomDrawings();
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                return;
+            }
             if (drawingMode === 'brush' || drawingMode === 'highlighter') {
                 if (e.button !== 0) return;
                 const rect = chartEl.getBoundingClientRect();
@@ -2469,6 +2491,17 @@
             e.stopPropagation();
         });
         window.addEventListener('mousemove', function (e) {
+            if (measureState) {
+                const rect = chartEl.getBoundingClientRect();
+                const t = chart.timeScale().coordinateToTime(e.clientX - rect.left);
+                const p = activeSeries ? activeSeries.coordinateToPrice(e.clientY - rect.top) : null;
+                if (t !== null && p !== null && p !== undefined) {
+                    measureState.endTime = snapToBarTime(t);
+                    measureState.endPrice = p;
+                    renderCustomDrawings();
+                }
+                return;
+            }
             if (freehand) {
                 const rect = chartEl.getBoundingClientRect();
                 const t = chart.timeScale().coordinateToTime(e.clientX - rect.left);
@@ -2547,6 +2580,16 @@
             renderCustomDrawings();
         });
         window.addEventListener('mouseup', function () {
+            if (measureState) {
+                measureState = null;
+                isDragging = false;
+                chart.applyOptions({ handleScroll: true, handleScale: true });
+                drawingMode = null;
+                paneMain.style.cursor = 'crosshair';
+                post({ type: 'measureFinished' });
+                renderCustomDrawings();
+                return;
+            }
             if (freehand) {
                 const pts = freehand.points;
                 freehand = null;
@@ -2590,6 +2633,45 @@
             chart.applyOptions({ handleScroll: true, handleScale: true });
             dragState = null;
         });
+        // ---------- Measure tool (temporary drag measurement) ----------
+        function drawMeasureOverlay() {
+            if (!measureState || !activeSeries) return;
+            const x1 = px(measureState.startTime), y1 = py(measureState.startPrice);
+            const x2 = px(measureState.endTime), y2 = py(measureState.endPrice);
+            if (x1 === null || y1 === null || x2 === null || y2 === null) return;
+            const xL = Math.min(x1, x2), xR = Math.max(x1, x2), yT = Math.min(y1, y2), yB = Math.max(y1, y2);
+            const priceDiff = measureState.endPrice - measureState.startPrice;
+            const pricePct = measureState.startPrice !== 0 ? (priceDiff / measureState.startPrice) * 100 : 0;
+            const barSec = rawData.length > 1 ? (rawData[1].time - rawData[0].time) : 3600;
+            const barCount = Math.round(Math.abs(measureState.endTime - measureState.startTime) / barSec);
+            const timeDiffSec = Math.abs(measureState.endTime - measureState.startTime);
+            const timeStr = fmtDuration(timeDiffSec);
+            const isUp = priceDiff >= 0;
+            const boxColor = isUp ? COLORS.up : COLORS.down;
+            ctx.globalAlpha = 0.15;
+            ctx.fillStyle = boxColor;
+            ctx.fillRect(xL, yT, Math.max(1, xR - xL), Math.max(1, yB - yT));
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = boxColor;
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(xL, yT, Math.max(1, xR - xL), Math.max(1, yB - yT));
+            const labelX = xR + 10;
+            const labelY = (yT + yB) / 2;
+            const priceAbsStr = (priceDiff >= 0 ? '+' : '') + fmtPrice(Math.abs(priceDiff));
+            const pricePctStr = (pricePct >= 0 ? '+' : '') + pricePct.toFixed(2) + '%';
+            const lines = [
+                priceAbsStr + ' (' + pricePctStr + ')',
+                barCount + ' bars',
+                timeStr
+            ];
+            ctx.font = '11px Trebuchet MS';
+            ctx.fillStyle = boxColor;
+            const lineHeight = 14;
+            const startY = labelY - (lines.length - 1) * lineHeight / 2;
+            for (let i = 0; i < lines.length; i++) {
+                ctx.fillText(lines[i], labelX, startY + i * lineHeight);
+            }
+        }
         // ---------- Click / crosshair ----------
         const NEED = {
             anchoredvwap: 1, fixedrangevolumeprofile: 2, anchoredvolumeprofile: 1, pricerange: 2, daterange: 2, dateandpricerange: 2,
@@ -2605,7 +2687,8 @@
             rectangle: 2, circle: 2, ellipse: 2, arc: 3, triangle: 3,
             polyline: 20, path: 20, rotatedrectangle: 3, curve: 3, doublecurve: 5,
             arrow: 2, arrowmarker: 1, arrowmarkup: 1, arrowmarkdown: 1, brush: 20, highlighter: 20,
-            text: 1, anchoredtext: 1, note: 1, anchorednote: 1, callout: 1, comment: 1, pricelabel: 1, pricenote: 1, signpost: 1, pin: 1, flag: 1, flagmark: 1, sticker: 1, table: 1
+            text: 1, anchoredtext: 1, note: 1, anchorednote: 1, callout: 1, comment: 1, pricelabel: 1, pricenote: 1, signpost: 1, pin: 1, flag: 1, flagmark: 1, sticker: 1, table: 1,
+            measure: 2
         };
         chart.subscribeClick(function (param) {
             if (!param.point) return;
@@ -2621,6 +2704,7 @@
                 return;
             }
             if (drawingMode === 'brush' || drawingMode === 'highlighter') return;
+            if (drawingMode === 'measure') return;
             if (!drawingMode) {
                 let found = null;
                 for (let i = customDrawings.length - 1; i >= 0; i--) {

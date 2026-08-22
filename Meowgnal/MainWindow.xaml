@@ -1035,6 +1035,7 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </TabControl>
                             </Border>
                         </Popup>
+
                         <Button x:Name="ForecastGroupButton" Style="{StaticResource RailButton}" Click="ForecastGroup_Click" ToolTip="Forecasting &amp; measurement tools">
                             <ContentControl Content="{StaticResource Icon_forecast}" Width="18" Height="18"/>
                         </Button>
@@ -1087,6 +1088,15 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                                 </StackPanel>
                             </Border>
                         </Popup>
+                        <Button x:Name="MeasureButton" Style="{StaticResource RailButton}" Click="MeasureButton_Click" ToolTip="Measure — drag on chart to see price/time distance">
+                            <Canvas Width="18" Height="18">
+                                <Line X1="3" Y1="15" X2="15" Y2="3" Stroke="{DynamicResource TextSecondary}" StrokeThickness="1.5"/>
+                                <Line X1="3" Y1="15" X2="3" Y2="11" Stroke="{DynamicResource TextSecondary}" StrokeThickness="1.2"/>
+                                <Line X1="3" Y1="15" X2="7" Y2="15" Stroke="{DynamicResource TextSecondary}" StrokeThickness="1.2"/>
+                                <Line X1="15" Y1="3" X2="15" Y2="7" Stroke="{DynamicResource TextSecondary}" StrokeThickness="1.2"/>
+                                <Line X1="15" Y1="3" X2="11" Y2="3" Stroke="{DynamicResource TextSecondary}" StrokeThickness="1.2"/>
+                            </Canvas>
+                        </Button>
                         <Rectangle Width="24" Height="1" Fill="{DynamicResource BorderLine}" Margin="0,6,0,6"/>
                         <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
 Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
