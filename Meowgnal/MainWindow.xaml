@@ -1230,59 +1230,6 @@ Click="IconStampGroup_Click" Cursor="Hand">
                                 </TabControl>
                             </Border>
                         </Popup>
-
-                        <Button x:Name="ForecastGroupButton" Style="{StaticResource RailButton}" Click="ForecastGroup_Click" ToolTip="Forecasting &amp; measurement tools">
-                            <ContentControl Content="{StaticResource Icon_forecast}" Width="18" Height="18"/>
-                        </Button>
-                        <Popup x:Name="ForecastPopup" Placement="Right" PlacementTarget="{Binding ElementName=ForecastGroupButton}" StaysOpen="False">
-                            <Border Background="{DynamicResource BgPanel}" BorderBrush="{DynamicResource BorderLine}" BorderThickness="1" CornerRadius="6" Padding="4">
-                                <StackPanel Width="260">
-                                    <TextBlock Text="FORECASTING" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="longposition" Click="ToolButton_Click">
-                                        <TextBlock Text="Long Position (2 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="shortposition" Click="ToolButton_Click">
-                                        <TextBlock Text="Short Position (2 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="positionforecast" Click="ToolButton_Click">
-                                        <TextBlock Text="Position Forecast (4 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
-                                    <TextBlock Text="PATTERN &amp; GHOST" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="barspattern" Click="ToolButton_Click">
-                                        <TextBlock Text="Bars Pattern (2 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="ghostfeed" Click="ToolButton_Click">
-                                        <TextBlock Text="Ghost Feed (1 click)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="sector" Click="ToolButton_Click">
-                                        <TextBlock Text="Sector (5 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
-                                    <TextBlock Text="VOLUME-BASED" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="anchoredvwap" Click="ToolButton_Click">
-                                        <TextBlock Text="Anchored VWAP (1 click)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="fixedrangevolumeprofile" Click="ToolButton_Click">
-                                        <TextBlock Text="Fixed Range Volume Profile (2 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="anchoredvolumeprofile" Click="ToolButton_Click">
-                                        <TextBlock Text="Anchored Volume Profile (1 click)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Border Height="1" Background="{DynamicResource BorderLine}" Margin="4,6"/>
-                                    <TextBlock Text="MEASURERS" Foreground="{DynamicResource TextMuted}" FontSize="9" FontWeight="SemiBold" Margin="8,2,0,2"/>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="pricerange" Click="ToolButton_Click">
-                                        <TextBlock Text="Price Range (2 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="daterange" Click="ToolButton_Click">
-                                        <TextBlock Text="Date Range (2 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                    <Button Style="{StaticResource TvButtonLeft}" Tag="dateandpricerange" Click="ToolButton_Click">
-                                        <TextBlock Text="Date and Price Range (2 clicks)" VerticalAlignment="Center"/>
-                                    </Button>
-                                </StackPanel>
-                            </Border>
-                        </Popup>
                         <Button x:Name="MeasureButton" Style="{StaticResource RailButton}" Click="MeasureButton_Click" ToolTip="Measure — drag on chart to see price/time distance">
                             <ContentControl Content="{StaticResource Icon_measure}" Width="18" Height="18"/>
                         </Button>
@@ -1311,10 +1258,6 @@ BorderThickness="1" CornerRadius="4" Padding="4" Margin="4,0,0,0">
                             <ContentControl x:Name="KeepDrawingIcon" Content="{StaticResource Icon_keepdrawing}" Width="18" Height="18"/>
                         </Button>
                         <Rectangle Width="24" Height="1" Fill="{DynamicResource BorderLine}" Margin="0,6,0,6"/>
-                        <Button x:Name="ToolAutoSRButton" Style="{StaticResource RailButton}" Tag="auto_sr"
-Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
-                            <ContentControl Content="{StaticResource Icon_autosr}" Width="18" Height="18"/>
-                        </Button>
                         <Button x:Name="LockAllDrawingsButton" Style="{StaticResource RailButton}"
 Click="LockAllDrawingsButton_Click" ToolTip="Lock All Drawings — prevent selecting / moving / deleting">
                             <ContentControl x:Name="LockAllIcon" Content="{StaticResource Icon_lockall}" Width="18" Height="18"/>
@@ -1452,6 +1395,12 @@ BorderBrush="{DynamicResource BorderLine}" BorderThickness="0,0,0,1" Padding="10
                             </StackPanel>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                 <Button x:Name="RefreshButton" Content="⟳ Refresh" Style="{StaticResource TvButton}" Click="RefreshButton_Click"/>
+                                <Button x:Name="AutoSRButton" Style="{StaticResource TvButton}" Tag="auto_sr" Click="ToolButton_Click" ToolTip="Auto Support/Resistance — detect important levels">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ContentControl Content="{StaticResource Icon_autosr}" Width="18" Height="18" Margin="0,0,6,0"/>
+                                        <TextBlock Text="Auto S/R" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                                 <Button x:Name="OpenBuilderButton" Content="📊 Strategies" Style="{StaticResource TvButton}" Click="OpenBuilderButton_Click"/>
                                 <Button x:Name="OpenBacktestButton" Content="Backtest" Style="{StaticResource TvButton}" Click="OpenBacktestButton_Click"/>
                                 <Button x:Name="OpenJournalButton" Content="📓 Journal" Style="{StaticResource TvButton}" Click="OpenJournalButton_Click"/>

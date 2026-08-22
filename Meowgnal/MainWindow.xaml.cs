@@ -2672,46 +2672,40 @@ public partial class MainWindow : Window
 
     private void CursorGroup_Click(object sender, RoutedEventArgs e)
     {
-        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         if (!CursorPopup.IsOpen) RefreshCursorMenuHighlight();
         CursorPopup.IsOpen = !CursorPopup.IsOpen;
     }
-
     private void LineGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         LinePopup.IsOpen = !LinePopup.IsOpen;
     }
-
     private void FibGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         FibPopup.IsOpen = !FibPopup.IsOpen;
     }
-
     private void PatternsGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         PatternsPopup.IsOpen = !PatternsPopup.IsOpen;
     }
-
     private void BrushesShapesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         BrushesShapesPopup.IsOpen = !BrushesShapesPopup.IsOpen;
     }
-
     private void TextNotesGroup_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         TextNotesPopup.IsOpen = !TextNotesPopup.IsOpen;
     }
-
     private void IconStampGroup_Click(object sender, RoutedEventArgs e)
     {
         CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false;
         PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false;
-        TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false;
+        TextNotesPopup.IsOpen = false;
         IconStampPopup.IsOpen = !IconStampPopup.IsOpen;
     }
     private async void IconStampItem_Click(object sender, RoutedEventArgs e)
@@ -2795,7 +2789,6 @@ public partial class MainWindow : Window
         PatternsPopup.IsOpen = false;
         BrushesShapesPopup.IsOpen = false;
         TextNotesPopup.IsOpen = false;
-        ForecastPopup.IsOpen = false;
         IconStampPopup.IsOpen = false;
         if (_hideDrawingsEnabled && !tag.StartsWith("cur_") && tag != "clear" && tag != "auto_sr")
         {
@@ -2811,13 +2804,9 @@ public partial class MainWindow : Window
         }
         await SendDrawingModeToChartAsync(tag);
     }
-    private void ForecastGroup_Click(object sender, RoutedEventArgs e)
-    {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
-    }
     private async void MeasureButton_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         SetActiveTool(MeasureButton);
         _activeDrawingMode = "measure";
         if (_activeCursorMode != "cross")
@@ -2829,7 +2818,7 @@ public partial class MainWindow : Window
     }
     private async void ZoomButton_Click(object sender, RoutedEventArgs e)
     {
-        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; ForecastPopup.IsOpen = false; IconStampPopup.IsOpen = false;
+        CursorPopup.IsOpen = false; LinePopup.IsOpen = false; FibPopup.IsOpen = false; PatternsPopup.IsOpen = false; BrushesShapesPopup.IsOpen = false; TextNotesPopup.IsOpen = false; IconStampPopup.IsOpen = false;
         SetActiveTool(ZoomButton);
         _activeDrawingMode = "zoom";
         if (_activeCursorMode != "cross")
@@ -2941,7 +2930,6 @@ public partial class MainWindow : Window
         PatternsPopup.IsOpen = false;
         BrushesShapesPopup.IsOpen = false;
         TextNotesPopup.IsOpen = false;
-        ForecastPopup.IsOpen = false;
 
         var cursorMap = new Dictionary<string, string>
         {
@@ -2965,23 +2953,15 @@ public partial class MainWindow : Window
         var group = tag switch
         {
             "fib" or "fibextension" or "fibchannel" or "fibtimezone" or "trendbasedfibtime" or "fibcircles" or "fibspiral"
-                or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan"
-                or "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => FibGroupButton,
-
+            or "fibarcs" or "fibwedge" or "fibspeedfan" or "pitchfan"
+            or "gannbox" or "gannsquare" or "gannsquarefixed" or "gannfan" => FibGroupButton,
             "xabcdpattern" or "cypherpattern" or "headandshoulders" or "abcdpattern" or "trianglepattern" or "threedrivespattern"
-                or "elliottimpulsewave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave"
-                or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
-
-            "longposition" or "shortposition" or "positionforecast" or "barspattern" or "ghostfeed" or "sector"
-or "anchoredvwap" or "fixedrangevolumeprofile" or "anchoredvolumeprofile"
-or "pricerange" or "daterange" or "dateandpricerange" => ForecastGroupButton,
-
+            or "elliottimpulsewave" or "elliottcorrectionwave" or "elliotttrianglewave" or "elliottdoublecombowave" or "elliotttriplecombowave"
+            or "cycliclines" or "timecycles" or "sineline" => PatternsGroupButton,
             "rectangle" or "rotatedrectangle" or "circle" or "ellipse" or "triangle" or "polyline" or "arc" or "path" or "curve" or "doublecurve"
-or "arrow" or "arrowmarkup" or "arrowmarkdown" or "arrowmarker" or "brush" or "highlighter" => BrushesShapesGroupButton,
-
+            or "arrow" or "arrowmarkup" or "arrowmarkdown" or "arrowmarker" or "brush" or "highlighter" => BrushesShapesGroupButton,
             "text" or "anchoredtext" or "note" or "anchorednote" or "callout" or "comment"
-or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" => TextNotesGroupButton,
-
+            or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" => TextNotesGroupButton,
             "cur_cross" or "cur_dot" or "cur_arrow" or "cur_demo" or "cur_magic" or "cur_eraser" => CursorGroupButton,
             _ => LineGroupButton,
         };
@@ -3011,7 +2991,7 @@ or "pricelabel" or "pricenote" or "signpost" or "flagmark" or "pin" or "table" =
     }
     private void SetActiveTool(Button? active)
     {
-        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, ForecastGroupButton, MeasureButton, ZoomButton, BrushesShapesGroupButton, TextNotesGroupButton, IconStampGroupButton };
+        var railButtons = new[] { CursorGroupButton, LineGroupButton, FibGroupButton, PatternsGroupButton, MeasureButton, ZoomButton, BrushesShapesGroupButton, TextNotesGroupButton, IconStampGroupButton };
         foreach (var b in railButtons)
             b.Background = Brushes.Transparent;
         (active ?? CursorGroupButton).Background = (Brush)FindResource("Accent");
